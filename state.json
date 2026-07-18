@@ -6,19 +6,23 @@
     "release_deadline": "2027-01-18",
     "phase_mode": "development"
   },
-  "goal": "Phase 0 基盤構築: monorepo scaffold + contracts + domain + DB migrations + fixtures + API + CI を PR 化し STABLE 判定",
-  "phase": "Verify",
+  "goal": "次セッション: Issue #9 (MapLibre 地図) または Issue #10 後半 (DB リポジトリ実装・マッピング層) を実装し PR 化",
+  "phase": "Monitor",
   "kpi": {
     "success_rate_target": 0.9,
     "ci_success_rate": 1.0,
     "test_pass_rate": 1.0,
-    "test_count": 96,
+    "test_count": 104,
     "security_critical": 0,
     "blocker_count": 0
   },
   "execution": {
     "max_duration_minutes": 300,
-    "session_started_at": "2026-07-18T10:19:00+09:00",
+    "last_session": {
+      "date": "2026-07-18",
+      "started_at": "10:19",
+      "summary": "Phase 0 基盤 (PR #6) + Phase 1 Web MVP (PR #11) を merge。Neon プロジェクト作成・0001 を dev/main 両ブランチへ適用検証"
+    },
     "repair_count": 0,
     "max_repair": 3,
     "same_error_limit": 2
@@ -30,26 +34,28 @@
   "deploy": {
     "ready": false
   },
-  "completed_issues": [1, 2, 3, 4, 5],
+  "infra": {
+    "github_repo": "Kensan196948G/Public-Works-Stakeholder-Map",
+    "github_project": 48,
+    "neon_project_id": "tiny-river-77604173",
+    "neon_migrations_applied": ["0001_initial_schema.sql"],
+    "neon_dev_branch": "br-calm-forest-auo4xou3"
+  },
+  "completed_issues": [1, 2, 3, 4, 5, 7, 8],
   "blocked_issues": [],
-  "open_prs": [
-    {
-      "number": 6,
-      "title": "feat: Phase 0 基盤構築",
-      "branch": "feature/phase0-foundation",
-      "ci": "success",
-      "review": "CodeRabbit 2巡完了 (Critical 0 / Major 13 修正 / Minor skip 1 理由記録)",
-      "note": "main 宛のため merge は人間の明示承認待ち"
-    }
-  ],
+  "open_issues": {
+    "9": "MapLibre 地図表示 (P2) — タイルソース利用条件の確認から",
+    "10": "Neon/PostGIS リポジトリ実装 (P2) — スキーマ適用済み、残りは DB リポジトリ層 + jurisdiction_asset_type マッピング"
+  },
   "learning": {
     "failure_patterns": [
-      "vitest 4 (vite 8) はローカルの ulimit -v 20GB 環境で WASM 仮想メモリ予約により起動不能 → vitest 3 に固定 (ADR-0001)",
-      "CodeRabbit CLI は organization spending cap で rate limit になる場合がある (37分待ち) → 内部レビューエージェントで代替"
+      "vitest 4 / workerd はローカルの ulimit -v 20GB 環境で V8 仮想メモリ予約により起動不能 → vitest 3 固定・API 検証は app.request() 統合テストで代替 (ADR-0001)",
+      "CodeRabbit CLI は organization spending cap で rate limit になる場合がある → GitHub 側 CodeRabbit チェック + 内部レビューエージェントで代替"
     ],
     "success_patterns": [
       "クロック注入 (now: () => Date) で鮮度・期限超過テストを決定的に実行",
-      "fixture を TS ワークスペースパッケージ化し契約型で fixture 品質をコンパイル時検証"
+      "fixture を TS ワークスペースパッケージ化し契約型で品質をコンパイル時検証",
+      "DB 制約 (§5.3) を dev ブランチ上で拒否動作まで実証してから main へ適用"
     ]
   }
 }
