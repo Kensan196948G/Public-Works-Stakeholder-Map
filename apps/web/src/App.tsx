@@ -10,9 +10,20 @@ import {
   type DecisionState,
 } from './checklist.js';
 import { buildCandidatesCsv, downloadCsv } from './csv.js';
+import { loadSettings, type AppSettings } from './settings.js';
+import { AuditPage } from './components/AuditPage.js';
 import { CandidateCard } from './components/CandidateCard.js';
 import { DisclaimerBanner } from './components/DisclaimerBanner.js';
 import { SearchForm } from './components/SearchForm.js';
+import { SettingsPage } from './components/SettingsPage.js';
+
+type PageId = 'search' | 'settings' | 'audit';
+
+const PAGES: readonly { id: PageId; label: string }[] = [
+  { id: 'search', label: '🔎 検索' },
+  { id: 'settings', label: '⚙️ システム設定' },
+  { id: 'audit', label: '📜 監査ログ' },
+];
 
 // 地図（WebGL）は遅延読込し、初期表示と非対応環境への影響を抑える
 const MapPicker = lazy(() =>
@@ -20,6 +31,8 @@ const MapPicker = lazy(() =>
 );
 
 export function App() {
+  const [page, setPage] = useState<PageId>('search');
+  const [settings, setSettings] = useState<AppSettings>(() => loadSettings());
   const [lat, setLat] = useState('35.05');
   const [lon, setLon] = useState('139.05');
   const [response, setResponse] = useState<SearchResponse | null>(null);
@@ -79,7 +92,37 @@ export function App() {
 
       <DisclaimerBanner />
 
-      <main className="layout">
+      <nav className="app-nav" aria-label="ページ切替">
+        {PAGES.map((p) => (
+          <button
+            key={p.id}
+            type="button"
+            className={page === p.id ? 'nav-active' : ''}
+            aria-current={page === p.id ? 'page' : undefined}
+            onClick={() => setPage(p.id)}
+          >
+            {p.label}
+          </button>
+        ))}
+      </nav>
+
+      {page === 'settings' && (
+        <section className="pane">
+          <SettingsPage
+            settings={settings}
+            onSettingsChange={setSettings}
+            onChecklistCleared={() => setChecklist({})}
+          />
+        </section>
+      )}
+
+      {page === 'audit' && (
+        <section className="pane">
+          <AuditPage />
+        </section>
+      )}
+
+      <main className={`layout${page === 'search' ? '' : ' hidden'}`}>
         <section className="pane pane-form" aria-label="検索条件">
           <SearchForm
             onSearch={handleSearch}
@@ -88,6 +131,7 @@ export function App() {
             lon={lon}
             onLatChange={setLat}
             onLonChange={setLon}
+            initialRadius={settings.defaultRadiusMeters}
           />
         </section>
 

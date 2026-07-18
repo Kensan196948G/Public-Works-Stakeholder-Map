@@ -1,7 +1,10 @@
 import { Hono } from 'hono';
 import { secureHeaders } from 'hono/secure-headers';
 import {
+  auditEventsResponseSchema,
   ERROR_CODES,
+  GEOCODE_QUERY_MAX_LENGTH,
+  geocodeResponseSchema,
   metadataResponseSchema,
   REQUIRED_DISCLAIMER,
   searchRequestSchema,
@@ -12,11 +15,21 @@ import {
 } from '@pwsm/contracts';
 import { demoDataset } from '@pwsm/fixtures';
 import {
+  listAuditEvents,
+  recordAuditEvent,
+  type AuditRecordInput,
+} from './repositories/audit-repository.js';
+import {
   checkDatabaseReady,
   fetchRuleVersion,
   searchCandidatesDb,
 } from './repositories/db-repository.js';
 import { searchCandidates } from './repositories/fixture-repository.js';
+import {
+  GEOCODER_ATTRIBUTION,
+  GeocodeUpstreamError,
+  geocodeAddress,
+} from './services/geocode.js';
 
 /**
  * Workers API 本体（詳細設計仕様書 §6）。
@@ -29,6 +42,8 @@ import { searchCandidates } from './repositories/fixture-repository.js';
 export interface AppOptions {
   /** テストから固定クロックを注入する。省略時は実時刻 */
   now?: () => Date;
+  /** テストからジオコーダーの fetch を注入する（外部 API をモック） */
+  geocodeFetch?: (input: string, init?: RequestInit) => Promise<Response>;
 }
 
 export interface ApiContext {
@@ -45,7 +60,7 @@ export interface ApiContext {
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 const PROBLEM_TYPE_BASE = 'https://public-works-map.example/errors';
 
-type ProblemStatus = 400 | 404 | 500;
+type ProblemStatus = 400 | 403 | 404 | 500 | 502;
 
 function problemResponse(
   requestId: string,
@@ -97,7 +112,25 @@ function classifyValidationError(path: readonly PropertyKey[]): {
 
 export function buildApp(options: AppOptions = {}) {
   const now = options.now ?? (() => new Date());
+  const geocodeFetch = options.geocodeFetch ?? fetch;
   const app = new Hono<ApiContext>().basePath('/api/v1');
+
+  /** 監査記録。失敗しても本処理を止めない（Workers では waitUntil で非同期化） */
+  function recordAudit(
+    c: { env?: ApiContext['Bindings']; executionCtx?: { waitUntil?: (p: Promise<unknown>) => void } },
+    input: AuditRecordInput,
+  ): void {
+    const promise = recordAuditEvent(c.env?.DATABASE_URL, input, now()).catch((err: unknown) => {
+      console.error('audit record failed', {
+        message: err instanceof Error ? err.message : String(err),
+      });
+    });
+    try {
+      c.executionCtx?.waitUntil?.(promise);
+    } catch {
+      // Workers 以外（Node/テスト）では executionCtx が無い — promise は投げっぱなしで良い
+    }
+  }
 
   app.use(secureHeaders());
 
@@ -153,6 +186,72 @@ export function buildApp(options: AppOptions = {}) {
     return c.json(body);
   });
 
+  // 住所検索（FR-001）。クエリは監査・ログへ記録しない（プライバシー最小化）
+  app.get('/geocode', async (c) => {
+    const requestId = c.get('requestId');
+    const query = (c.req.query('q') ?? '').trim();
+    if (query.length === 0 || query.length > GEOCODE_QUERY_MAX_LENGTH) {
+      return problemResponse(
+        requestId,
+        400,
+        ERROR_CODES.INVALID_QUERY,
+        '入力内容を確認してください',
+        `住所は1〜${GEOCODE_QUERY_MAX_LENGTH}文字で指定してください`,
+      );
+    }
+    try {
+      const results = await geocodeAddress(query, geocodeFetch);
+      recordAudit(c, {
+        actor: 'anonymous',
+        action: 'geocode.search',
+        targetKind: 'geocode',
+        result: 'success',
+        correlationId: requestId,
+        metadata: { resultCount: results.length },
+      });
+      return c.json(
+        geocodeResponseSchema.parse({ results, attribution: GEOCODER_ATTRIBUTION }),
+      );
+    } catch (err) {
+      if (err instanceof GeocodeUpstreamError) {
+        recordAudit(c, {
+          actor: 'anonymous',
+          action: 'geocode.search',
+          targetKind: 'geocode',
+          result: 'failure',
+          correlationId: requestId,
+          metadata: { reason: 'upstream' },
+        });
+        return problemResponse(
+          requestId,
+          502,
+          ERROR_CODES.UPSTREAM_ERROR,
+          '住所検索サービスに接続できません',
+          '時間をおいて再度お試しいただくか、緯度経度・地図で地点を指定してください',
+        );
+      }
+      throw err;
+    }
+  });
+
+  // 監査ログ閲覧（SCR-09 先行）。認証・RBAC 導入までは production で無効化する
+  app.get('/audit-events', async (c) => {
+    const requestId = c.get('requestId');
+    if (c.env?.APP_ENV === 'production') {
+      return problemResponse(
+        requestId,
+        403,
+        ERROR_CODES.FORBIDDEN,
+        '監査ログは閲覧できません',
+        '本番環境の監査ログ閲覧は認証導入後に管理者のみへ提供されます',
+      );
+    }
+    const rawLimit = Number(c.req.query('limit') ?? 50);
+    const limit = Number.isInteger(rawLimit) ? Math.min(Math.max(rawLimit, 1), 200) : 50;
+    const { events, store } = await listAuditEvents(c.env?.DATABASE_URL, limit);
+    return c.json(auditEventsResponseSchema.parse({ events, store }));
+  });
+
   app.post('/stakeholders/search', async (c) => {
     const requestId = c.get('requestId');
 
@@ -193,6 +292,19 @@ export function buildApp(options: AppOptions = {}) {
       disclaimer: REQUIRED_DISCLAIMER,
       candidates: result.candidates,
     };
+    // 検索実行を監査へ記録（座標・条件詳細は記録しない: プライバシー最小化）
+    recordAudit(c, {
+      actor: 'anonymous',
+      action: 'stakeholder.search',
+      targetKind: 'search',
+      result: 'success',
+      correlationId: c.get('requestId'),
+      metadata: {
+        candidateCount: result.candidates.length,
+        datasetVersion: body.datasetVersion,
+        ruleVersion: body.ruleVersion,
+      },
+    });
     return c.json(body);
   });
 

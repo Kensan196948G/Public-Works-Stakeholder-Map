@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
-import type { AssetType, ImpactType, SearchRequest, WorkType } from '@pwsm/contracts';
+import type { AssetType, GeocodeResult, ImpactType, SearchRequest, WorkType } from '@pwsm/contracts';
 import { assetTypeSchema, impactTypeSchema, workTypeSchema } from '@pwsm/contracts';
+import { ApiError, geocode } from '../api.js';
 import { ASSET_TYPE_LABELS, IMPACT_TYPE_LABELS, WORK_TYPE_LABELS } from '../labels.js';
 
 /** 架空デモ地点（fixture の 3 地域に対応） */
@@ -18,6 +19,8 @@ interface SearchFormProps {
   lon: string;
   onLatChange: (value: string) => void;
   onLonChange: (value: string) => void;
+  /** システム設定の既定検索半径（m） */
+  initialRadius: number;
 }
 
 function CheckboxGroup<T extends string>({
@@ -59,8 +62,48 @@ function CheckboxGroup<T extends string>({
 }
 
 /** 地点・工事条件の入力フォーム（SCR-02 の条件ペイン相当） */
-export function SearchForm({ onSearch, searching, lat, lon, onLatChange, onLonChange }: SearchFormProps) {
-  const [radius, setRadius] = useState('500');
+export function SearchForm({
+  onSearch,
+  searching,
+  lat,
+  lon,
+  onLatChange,
+  onLonChange,
+  initialRadius,
+}: SearchFormProps) {
+  const [radius, setRadius] = useState(String(initialRadius));
+  const [addressQuery, setAddressQuery] = useState('');
+  const [addressResults, setAddressResults] = useState<GeocodeResult[] | null>(null);
+  const [addressError, setAddressError] = useState<string | null>(null);
+  const [addressSearching, setAddressSearching] = useState(false);
+
+  async function handleAddressSearch() {
+    const query = addressQuery.trim();
+    if (query === '') return;
+    setAddressSearching(true);
+    setAddressError(null);
+    setAddressResults(null);
+    try {
+      const response = await geocode(query);
+      setAddressResults(response.results);
+      if (response.results.length === 0) {
+        setAddressError('該当する住所が見つかりませんでした。表記を変えてお試しください。');
+      }
+    } catch (e) {
+      setAddressError(
+        e instanceof ApiError ? e.message : '住所検索に失敗しました。時間をおいて再度お試しください。',
+      );
+    } finally {
+      setAddressSearching(false);
+    }
+  }
+
+  function handleAddressSelect(result: GeocodeResult) {
+    onLatChange(result.location.lat.toFixed(6));
+    onLonChange(result.location.lon.toFixed(6));
+    setAddressResults(null);
+    setAddressQuery(result.label);
+  }
   const [workTypes, setWorkTypes] = useState<WorkType[]>([]);
   const [assetTypes, setAssetTypes] = useState<AssetType[]>([]);
   const [impactTypes, setImpactTypes] = useState<ImpactType[]>([]);
@@ -81,6 +124,47 @@ export function SearchForm({ onSearch, searching, lat, lon, onLatChange, onLonCh
     <form onSubmit={handleSubmit} aria-label="候補検索条件">
       <fieldset>
         <legend>📍 地点</legend>
+        <label>
+          住所で検索（国土地理院 住所検索API）
+          <div className="address-search">
+            <input
+              type="text"
+              value={addressQuery}
+              onChange={(e) => setAddressQuery(e.target.value)}
+              placeholder="例: 千代田区霞が関一丁目"
+              maxLength={100}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  void handleAddressSearch();
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => void handleAddressSearch()}
+              disabled={addressSearching || addressQuery.trim() === ''}
+            >
+              {addressSearching ? '検索中…' : '住所検索'}
+            </button>
+          </div>
+        </label>
+        {addressError !== null && (
+          <p className="error" role="alert">
+            {addressError}
+          </p>
+        )}
+        {addressResults !== null && addressResults.length > 0 && (
+          <ul className="address-results" aria-label="住所候補">
+            {addressResults.map((result) => (
+              <li key={`${result.label}-${result.location.lat}-${result.location.lon}`}>
+                <button type="button" onClick={() => handleAddressSelect(result)}>
+                  📍 {result.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
         <label>
           デモ地点
           <select

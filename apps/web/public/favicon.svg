@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- 地図ピン + 地図面のシンプルアイコン -->
+  <rect x="4" y="12" width="56" height="44" rx="6" fill="#0369a1"/>
+  <path d="M4 24 L22 18 L42 26 L60 20 L60 50 A6 6 0 0 1 54 56 L10 56 A6 6 0 0 1 4 50 Z" fill="#e0f2fe"/>
+  <path d="M22 18 L22 56 M42 26 L42 56" stroke="#7dd3fc" stroke-width="2" fill="none"/>
+  <circle cx="32" cy="26" r="12" fill="#b91c1c"/>
+  <circle cx="32" cy="26" r="5" fill="#fff"/>
+  <path d="M32 38 L26 30 L38 30 Z" fill="#b91c1c"/>
+</svg>

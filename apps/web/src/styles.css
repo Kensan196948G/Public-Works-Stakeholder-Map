@@ -308,3 +308,118 @@ dd {
   font-size: 0.85rem;
   margin-top: 0.2rem;
 }
+
+/* --- ナビゲーション・設定・監査ログ（Issue #17） --- */
+.app-nav {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.app-nav button {
+  background: #e2e8f0;
+  color: var(--color-text);
+}
+
+.app-nav button.nav-active {
+  background: #0369a1;
+  color: #fff;
+}
+
+.hidden {
+  display: none;
+}
+
+.settings-section {
+  border-bottom: 1px dashed var(--color-border);
+  padding: 0.5rem 0 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.settings-section h3 {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+}
+
+.settings-note {
+  color: #475569;
+  font-size: 0.9rem;
+}
+
+.settings-section input[type='number'] {
+  width: 10rem;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.audit-table-wrap {
+  overflow-x: auto;
+}
+
+.audit-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.85rem;
+}
+
+.audit-table th,
+.audit-table td {
+  border: 1px solid var(--color-border);
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.audit-table th {
+  background: #f1f5f9;
+}
+
+.audit-correlation {
+  font-family: monospace;
+  font-size: 0.75rem;
+}
+
+/* --- 住所検索（Issue #16） --- */
+.address-search {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.2rem;
+}
+
+.address-search input {
+  flex: 1;
+  padding: 0.35rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+
+.address-search button {
+  white-space: nowrap;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.7rem;
+}
+
+.address-results {
+  list-style: none;
+  margin: 0.4rem 0;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+
+.address-results li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+.address-results button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  color: var(--color-text);
+  font-size: 0.85rem;
+  border-radius: 0;
+}
+
+.address-results button:hover {
+  background: #e0f2fe;
+}

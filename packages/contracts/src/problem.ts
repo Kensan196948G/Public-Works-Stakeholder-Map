@@ -10,7 +10,10 @@ export const errorCodeSchema = z.enum([
   'INVALID_BODY',
   'INVALID_COORDINATE',
   'INVALID_RADIUS',
+  'INVALID_QUERY',
+  'FORBIDDEN',
   'NOT_FOUND',
+  'UPSTREAM_ERROR',
   'INTERNAL_ERROR',
 ]);
 export type ErrorCode = z.infer<typeof errorCodeSchema>;
