@@ -7,11 +7,12 @@
     "phase_mode": "development"
   },
   "goal": "Phase 0 基盤構築: monorepo scaffold + contracts + domain + DB migrations + fixtures + API + CI を PR 化し STABLE 判定",
-  "phase": "Build",
+  "phase": "Verify",
   "kpi": {
     "success_rate_target": 0.9,
-    "ci_success_rate": 0.0,
-    "test_pass_rate": 0.0,
+    "ci_success_rate": 1.0,
+    "test_pass_rate": 1.0,
+    "test_count": 96,
     "security_critical": 0,
     "blocker_count": 0
   },
@@ -29,10 +30,26 @@
   "deploy": {
     "ready": false
   },
-  "completed_issues": [],
+  "completed_issues": [1, 2, 3, 4, 5],
   "blocked_issues": [],
+  "open_prs": [
+    {
+      "number": 6,
+      "title": "feat: Phase 0 基盤構築",
+      "branch": "feature/phase0-foundation",
+      "ci": "success",
+      "review": "CodeRabbit 2巡完了 (Critical 0 / Major 13 修正 / Minor skip 1 理由記録)",
+      "note": "main 宛のため merge は人間の明示承認待ち"
+    }
+  ],
   "learning": {
-    "failure_patterns": [],
-    "success_patterns": []
+    "failure_patterns": [
+      "vitest 4 (vite 8) はローカルの ulimit -v 20GB 環境で WASM 仮想メモリ予約により起動不能 → vitest 3 に固定 (ADR-0001)",
+      "CodeRabbit CLI は organization spending cap で rate limit になる場合がある (37分待ち) → 内部レビューエージェントで代替"
+    ],
+    "success_patterns": [
+      "クロック注入 (now: () => Date) で鮮度・期限超過テストを決定的に実行",
+      "fixture を TS ワークスペースパッケージ化し契約型で fixture 品質をコンパイル時検証"
+    ]
   }
 }

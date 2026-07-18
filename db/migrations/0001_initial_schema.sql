@@ -20,7 +20,8 @@ CREATE SCHEMA IF NOT EXISTS workflow;    -- レビュー・検索セッション
 CREATE SCHEMA IF NOT EXISTS audit;       -- 監査イベント（管理者のみ）
 
 -- ---------------------------------------------------------------
--- 列挙型（§4.1）— packages/contracts/src/enums.ts と一致させること
+-- 列挙型（§4.1）— organization_type / record_status / verification_state /
+-- boundary_precision / source_authority は packages/contracts/src/enums.ts と一致させること
 -- ---------------------------------------------------------------
 CREATE TYPE core.organization_type AS ENUM (
   'issuer', 'road_admin', 'river_admin', 'port_admin',
@@ -48,7 +49,10 @@ CREATE TYPE provenance.fetch_mode AS ENUM ('manual', 'scheduled', 'api');
 
 CREATE TYPE core.contact_type AS ENUM ('phone', 'web', 'email', 'counter');
 
-CREATE TYPE core.asset_type AS ENUM (
+-- 管轄区域の資産種別（§5.2 jurisdictions 用）。
+-- 注意: contracts の assetTypeSchema（§4.2 工事対象: coast/park 等を含む検索入力）とは
+-- 別概念。Phase 1 の空間検索では両者のマッピング層を実装すること。
+CREATE TYPE core.jurisdiction_asset_type AS ENUM (
   'administrative', 'road', 'river', 'port', 'police'
 );
 
@@ -239,7 +243,7 @@ CREATE TABLE core.jurisdictions (
   id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id  uuid NOT NULL REFERENCES core.organizations(id),
   office_id        uuid REFERENCES core.offices(id),
-  asset_type       core.asset_type NOT NULL,
+  asset_type       core.jurisdiction_asset_type NOT NULL,
   asset_name       text,
   geometry         geometry(MultiPolygon, 4326),
   precision        core.boundary_precision NOT NULL,
