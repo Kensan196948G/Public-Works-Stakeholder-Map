@@ -25,12 +25,11 @@ export function App() {
   const [response, setResponse] = useState<SearchResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
-  const [checklist, setChecklist] = useState<ChecklistEntries>({});
-
-  // チェックリストは local storage で 7 日間保持する（FR-009 / §10）
-  useEffect(() => {
-    setChecklist(loadChecklist(getChecklistStorage(), new Date()));
-  }, []);
+  // チェックリストは local storage で 7 日間保持する（FR-009 / §10）。
+  // lazy initializer で保存済みデータを先に読み込み、初期値 {} による上書きを防ぐ
+  const [checklist, setChecklist] = useState<ChecklistEntries>(() =>
+    loadChecklist(getChecklistStorage(), new Date()),
+  );
   useEffect(() => {
     saveChecklist(getChecklistStorage(), checklist, new Date());
   }, [checklist]);

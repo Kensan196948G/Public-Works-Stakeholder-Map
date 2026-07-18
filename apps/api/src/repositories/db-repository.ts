@@ -37,6 +37,8 @@ interface JurisdictionRow {
   evidence_title: string | null;
   evidence_url: string | null;
   authority: SourceAuthority | null;
+  /** true: 区域が地点を包含（ST_Covers）。false: 検索半径による周辺一致のみ */
+  covered: boolean;
 }
 
 interface RuleRow {
@@ -85,11 +87,15 @@ async function loadPublishedRules(sql: Sql): Promise<StakeholderRule[]> {
   }));
 }
 
-/** 現在有効なルール版（メタデータ・応答用）。ルール未登録時は 0。 */
+/** 現在有効なルール版（メタデータ・応答用）。検索時と同じ有効期間条件で判定する。ルール未登録時は 0。 */
 export async function fetchRuleVersion(databaseUrl: string): Promise<number> {
   const sql = neon(databaseUrl);
   const rows = (await sql`
-    SELECT COALESCE(MAX(version), 0) AS version FROM core.stakeholder_rules WHERE status = 'published'
+    SELECT COALESCE(MAX(version), 0) AS version
+    FROM core.stakeholder_rules
+    WHERE status = 'published'
+      AND (effective_from IS NULL OR effective_from <= now())
+      AND (effective_to IS NULL OR effective_to >= now())
   `) as { version: number }[];
   return rows[0]?.version ?? 0;
 }
@@ -133,7 +139,8 @@ export async function searchCandidatesDb(
         j.estimated,
         e.title AS evidence_title,
         e.url AS evidence_url,
-        ds.authority
+        ds.authority,
+        ST_Covers(j.geometry, ST_SetSRID(ST_MakePoint(${lon}, ${lat}), 4326)) AS covered
       FROM core.jurisdictions j
       JOIN core.organizations o ON o.id = j.organization_id AND o.status = 'published'
       LEFT JOIN core.offices f ON f.id = j.office_id
@@ -177,27 +184,45 @@ export async function searchCandidatesDb(
     byOrganization.set(row.organization_id, list);
   }
 
+  // 複数行の統合は常に「最も不確実な値」を代表値にする保守的集約（不確実性を隠さない）
+  const AUTHORITY_WEAKNESS: Record<SourceAuthority, number> = {
+    secondary_open: 0,
+    official_catalog: 1,
+    primary_official: 2,
+  };
+  const PRECISION_UNCERTAINTY: readonly BoundaryPrecision[] = [
+    'official',
+    'administrative_unit',
+    'interpreted',
+    'estimated',
+  ];
+
   const candidates: Candidate[] = [];
   for (const orgRows of byOrganization.values()) {
     const first = orgRows[0];
     if (first === undefined) continue;
 
-    // 複数管轄一致時は「最も不確実な区分」を代表値にする（不確実性を隠さない）
     const estimated = orgRows.some((r) => r.estimated);
     const precision = orgRows
       .map((r) => r.precision)
-      .sort(
-        (a, b) =>
-          ['official', 'administrative_unit', 'interpreted', 'estimated'].indexOf(b) -
-          ['official', 'administrative_unit', 'interpreted', 'estimated'].indexOf(a),
-      )[0] as BoundaryPrecision;
-
-    const sourceCheckedAt = first.source_checked_at === null ? null : new Date(first.source_checked_at);
-    const freshnessDueAt = first.freshness_due_at === null ? null : new Date(first.freshness_due_at);
+      .sort((a, b) => PRECISION_UNCERTAINTY.indexOf(b) - PRECISION_UNCERTAINTY.indexOf(a))[0] as BoundaryPrecision;
+    // 権威性は最も弱いソースを代表値にする（null は secondary_open 相当）
+    const authority = orgRows
+      .map((r) => r.authority ?? 'secondary_open')
+      .sort((a, b) => AUTHORITY_WEAKNESS[a] - AUTHORITY_WEAKNESS[b])[0] as SourceAuthority;
+    // 確認日は最古、確認期限は最も早いものを代表値にする
+    const checkedTimes = orgRows
+      .filter((r) => r.source_checked_at !== null)
+      .map((r) => new Date(r.source_checked_at as string).getTime());
+    const dueTimes = orgRows
+      .filter((r) => r.freshness_due_at !== null)
+      .map((r) => new Date(r.freshness_due_at as string).getTime());
+    const sourceCheckedAt = checkedTimes.length === 0 ? null : new Date(Math.min(...checkedTimes));
+    const freshnessDueAt = dueTimes.length === 0 ? null : new Date(Math.min(...dueTimes));
 
     const confidence = calculateConfidence(
       {
-        authority: first.authority ?? 'secondary_open',
+        authority,
         sourceCheckedAt,
         freshnessDueAt,
         precision,
@@ -209,11 +234,16 @@ export async function searchCandidatesDb(
       now,
     );
 
+    // 包含一致と周辺一致で理由を区別し、周辺一致で「含まれる」と断定しない
     const spatialReasons = [
       ...new Set(
         orgRows
           .filter((r) => r.asset_name !== null)
-          .map((r) => `指定地点が「${r.asset_name}」の区域に含まれます`),
+          .map((r) =>
+            r.covered
+              ? `指定地点が「${r.asset_name}」の区域に含まれます`
+              : `「${r.asset_name}」の区域が検索半径 ${request.radiusMeters}m の範囲内にあります`,
+          ),
       ),
     ];
     const typeReasons = reasonsByType.get(first.organization_type) ?? [];

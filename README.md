@@ -260,7 +260,9 @@ npm test
 npm run webui                 # fixture（架空データ）モード
 # → http://localhost:<自動選択ポート>/ と LAN アドレスが表示されます
 
-# DB モード（Neon 接続。接続文字列は .env.local 等から読み込み、コードへ書かない）
+# DB モード（Neon 接続）。環境変数はシェルから明示的に渡す
+# （.env ファイルは自動読込されない。値をコマンド履歴に残したくない場合は
+#   `set -a && source .env.local && set +a && npm run webui` のように読み込む）
 DATABASE_URL="<Neon接続文字列>" DATASET_VERSION="<データ版>" npm run webui
 
 # 停止: Ctrl+C
@@ -429,14 +431,16 @@ Issueには次の情報を含めてください。
 | 📚 運用文書 | ✅ チェックリスト / デプロイ / ロールバック / 障害対応 |
 | 🚀 本番デプロイ | ⏸️ **人間の明示承認待ち**（`docs/operations/deploy-runbook.md` 参照） |
 
-### ✅ 実装済み（Phase 0）
+### ✅ 実装済み（Phase 0 + Phase 1）
 
 - 📜 API 契約と列挙型（Zod、Web/API 共有の単一の真実）
 - 🧮 ドメインロジック: 正規化（NFKC・電話・URL）、信頼度スコア（説明可能な加減点方式）、CSV 数式注入対策、宣言的ルール評価、TTL 鮮度判定
-- 🌐 Workers API: `/api/v1/health/*`、`/metadata`、`/stakeholders/search`（架空 fixture ベース、免責常時付与、RFC 9457 エラー）
-- 🗄️ Neon PostgreSQL 初期マイグレーション SQL
+- 🌐 Workers API: `/api/v1/health/*`、`/metadata`、`/stakeholders/search`（架空 fixture ⇔ Neon/PostGIS 切替、免責常時付与、RFC 9457 エラー）
+- 🐘 Neon PostgreSQL: 初期スキーマ + 架空 seed 適用済み、ST_Covers/ST_DWithin 空間検索
+- 🗺️ 地図（MapLibre + 地理院タイル）・チェックリスト（FR-009）・CSV 出力
 - 🤖 GitHub Actions CI（lint / typecheck / test / build / 依存監査）
+- 📚 運用文書（リリース前チェックリスト・デプロイ・ロールバック・障害対応）
 
-### 🚧 次のゲート（Phase 0 完了 → Phase 1）
+### 🚧 次のゲート（Phase 2）
 
-代表3地域の公式情報源台帳、利用条件、データ項目、手動取込fixtureを確定することです。全国を一度に埋めるより、少数地域を高品質に仕上げてから広げます。あわせて Neon 接続・PostGIS 空間検索・地図 UI（MapLibre）を Phase 1 で実装します。
+**実データ整備**: 代表3地域の公式情報源台帳、利用条件、データ項目、手動取込を確定することです。全国を一度に埋めるより、少数地域を高品質に仕上げてから広げます。あわせて取込・レビュー・品質ダッシュボード・監査画面（SCR-06〜09）を実装します。現時点の候補データは全て架空デモです。

@@ -106,6 +106,8 @@ export function MapPicker({ location, onPick }: MapPickerProps) {
 
   useEffect(() => {
     markerRef.current?.setLngLat([location.lon, location.lat]);
+    // プリセット選択・手入力による地点変更にも地図中心を追従させる
+    mapRef.current?.easeTo({ center: [location.lon, location.lat], duration: 400 });
   }, [location.lat, location.lon]);
 
   return (

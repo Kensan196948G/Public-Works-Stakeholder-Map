@@ -35,7 +35,7 @@ flowchart TD
 | DB スキーマ / データの不整合・破損 | Neon の branch restore で復旧 | §3 |
 | 誤窓口表示・改ざん疑い・情報漏えい疑い | インシデント初動を優先 | `incident-response.md` |
 
-> 💡 **原則: まず影響の小さい・非破壊の手段から。** Workers 版ロールバックと Neon branch restore はデータを壊さない。DROP を伴う DB down（§3.2）は最終手段。
+> 💡 **原則: まず影響の小さい手段から。** Workers 版ロールバックは非破壊。Neon 復旧は **restore branch を作成して検証してから main へ反映**する（§3.1）。main への直接 in-place restore は現在のデータ状態を置換するため非破壊とは扱わない。DROP を伴う DB down（§3.2）は最終手段。
 
 ---
 
@@ -86,18 +86,20 @@ wrangler rollback [<VERSION_ID>]
 対象: プロジェクト `tiny-river-77604173`（main = 本番 / dev = `br-calm-forest-auo4xou3`）。
 本番マイグレーションは `db/migrations/0001_initial_schema.sql`（単一トランザクション・**down 節なし**）。
 
-### 3.1 branch restore による復旧 — 非破壊・第一選択 🟢
+### 3.1 restore branch 経由の復旧 — 第一選択 🟢
 
-Neon のブランチ / Point-in-Time restore を使い、本番ブランチを問題発生前へ戻します。データを DROP しないため安全です。
+Neon の Point-in-Time restore を使い、**まず対象時刻の復元ブランチ（restore branch）を作成し、そこで検証してから main へ反映**します。
+main へ直接 in-place restore すると現在のデータ状態を上書きするため、本手順では採らず、検証を挟む復元ブランチ方式を第一選択とします。
 
-| ✅ | 手順 |
+| ✅ | 手順（順序どおり） |
 |---|---|
 | ☐ | 復旧目標時刻（RPO 目標 24 時間・設計 §15）を決める |
-| ☐ | 本番（main）ブランチを対象時刻へ restore、または対象時刻の復元ブランチを作成して切替 |
-| ☐ | restore 後、件数・FK・geometry・サンプル検索を検証（設計 §15 の復元試験に準拠） |
-| ☐ | アプリの接続先を復旧後ブランチへ向ける（Secrets 変更は人間承認） |
+| ☐ | 対象時刻の**復元ブランチ（restore branch）を作成**する（main へは直接適用しない） |
+| ☐ | 復元ブランチ上で **件数・FK・geometry・サンプル検索**を検証（設計 §15 の復元試験に準拠） |
+| ☐ | 検証合格後に、復元ブランチを本番へ反映（main への昇格、または接続先を復元ブランチへ切替） |
+| ☐ | アプリの接続先変更（`DATABASE_URL`）に伴う Secrets 変更は人間承認 |
 
-> 🚫 Neon **プロジェクトの削除・dev ブランチの削除**は人間承認必須。restore / 復元ブランチ作成もデータ影響があるため人間が実行する。
+> 🚫 Neon **プロジェクトの削除・dev ブランチの削除・main への直接 restore（in-place）** は人間承認必須（データ状態を置換するため）。復元ブランチの作成・反映も人間が実行する。
 
 ### 3.2 スキーマ down（全削除）— 最終手段・破壊的 🔴
 

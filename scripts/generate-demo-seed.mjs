@@ -60,16 +60,16 @@ for (const org of demoDataset.organizations) {
   lines.push(
     `INSERT INTO provenance.data_sources (id, name, publisher, base_url, authority, format, fetch_mode, ttl_days, allowed_host, active)`,
     `VALUES (${q(srcId)}, ${q(`${org.name} 公式情報`)}, ${q(org.name)}, ${q(org.officialUrl)}, ${q(org.authority)}, 'HTML', 'manual', ${org.ttlDays}, ${q(host)}, true)`,
-    `ON CONFLICT (id) DO NOTHING;`,
+    `ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, publisher = EXCLUDED.publisher, base_url = EXCLUDED.base_url, authority = EXCLUDED.authority, ttl_days = EXCLUDED.ttl_days, allowed_host = EXCLUDED.allowed_host, active = EXCLUDED.active;`,
     `INSERT INTO provenance.source_evidence (id, source_id, title, url, captured_at)`,
     `VALUES (${q(evId)}, ${q(srcId)}, ${q(evidence.title)}, ${q(evidence.url)}, ${q(evidence.sourceCheckedAt)})`,
-    `ON CONFLICT (id) DO NOTHING;`,
+    `ON CONFLICT (id) DO UPDATE SET source_id = EXCLUDED.source_id, title = EXCLUDED.title, url = EXCLUDED.url, captured_at = EXCLUDED.captured_at;`,
     `INSERT INTO core.organizations (id, canonical_name, normalized_name, organization_type, official_url, status, source_checked_at, freshness_due_at)`,
     `VALUES (${q(orgId)}, ${q(org.name)}, ${q(normalizeOrganizationName(org.name))}, ${q(org.type)}, ${q(org.officialUrl)}, ${q(org.reviewStatus)}, ${q(org.sourceCheckedAt)}, ${q(due)})`,
-    `ON CONFLICT (id) DO NOTHING;`,
+    `ON CONFLICT (id) DO UPDATE SET canonical_name = EXCLUDED.canonical_name, normalized_name = EXCLUDED.normalized_name, organization_type = EXCLUDED.organization_type, official_url = EXCLUDED.official_url, status = EXCLUDED.status, source_checked_at = EXCLUDED.source_checked_at, freshness_due_at = EXCLUDED.freshness_due_at;`,
     `INSERT INTO core.offices (id, organization_id, name, status)`,
     `VALUES (${q(officeId)}, ${q(orgId)}, ${q(org.officeName)}, ${q(org.reviewStatus)})`,
-    `ON CONFLICT (id) DO NOTHING;`,
+    `ON CONFLICT (id) DO UPDATE SET organization_id = EXCLUDED.organization_id, name = EXCLUDED.name, status = EXCLUDED.status;`,
   );
 
   for (const regionCode of org.regionCodes) {
@@ -79,7 +79,7 @@ for (const org of demoDataset.organizations) {
     lines.push(
       `INSERT INTO core.jurisdictions (id, organization_id, office_id, asset_type, asset_name, geometry, precision, estimated, status, evidence_id, source_checked_at)`,
       `VALUES (${q(jurId)}, ${q(orgId)}, ${q(officeId)}, ${q(ASSET_TYPE_BY_ORG[org.type])}, ${q(region.name)}, ST_GeomFromText(${q(bboxToMultiPolygonWkt(region.bbox))}, 4326), ${q(org.precision)}, ${org.estimated}, ${q(org.reviewStatus)}, ${q(evId)}, ${q(org.sourceCheckedAt)})`,
-      `ON CONFLICT (id) DO NOTHING;`,
+      `ON CONFLICT (id) DO UPDATE SET asset_type = EXCLUDED.asset_type, asset_name = EXCLUDED.asset_name, geometry = EXCLUDED.geometry, precision = EXCLUDED.precision, estimated = EXCLUDED.estimated, status = EXCLUDED.status, evidence_id = EXCLUDED.evidence_id, source_checked_at = EXCLUDED.source_checked_at;`,
     );
   }
 }
@@ -90,7 +90,7 @@ for (const rule of demoDataset.rules) {
   lines.push(
     `INSERT INTO core.stakeholder_rules (id, rule_code, version, condition_json, target_types, reason_template, priority, status, approved_by, approved_at)`,
     `VALUES (${q(ruleId)}, ${q(rule.ruleCode)}, ${rule.version}, ${q(JSON.stringify(rule.condition))}::jsonb, ${targetTypes}, ${q(rule.reasonTemplate)}, ${rule.priority}, 'published', 'demo-seed', '2026-07-18T00:00:00Z')`,
-    `ON CONFLICT (id) DO NOTHING;`,
+    `ON CONFLICT (id) DO UPDATE SET condition_json = EXCLUDED.condition_json, target_types = EXCLUDED.target_types, reason_template = EXCLUDED.reason_template, priority = EXCLUDED.priority, status = EXCLUDED.status;`,
   );
 }
 

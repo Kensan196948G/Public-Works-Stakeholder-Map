@@ -88,7 +88,8 @@ wrangler secret put DATABASE_URL --env preview
 | ☐ | 登録値がシェル履歴・ログ・スクリーンショットに残っていない |
 | ☐ | `.env` / `.env.local` を誤ってコミットしていない |
 
-> ℹ️ 現段階（Phase 0）の API は fixture ベースで動作し、`DATABASE_URL` は Neon 接続導入（Phase 1）で必須になります。DB 未接続の版をデプロイする場合、この節はスキップ可（`/health/ready` は fixture 版を返す）。
+> 🔴 **本番では `DATABASE_URL` を必ず設定します（この節は省略不可）。** 実装（`apps/api/src/app.ts`）は `DATABASE_URL` が設定されている場合のみ DB 到達を確認し、`SELECT 1` が失敗すると `/api/v1/health/ready` が **503 `{status:"unavailable"}`** を返します。
+> `DATABASE_URL` 未設定は開発用の fixture モード（`/health/ready` は常に 200 `ok`）であり、本番構成では使いません。DB 接続なしの版を本番へ出さないでください。
 
 ---
 
@@ -149,10 +150,12 @@ ls apps/web/dist
 
 配置は運用中の Cloudflare Pages プロジェクト設定に従います（いずれも人間が実行）。
 
+> 🔴 **main への merge を本番公開の契機にしません（`main merge ≠ 本番公開`）。** 自動デプロイ（Pages の自動プロダクション・デプロイ / merge 連動公開）は**無効化**し、本番反映は必ず人間が手動でプロモーションします。
+
 | 方式 | 概要 |
 |---|---|
-| GitHub 連携（推奨） | main への merge を契機に Pages が自動ビルド。**merge = 公開**になるため人間承認を要する |
-| 直接アップロード | `wrangler pages deploy apps/web/dist --project-name <PAGES_PROJECT>` で `dist/` を配置 |
+| 直接アップロード（推奨） | `wrangler pages deploy apps/web/dist --project-name <PAGES_PROJECT>` で人間が明示的に `dist/` を配置 |
+| GitHub 連携（プレビューのみ） | ブランチ / PR のプレビュー・ビルド確認に限定。**プロダクション・ブランチの自動公開は無効化**し、本番は人間が手動でプロモーションする |
 
 | ✅ | 確認項目 |
 |---|---|
@@ -169,10 +172,12 @@ ls apps/web/dist
 ```bash
 # <BASE_URL> は対象環境の URL（例: https://pwsm-api.<subdomain>.workers.dev）
 
-# 1) liveness: {"status":"ok"}
+# 1) liveness: プロセス確認のみ。常に 200 {"status":"ok"}
 curl -fsS "<BASE_URL>/api/v1/health/live"
 
-# 2) readiness: {"status":"ok","datasetVersion":"..."}
+# 2) readiness: 本番（DATABASE_URL 設定時）は DB 到達を確認。
+#    到達可 → 200 {"status":"ok","datasetVersion":"..."}
+#    到達不可 → 503 {"status":"unavailable","datasetVersion":"..."}
 curl -fsS "<BASE_URL>/api/v1/health/ready"
 
 # 3) metadata: disclaimer / datasetVersion / ruleVersion / appEnv を確認
@@ -181,14 +186,14 @@ curl -fsS "<BASE_URL>/api/v1/metadata"
 
 | ✅ | 確認項目 | 期待 |
 |---|---|---|
-| ☐ | `/api/v1/health/live` | HTTP 200・`status: ok` |
-| ☐ | `/api/v1/health/ready` | HTTP 200・`datasetVersion` が想定版 |
+| ☐ | `/api/v1/health/live` | HTTP 200・`status: ok`（プロセス確認のみ・DB は見ない） |
+| ☐ | `/api/v1/health/ready` | 本番は HTTP 200・`status: ok`・`datasetVersion` が想定版（DB 到達不可なら 503 `unavailable`＝デプロイ失敗として扱う） |
 | ☐ | `/api/v1/metadata` | `disclaimer`（必須免責文）を含む・`appEnv` が `production` |
 | ☐ | 検索 `POST /api/v1/stakeholders/search` | 候補応答に免責が常時付与される |
 | ☐ | Web トップ | 免責が常時表示・検索が API に到達する |
 | ☐ | エラー整形 | 異常系が RFC 9457（Problem Details）で返る |
 
-> ⚠️ `/health/ready` は現状 fixture リポジトリで常時 ready を返します。Neon 接続導入後は DB 到達確認を含める実装に更新すること（`apps/api/src/app.ts` 参照）。
+> ⚠️ 本番（`DATABASE_URL` 設定時）に `/health/ready` が 503 `unavailable` を返す場合、DB 到達不可＝デプロイ未完了とみなし、公開しないこと（`§8 失敗時` / `rollback.md` へ）。`DATABASE_URL` 未設定の fixture モードは開発専用で、本番構成では使わない（`apps/api/src/app.ts` 参照）。
 
 ---
 

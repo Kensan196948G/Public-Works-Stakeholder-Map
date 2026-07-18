@@ -16,7 +16,7 @@
     "test:watch": "vitest",
     "build": "npm run build --workspaces --if-present",
     "data:validate": "vitest run data/fixtures/test/dataset.test.ts",
-    "seed:generate": "node scripts/generate-demo-seed.mjs",
+    "seed:generate": "npm run build && node scripts/generate-demo-seed.mjs",
     "webui": "npm run build && node apps/api/dist/dev/node-server.js"
   },
   "engines": {

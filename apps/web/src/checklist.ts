@@ -39,16 +39,47 @@ function createMemoryStorage(): StorageLike {
 
 let fallbackStorage: StorageLike | null = null;
 
-/** 利用可能なストレージを返す。local storage 不可時は同一セッション内のみ有効な in-memory。 */
-export function getChecklistStorage(): StorageLike {
-  try {
-    const storage = window.localStorage;
-    if (typeof storage?.getItem === 'function') return storage;
-  } catch {
-    // SecurityError 等 — フォールバックへ
-  }
+function memoryFallback(): StorageLike {
   fallbackStorage ??= createMemoryStorage();
   return fallbackStorage;
+}
+
+/**
+ * 利用可能なストレージを返す。local storage が取得不可、または各操作が
+ * 実行時に失敗する環境（プライベートモード・容量超過等）では in-memory へ退避する。
+ */
+export function getChecklistStorage(): StorageLike {
+  let storage: Storage;
+  try {
+    storage = window.localStorage;
+    if (typeof storage?.getItem !== 'function') return memoryFallback();
+  } catch {
+    return memoryFallback();
+  }
+  // 操作単位でも失敗し得るため、例外時は in-memory へフォールバックする
+  return {
+    getItem: (key) => {
+      try {
+        return storage.getItem(key);
+      } catch {
+        return memoryFallback().getItem(key);
+      }
+    },
+    setItem: (key, value) => {
+      try {
+        storage.setItem(key, value);
+      } catch {
+        memoryFallback().setItem(key, value);
+      }
+    },
+    removeItem: (key) => {
+      try {
+        storage.removeItem(key);
+      } catch {
+        memoryFallback().removeItem(key);
+      }
+    },
+  };
 }
 
 /** 保存済みチェックリストを読み込む。破損・期限切れは破棄して空を返す。 */
