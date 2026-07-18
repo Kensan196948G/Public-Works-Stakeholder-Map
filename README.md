@@ -390,7 +390,8 @@ Issueには次の情報を含めてください。
 | 2026-07-18 | 🏗️ monorepo scaffold（contracts / domain / fixtures / api）構築 |
 | 2026-07-18 | 🗄️ DB 初期スキーマ（5 スキーマ分離 + 整合性 CHECK 制約）作成 |
 | 2026-07-18 | ✅ テスト 86 件通過・lint / typecheck / CI 整備 |
-| 2026-07-18 | 🖥️ Phase 1 着手: Web MVP（検索・候補一覧・免責・CSV 出力）実装 |
+| 2026-07-18 | 🖥️ Phase 1 着手: Web MVP（検索・候補一覧・免責・CSV 出力）実装・merge 済み |
+| 2026-07-18 | 🐘 Neon プロジェクト作成・0001 スキーマを dev/main 両ブランチへ適用検証（制約拒否動作を実証） |
 
 ### ✅ 実装済み（Phase 0）
 
