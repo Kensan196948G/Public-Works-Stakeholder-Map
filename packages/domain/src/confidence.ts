@@ -74,10 +74,16 @@ export function calculateConfidence(input: ConfidenceInput, now: Date): Confiden
   const precisionKey: BoundaryPrecision = input.estimated ? 'estimated' : input.precision;
   const boundaryPrecision = PRECISION_POINTS[precisionKey];
   const reviewState = REVIEW_POINTS[input.reviewStatus];
-  const conflictingSourcesPenalty = Math.min(
-    25,
-    Math.max(0, input.conflictingSourceCount) * 10,
-  );
+  // NaN・負数・小数は減点計算を壊すため早期拒否する（total の NaN 化を防ぐ）
+  if (
+    !Number.isInteger(input.conflictingSourceCount) ||
+    input.conflictingSourceCount < 0
+  ) {
+    throw new RangeError(
+      `conflictingSourceCount must be a non-negative integer: ${input.conflictingSourceCount}`,
+    );
+  }
+  const conflictingSourcesPenalty = Math.min(25, input.conflictingSourceCount * 10);
   const linkFailurePenalty = input.linkFailed ? 30 : 0;
 
   const raw =

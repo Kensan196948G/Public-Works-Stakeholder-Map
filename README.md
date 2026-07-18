@@ -3,7 +3,7 @@
 > **公共工事ステークホルダー整理マップ**  
 > 工事場所と作業条件から、事前に確認したほうがよい関係機関を公開情報ベースで整理します。
 
-[![Status](https://img.shields.io/badge/status-phase0_scaffold-22c55e)](#%EF%B8%8F-開発状況)
+[![Status](https://img.shields.io/badge/status-phase0_scaffold-22c55e)](#️-開発状況)
 [![Data](https://img.shields.io/badge/data-public_only-0ea5e9)](#-データ方針)
 [![Decision](https://img.shields.io/badge/decision-support_not_determination-f59e0b)](#%EF%B8%8F-重要な注意)
 [![License](https://img.shields.io/badge/license-TBD-lightgrey)](#-ライセンス)

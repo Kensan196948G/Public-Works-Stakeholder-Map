@@ -6,6 +6,7 @@ import {
   impactTypeSchema,
   organizationTypeSchema,
   searchPurposeSchema,
+  sourceAuthoritySchema,
   verificationStateSchema,
   workTypeSchema,
 } from './enums.js';
@@ -37,7 +38,7 @@ export type SearchRequest = z.infer<typeof searchRequestSchema>;
 export const evidenceSchema = z.object({
   title: z.string().min(1),
   url: z.url(),
-  authority: z.string().optional(),
+  authority: sourceAuthoritySchema.optional(),
   sourceCheckedAt: z.iso.datetime({ offset: true }).nullable(),
 });
 export type Evidence = z.infer<typeof evidenceSchema>;

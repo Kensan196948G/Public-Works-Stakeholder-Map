@@ -106,4 +106,10 @@ describe('calculateConfidence', () => {
     const result = calculateConfidence(baseInput({ freshnessDueAt: null }), NOW);
     expect(result.breakdown.freshness).toBe(10);
   });
+
+  it('conflictingSourceCount が負数・小数・NaN なら RangeError', () => {
+    expect(() => calculateConfidence(baseInput({ conflictingSourceCount: -1 }), NOW)).toThrow(RangeError);
+    expect(() => calculateConfidence(baseInput({ conflictingSourceCount: 1.5 }), NOW)).toThrow(RangeError);
+    expect(() => calculateConfidence(baseInput({ conflictingSourceCount: Number.NaN }), NOW)).toThrow(RangeError);
+  });
 });

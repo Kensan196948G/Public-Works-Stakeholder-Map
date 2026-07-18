@@ -7,6 +7,12 @@ import { demoDataset } from '../src/index.js';
  * 公開レコードは公式 URL・取得日時・確認状態を必須とする。
  */
 describe('demoDataset 品質検査', () => {
+  it('データセットが空でない（空 fixture の見逃し防止）', () => {
+    expect(demoDataset.organizations.length).toBeGreaterThan(0);
+    expect(demoDataset.regions.length).toBeGreaterThan(0);
+    expect(demoDataset.rules.length).toBeGreaterThan(0);
+  });
+
   it('全機関が架空データであることを名称で明示する（デモ表記）', () => {
     for (const org of demoDataset.organizations) {
       expect(org.name, `${org.id} の名称に（デモ）表記がない`).toContain('（デモ）');
@@ -16,7 +22,9 @@ describe('demoDataset 品質検査', () => {
   it('公開レコードは公式 URL と原典確認日時を必須とする', () => {
     for (const org of demoDataset.organizations) {
       if (org.reviewStatus === 'published') {
-        expect(org.officialUrl, `${org.id} に officialUrl がない`).toMatch(/^https:\/\//);
+        const url = new URL(org.officialUrl);
+        expect(url.protocol, `${org.id} の officialUrl が HTTPS でない`).toBe('https:');
+        expect(url.hostname.length, `${org.id} の officialUrl にホスト名がない`).toBeGreaterThan(0);
         expect(Date.parse(org.sourceCheckedAt), `${org.id} の sourceCheckedAt が不正`).not.toBeNaN();
       }
     }

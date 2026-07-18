@@ -99,4 +99,9 @@ describe('normalizeUrl', () => {
     expect(normalizeUrl('javascript:alert(1)').valid).toBe(false);
     expect(normalizeUrl('ftp://example.jp/file').valid).toBe(false);
   });
+
+  it('資格情報付き URL（user:pass@host）は拒否する', () => {
+    expect(normalizeUrl('https://user:pass@example.jp/').valid).toBe(false);
+    expect(normalizeUrl('https://user@example.jp/').valid).toBe(false);
+  });
 });

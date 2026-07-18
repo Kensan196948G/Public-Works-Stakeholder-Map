@@ -42,8 +42,9 @@ export interface NormalizedPhone {
  * +81 は国内プレフィックス 0 へ変換する。判定不能な文字列は normalized を空にする。
  */
 export function normalizePhone(input: string): NormalizedPhone {
-  const display = input.trim();
-  const nfkc = display.normalize('NFKC');
+  // 表示用は原典表記をそのまま保持する（トリムも正規化値側でのみ行う）
+  const display = input;
+  const nfkc = input.trim().normalize('NFKC');
 
   // Extract extension: 「内線123」「(内線 123)」「ext.123」
   let extension: string | null = null;
@@ -85,6 +86,10 @@ export function normalizeUrl(input: string): NormalizedUrl {
     return { normalized: '', isHttps: false, valid: false };
   }
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    return { normalized: '', isHttps: false, valid: false };
+  }
+  // 資格情報付き URL（user:pass@host）はフィッシング・混同リスクがあるため拒否する
+  if (url.username !== '' || url.password !== '') {
     return { normalized: '', isHttps: false, valid: false };
   }
   url.hash = '';
