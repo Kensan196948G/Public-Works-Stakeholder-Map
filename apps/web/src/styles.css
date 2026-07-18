@@ -1,0 +1,250 @@
+/* 最小限のスタイル。色だけに依存せずアイコン・文字で状態を示す（要件 §7.1） */
+
+:root {
+  --color-text: #1e293b;
+  --color-bg: #f8fafc;
+  --color-border: #cbd5e1;
+  --color-warning-bg: #fef3c7;
+  --color-warning-border: #f59e0b;
+  --color-error: #b91c1c;
+  --grade-a: #15803d;
+  --grade-b: #0369a1;
+  --grade-c: #b45309;
+  --grade-d: #b91c1c;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+  color: var(--color-text);
+  background: var(--color-bg);
+  line-height: 1.6;
+}
+
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.app-header h1 {
+  font-size: 1.4rem;
+  margin-bottom: 0.25rem;
+}
+
+.app-header p {
+  margin-top: 0;
+  color: #475569;
+}
+
+.disclaimer {
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 800px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pane {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+fieldset {
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+}
+
+legend {
+  font-weight: 600;
+  padding: 0 0.25rem;
+}
+
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.25rem;
+}
+
+.checkbox-grid label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+
+form label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+form input[type='number'],
+form select {
+  display: block;
+  width: 100%;
+  padding: 0.35rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+
+button {
+  padding: 0.5rem 1.25rem;
+  border: none;
+  border-radius: 6px;
+  background: #0369a1;
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+button:disabled {
+  background: #94a3b8;
+  cursor: not-allowed;
+}
+
+.results-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.results-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.dataset-meta {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.candidate-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.candidate-card {
+  border: 1px solid var(--color-border);
+  border-left-width: 5px;
+  border-radius: 6px;
+  padding: 0.75rem 1rem;
+}
+
+.candidate-card.confidence-A { border-left-color: var(--grade-a); }
+.candidate-card.confidence-B { border-left-color: var(--grade-b); }
+.candidate-card.confidence-C { border-left-color: var(--grade-c); }
+.candidate-card.confidence-D { border-left-color: var(--grade-d); }
+
+.candidate-card.expired {
+  background: #fff7ed;
+}
+
+.candidate-card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.org-type {
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: #e2e8f0;
+  border-radius: 999px;
+  padding: 0.1rem 0.6rem;
+}
+
+.confidence-badge {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.grade-A { color: var(--grade-a); }
+.grade-B { color: var(--grade-b); }
+.grade-C { color: var(--grade-c); }
+.grade-D { color: var(--grade-d); }
+
+.candidate-card h3 {
+  margin: 0.4rem 0 0;
+}
+
+.office-name {
+  margin: 0;
+  color: #475569;
+}
+
+.candidate-note {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #b45309;
+  margin: 0.4rem 0;
+}
+
+.warning {
+  background: var(--color-warning-bg);
+  border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  margin: 0.4rem 0;
+}
+
+.error {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.1rem 0.75rem;
+  font-size: 0.85rem;
+  margin: 0.5rem 0;
+}
+
+dt {
+  font-weight: 600;
+  color: #64748b;
+}
+
+dd {
+  margin: 0;
+}
+
+.evidence h4 {
+  margin: 0.5rem 0 0.25rem;
+  font-size: 0.9rem;
+}
+
+.evidence-host {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.placeholder {
+  color: #64748b;
+}
