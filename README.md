@@ -245,13 +245,34 @@ npm test
 | `npm test` | 単体・統合テスト（vitest） | ✅ 稼働 |
 | `npm run data:validate` | fixture の品質検査 | ✅ 稼働 |
 | `npm run build` | 全ワークスペースのビルド | ✅ 稼働 |
+| `npm run webui` | 🖥️ **検証用 WebUI 起動**（API + 画面を単一ポートで提供・空きポート自動選択） | ✅ 稼働 |
+| `npm run seed:generate` | 架空デモデータの seed SQL 生成（fixture が単一の真実） | ✅ 稼働 |
 | `npm run dev -w @pwsm/web` | Web UI 開発起動（vite、API へプロキシ） | ✅ 稼働 |
 | `npm run dev -w @pwsm/api` | API 開発起動（wrangler dev）※ | ✅ 稼働 |
-| `npm run test:e2e` | E2E テスト | 🚧 Phase 1 |
-| `npm run db:migrate` | DB マイグレーション | 🚧 Phase 1（SQL は作成済み） |
+| `npm run test:e2e` | ブラウザ E2E テスト | 🚧 Phase 2 |
 
 > ※ 仮想メモリ制限のある環境では workerd が起動できない場合があります（ADR-0001 追記参照）。
-> その場合、API の動作確認は統合テスト（`npm test`）で代替します。
+> その場合は `npm run webui`（Node サーバー）を使用してください。
+
+### 🖥️ 検証用 WebUI の起動と停止
+
+```bash
+npm run webui                 # fixture（架空データ）モード
+# → http://localhost:<自動選択ポート>/ と LAN アドレスが表示されます
+
+# DB モード（Neon 接続。接続文字列は .env.local 等から読み込み、コードへ書かない）
+DATABASE_URL="<Neon接続文字列>" DATASET_VERSION="<データ版>" npm run webui
+
+# 停止: Ctrl+C
+```
+
+### 🗄️ DB マイグレーションと seed
+
+```bash
+# Neon の dev ブランチで検証 → 人間承認後に main へ適用（詳細: docs/operations/）
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/0001_initial_schema.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/demo/0001_demo_dataset.sql
+```
 
 ### 📁 monorepo 構成
 
@@ -263,7 +284,9 @@ npm test
 | `apps/api` | `@pwsm/api` | Workers API（health / metadata / 候補検索） |
 | `apps/web` | `@pwsm/web` | Web UI（検索フォーム・候補一覧・免責・CSV 出力） |
 | `db/migrations` | — | Neon PostgreSQL 初期スキーマ（5 スキーマ分離） |
+| `db/seeds/demo` | — | 架空デモデータ seed（fixture から自動生成） |
 | `docs/adr` | — | アーキテクチャ決定記録 |
+| `docs/operations` | — | 📚 運用文書（リリース前チェックリスト・デプロイ手順・ロールバック・障害対応） |
 
 ---
 
@@ -392,6 +415,19 @@ Issueには次の情報を含めてください。
 | 2026-07-18 | ✅ テスト 86 件通過・lint / typecheck / CI 整備 |
 | 2026-07-18 | 🖥️ Phase 1 着手: Web MVP（検索・候補一覧・免責・CSV 出力）実装・merge 済み |
 | 2026-07-18 | 🐘 Neon プロジェクト作成・0001 スキーマを dev/main 両ブランチへ適用検証（制約拒否動作を実証） |
+| 2026-07-18 | 🗺️ 地図（MapLibre + 地理院タイル）・PostGIS 実検索・チェックリスト・運用文書 4 種を実装 |
+
+### 🚦 リリース準備状況（本番デプロイのみ人間承認待ち）
+
+| 領域 | 状態 |
+|---|---|
+| 🖥️ フロントエンド | ✅ 検索・地図・候補一覧・チェックリスト・CSV・免責 |
+| ⚙️ バックエンド API | ✅ health / metadata / 検索（fixture ⇔ Neon 切替） |
+| 🐘 データベース | ✅ スキーマ + 架空 seed 適用済み（Neon dev/main） |
+| 🧪 テスト | ✅ 110 件 + Neon 統合 4 件（環境変数ゲート） |
+| 🔐 セキュリティ | ✅ CSV 注入対策・URL 検証・CSP 系ヘッダー・依存監査 0 件 |
+| 📚 運用文書 | ✅ チェックリスト / デプロイ / ロールバック / 障害対応 |
+| 🚀 本番デプロイ | ⏸️ **人間の明示承認待ち**（`docs/operations/deploy-runbook.md` 参照） |
 
 ### ✅ 実装済み（Phase 0）
 

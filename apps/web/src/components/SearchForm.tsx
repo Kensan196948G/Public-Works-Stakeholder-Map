@@ -13,6 +13,11 @@ const DEMO_LOCATIONS = [
 interface SearchFormProps {
   onSearch: (request: SearchRequest) => void;
   searching: boolean;
+  /** 地点は App が保持する（地図クリックと同期するため制御化） */
+  lat: string;
+  lon: string;
+  onLatChange: (value: string) => void;
+  onLonChange: (value: string) => void;
 }
 
 function CheckboxGroup<T extends string>({
@@ -54,9 +59,7 @@ function CheckboxGroup<T extends string>({
 }
 
 /** 地点・工事条件の入力フォーム（SCR-02 の条件ペイン相当） */
-export function SearchForm({ onSearch, searching }: SearchFormProps) {
-  const [lat, setLat] = useState('35.05');
-  const [lon, setLon] = useState('139.05');
+export function SearchForm({ onSearch, searching, lat, lon, onLatChange, onLonChange }: SearchFormProps) {
   const [radius, setRadius] = useState('500');
   const [workTypes, setWorkTypes] = useState<WorkType[]>([]);
   const [assetTypes, setAssetTypes] = useState<AssetType[]>([]);
@@ -84,8 +87,8 @@ export function SearchForm({ onSearch, searching }: SearchFormProps) {
             onChange={(e) => {
               const preset = DEMO_LOCATIONS[Number(e.target.value)];
               if (preset !== undefined) {
-                setLat(String(preset.lat));
-                setLon(String(preset.lon));
+                onLatChange(String(preset.lat));
+                onLonChange(String(preset.lon));
               }
             }}
             defaultValue=""
@@ -102,11 +105,11 @@ export function SearchForm({ onSearch, searching }: SearchFormProps) {
         </label>
         <label>
           緯度
-          <input type="number" step="any" value={lat} onChange={(e) => setLat(e.target.value)} required />
+          <input type="number" step="any" value={lat} onChange={(e) => onLatChange(e.target.value)} required />
         </label>
         <label>
           経度
-          <input type="number" step="any" value={lon} onChange={(e) => setLon(e.target.value)} required />
+          <input type="number" step="any" value={lon} onChange={(e) => onLonChange(e.target.value)} required />
         </label>
         <label>
           検索半径（m）

@@ -75,4 +75,16 @@ describe('buildCandidatesCsv（FR-010 / §11.1）', () => {
     expect(csv).toContain('道路管理者');
     expect(csv).toContain('A・高');
   });
+
+  it('利用者判断とメモを出力する（FR-009 連携）', () => {
+    const withDecision = buildCandidatesCsv(response, EXPORTED_AT, {
+      'org-demo-0002': {
+        state: 'needs_inquiry',
+        note: '=1+1 の様なメモも無害化される',
+        decidedAt: EXPORTED_AT.toISOString(),
+      },
+    });
+    expect(withDecision).toContain('要照会');
+    expect(withDecision).toContain(`'=1+1`);
+  });
 });

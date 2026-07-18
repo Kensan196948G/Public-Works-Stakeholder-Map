@@ -1,5 +1,10 @@
 import type { Candidate } from '@pwsm/contracts';
 import {
+  DECISION_LABELS,
+  type ChecklistEntry,
+  type DecisionState,
+} from '../checklist.js';
+import {
   CONFIDENCE_LABELS,
   ORGANIZATION_TYPE_LABELS,
   PRECISION_LABELS,
@@ -24,8 +29,17 @@ function EvidenceLink({ title, url }: { title: string; url: string }) {
   );
 }
 
+interface CandidateCardProps {
+  candidate: Candidate;
+  /** 利用者のチェックリスト判断（FR-009）。未判断は undefined */
+  decision: ChecklistEntry | undefined;
+  onDecisionChange: (patch: { state?: DecisionState | null; note?: string }) => void;
+}
+
+const DECISION_STATES: readonly DecisionState[] = ['candidate', 'needs_inquiry', 'excluded'];
+
 /** 候補カード（SCR-03 / 設計 §9.2）。断定を避け「候補です」を常に明示する。 */
-export function CandidateCard({ candidate }: { candidate: Candidate }) {
+export function CandidateCard({ candidate, decision, onDecisionChange }: CandidateCardProps) {
   const expired = candidate.verificationState === 'expired';
   return (
     <article
@@ -82,6 +96,33 @@ export function CandidateCard({ candidate }: { candidate: Candidate }) {
             <EvidenceLink key={evidence.url} title={evidence.title} url={evidence.url} />
           ))}
         </ul>
+      </div>
+
+      <div className="decision" role="group" aria-label={`${candidate.name} の判断`}>
+        <h4>✅ あなたの判断（FR-009）</h4>
+        <div className="decision-buttons">
+          {DECISION_STATES.map((state) => (
+            <button
+              key={state}
+              type="button"
+              className={decision?.state === state ? 'decision-active' : ''}
+              aria-pressed={decision?.state === state}
+              onClick={() =>
+                onDecisionChange({ state: decision?.state === state ? null : state })
+              }
+            >
+              {DECISION_LABELS[state]}
+            </button>
+          ))}
+        </div>
+        <label className="decision-note">
+          確認メモ（実案件名・個人情報は記入しないでください）
+          <textarea
+            value={decision?.note ?? ''}
+            rows={2}
+            onChange={(e) => onDecisionChange({ note: e.target.value })}
+          />
+        </label>
       </div>
     </article>
   );
