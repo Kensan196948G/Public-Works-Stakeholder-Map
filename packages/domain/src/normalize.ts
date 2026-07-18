@@ -13,9 +13,19 @@ export function normalizeText(input: string): string {
     .trim();
 }
 
-/** 組織名の正規化。NFKC + 空白統合に加え、株式会社等の前後空白ゆらぎを吸収する。 */
+/** 法人格・組織種別の表記（前後の空白ゆらぎを吸収する対象） */
+const CORPORATE_DESIGNATORS =
+  /(株式会社|有限会社|合同会社|一般社団法人|一般財団法人|公益社団法人|公益財団法人|特定非営利活動法人|独立行政法人|地方独立行政法人)/g;
+
+/**
+ * 組織名の正規化。NFKC + 空白統合に加え、法人格表記の前後空白ゆらぎを吸収する
+ * （§8.3: 「株式会社 サンプル」と「株式会社サンプル」を同一視して重複判定に用いる）。
+ */
 export function normalizeOrganizationName(input: string): string {
-  return normalizeText(input);
+  return normalizeText(input).replace(
+    new RegExp(`\\s*${CORPORATE_DESIGNATORS.source}\\s*`, 'g'),
+    '$1',
+  );
 }
 
 export interface NormalizedPhone {
@@ -64,7 +74,7 @@ export interface NormalizedUrl {
   valid: boolean;
 }
 
-const TRACKING_PARAMS = /^(utm_|gclid$|fbclid$|yclid$|mc_)/;
+const TRACKING_PARAMS = /^(utm_|gclid$|fbclid$|yclid$|mc_)/i;
 
 /** URL 正規化。fragment 除去・追跡パラメータ除去・ホスト小文字化。canonical はここで書き換えない。 */
 export function normalizeUrl(input: string): NormalizedUrl {

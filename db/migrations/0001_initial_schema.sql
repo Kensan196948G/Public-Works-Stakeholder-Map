@@ -105,7 +105,9 @@ CREATE TABLE provenance.source_snapshots (
   result             text NOT NULL CHECK (result IN ('success', 'failed', 'skipped')),
   error_code         text,
   correlation_id     text NOT NULL,
-  created_at         timestamptz NOT NULL DEFAULT now()
+  created_at         timestamptz NOT NULL DEFAULT now(),
+  -- source_evidence の複合 FK 用（snapshot と source の対応を強制する）
+  CONSTRAINT uq_source_snapshots_id_source UNIQUE (id, source_id)
 );
 
 CREATE INDEX idx_source_snapshots_source_fetched
@@ -116,8 +118,13 @@ CREATE INDEX idx_source_snapshots_source_fetched
 -- ---------------------------------------------------------------
 CREATE TABLE provenance.source_evidence (
   id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  snapshot_id  uuid REFERENCES provenance.source_snapshots(id),
+  snapshot_id  uuid,
   source_id    uuid NOT NULL REFERENCES provenance.data_sources(id),
+  -- snapshot を参照する場合、その snapshot が同一 source に属することを強制する
+  -- （snapshot_id が NULL の場合は手動登録扱いで FK 検査対象外）
+  CONSTRAINT fk_evidence_snapshot_source
+    FOREIGN KEY (snapshot_id, source_id)
+    REFERENCES provenance.source_snapshots (id, source_id),
   title        text NOT NULL,
   url          text NOT NULL,
   -- 原典に更新日がない場合は null のまま保持する（取得日で代用しない）
@@ -158,8 +165,14 @@ CREATE TABLE core.organizations (
 );
 
 -- §5.3: 同一ソース・同一外部 ID・同一有効期間の重複を防ぐ
+-- （valid_from/valid_to の NULL は無期限として正規化し、NULL 同士のすり抜けを防ぐ）
 CREATE UNIQUE INDEX uq_org_source_ref
-  ON core.organizations (external_source_id, external_ref, valid_from)
+  ON core.organizations (
+    external_source_id,
+    external_ref,
+    COALESCE(valid_from, '-infinity'::date),
+    COALESCE(valid_to, 'infinity'::date)
+  )
   WHERE external_source_id IS NOT NULL AND external_ref IS NOT NULL;
 
 CREATE INDEX idx_org_normalized_name ON core.organizations (normalized_name);
@@ -267,8 +280,8 @@ CREATE TRIGGER trg_jurisdictions_updated
 -- ---------------------------------------------------------------
 CREATE TABLE core.stakeholder_rules (
   id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  rule_code       text NOT NULL UNIQUE,
-  version         integer NOT NULL DEFAULT 1,
+  rule_code       text NOT NULL,
+  version         integer NOT NULL DEFAULT 1 CHECK (version > 0),
   condition_json  jsonb NOT NULL,
   target_types    core.organization_type[] NOT NULL,
   reason_template text NOT NULL,
@@ -286,7 +299,9 @@ CREATE TABLE core.stakeholder_rules (
   -- 公開ルールは承認情報を必須とする
   CONSTRAINT chk_rule_published_approval CHECK (
     status <> 'published' OR (approved_by IS NOT NULL AND approved_at IS NOT NULL)
-  )
+  ),
+  -- 同一ルールの複数バージョン共存を許容しつつ、コード+版の組を一意にする
+  CONSTRAINT uq_stakeholder_rule_version UNIQUE (rule_code, version)
 );
 
 CREATE TRIGGER trg_stakeholder_rules_updated

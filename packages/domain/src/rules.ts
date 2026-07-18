@@ -9,13 +9,33 @@ import type { OrganizationType, SearchRequest } from '@pwsm/contracts';
 /** 検索入力のうちルール評価が参照できる配列フィールド */
 export type RuleArrayField = 'workTypes' | 'assetTypes' | 'impactTypes';
 
+/** フィールドと値の対応を保った includes 条件（未知の文字列をコンパイル時に拒否する） */
+type IncludesCondition = {
+  [Field in RuleArrayField]: {
+    readonly includes: {
+      readonly field: Field;
+      readonly value: SearchRequest[Field][number];
+    };
+  };
+}[RuleArrayField];
+
+/** フィールドと値の対応を保った intersects 条件 */
+type IntersectsCondition = {
+  [Field in RuleArrayField]: {
+    readonly intersects: {
+      readonly field: Field;
+      readonly values: readonly SearchRequest[Field][number][];
+    };
+  };
+}[RuleArrayField];
+
 export type RuleCondition =
   | { readonly all: readonly RuleCondition[] }
   | { readonly any: readonly RuleCondition[] }
   | { readonly not: RuleCondition }
-  | { readonly includes: { readonly field: RuleArrayField; readonly value: string } }
-  | { readonly intersects: { readonly field: RuleArrayField; readonly values: readonly string[] } }
-  | { readonly purposeIs: string }
+  | IncludesCondition
+  | IntersectsCondition
+  | { readonly purposeIs: NonNullable<SearchRequest['purpose']> }
   | { readonly always: true };
 
 export interface StakeholderRule {

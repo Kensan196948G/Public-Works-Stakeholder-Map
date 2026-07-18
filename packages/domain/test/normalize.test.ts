@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { normalizePhone, normalizeText, normalizeUrl } from '../src/normalize.js';
+import {
+  normalizeOrganizationName,
+  normalizePhone,
+  normalizeText,
+  normalizeUrl,
+} from '../src/normalize.js';
 
 describe('normalizeText', () => {
   it('NFKC 正規化で全角英数を半角へ統一する', () => {
@@ -16,6 +21,21 @@ describe('normalizeText', () => {
 
   it('前後の空白を除去する', () => {
     expect(normalizeText('  川の管理者  ')).toBe('川の管理者');
+  });
+});
+
+describe('normalizeOrganizationName', () => {
+  it('法人格表記の前後空白ゆらぎを吸収する', () => {
+    expect(normalizeOrganizationName('株式会社 サンプル')).toBe(
+      normalizeOrganizationName('株式会社サンプル'),
+    );
+    expect(normalizeOrganizationName('サンプル 株式会社')).toBe(
+      normalizeOrganizationName('サンプル株式会社'),
+    );
+  });
+
+  it('法人格を含まない行政機関名は空白統合のみ行う', () => {
+    expect(normalizeOrganizationName('みらい市　道路管理課')).toBe('みらい市 道路管理課');
   });
 });
 
@@ -57,6 +77,11 @@ describe('normalizeUrl', () => {
   it('追跡パラメータを除去し、通常パラメータを保持する', () => {
     const result = normalizeUrl('https://example.jp/p?utm_source=x&id=42&gclid=abc');
     expect(result.normalized).toBe('https://example.jp/p?id=42');
+  });
+
+  it('追跡パラメータは大文字小文字を区別せず除去する', () => {
+    const result = normalizeUrl('https://example.jp/p?UTM_SOURCE=x&GCLID=abc&id=7');
+    expect(result.normalized).toBe('https://example.jp/p?id=7');
   });
 
   it('ホスト名を小文字化する', () => {

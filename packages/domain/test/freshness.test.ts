@@ -18,6 +18,16 @@ describe('calculateFreshnessDue', () => {
     expect(calculateFreshnessDue(null, 90)).toBeNull();
   });
 
+  it('Invalid Date は RangeError で拒否する（期限内と誤判定しない）', () => {
+    const invalid = new Date('not-a-date');
+    expect(() => calculateFreshnessDue(invalid, 90)).toThrow(RangeError);
+    expect(() => isExpired(invalid, new Date('2026-07-18T00:00:00Z'))).toThrow(RangeError);
+    expect(() => isExpired(new Date('2026-10-01T00:00:00Z'), invalid)).toThrow(RangeError);
+    expect(() =>
+      freshnessElapsedRatio(invalid, new Date('2026-10-01T00:00:00Z'), new Date()),
+    ).toThrow(RangeError);
+  });
+
   it('TTL が 0 以下・非数なら RangeError', () => {
     expect(() => calculateFreshnessDue(CHECKED, 0)).toThrow(RangeError);
     expect(() => calculateFreshnessDue(CHECKED, -1)).toThrow(RangeError);

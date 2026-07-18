@@ -70,4 +70,17 @@ describe('demoDataset 品質検査', () => {
     const codes = demoDataset.rules.map((r) => r.ruleCode);
     expect(new Set(codes).size).toBe(codes.length);
   });
+
+  it('region コードと機関 ID は一意である', () => {
+    const regionCodes = demoDataset.regions.map((r) => r.code);
+    expect(new Set(regionCodes).size).toBe(regionCodes.length);
+    const orgIds = demoDataset.organizations.map((o) => o.id);
+    expect(new Set(orgIds).size).toBe(orgIds.length);
+  });
+
+  it('データセットの ruleVersion と各ルールの version が一致する', () => {
+    for (const rule of demoDataset.rules) {
+      expect(rule.version, `${rule.ruleCode} の version 不一致`).toBe(demoDataset.ruleVersion);
+    }
+  });
 });

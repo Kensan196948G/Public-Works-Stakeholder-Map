@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  candidateSchema,
   MAX_RADIUS_METERS,
   problemDetailsSchema,
   searchRequestSchema,
@@ -60,6 +61,40 @@ describe('searchResponseSchema', () => {
     };
     expect(searchResponseSchema.safeParse({ ...base, disclaimerRequired: true }).success).toBe(true);
     expect(searchResponseSchema.safeParse({ ...base, disclaimerRequired: false }).success).toBe(false);
+  });
+});
+
+describe('candidateSchema', () => {
+  const baseCandidate = {
+    organizationId: 'org-1',
+    name: 'デモ機関',
+    type: 'road_admin',
+    officeName: null,
+    confidence: 'B',
+    confidenceBreakdown: {
+      authority: 25,
+      freshness: 25,
+      boundaryPrecision: 5,
+      reviewState: 15,
+      conflictingSourcesPenalty: 0,
+      linkFailurePenalty: 0,
+      total: 70,
+    },
+    verificationState: 'unverified',
+    reasons: ['理由'],
+    estimated: true,
+    sourceCheckedAt: null,
+    freshnessDueAt: null,
+    evidence: [{ title: '出典', url: 'https://example.com/x', sourceCheckedAt: null }],
+  };
+
+  it('§5.3: estimated=true かつ precision=official の組み合わせを拒否する', () => {
+    expect(
+      candidateSchema.safeParse({ ...baseCandidate, precision: 'official' }).success,
+    ).toBe(false);
+    expect(
+      candidateSchema.safeParse({ ...baseCandidate, precision: 'estimated' }).success,
+    ).toBe(true);
   });
 });
 

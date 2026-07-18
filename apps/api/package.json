@@ -7,13 +7,13 @@
   "scripts": {
     "build": "tsc -b",
     "dev": "wrangler dev",
-    "deploy:preview": "wrangler versions upload"
+    "deploy:preview": "wrangler versions upload --env preview"
   },
   "dependencies": {
     "@pwsm/contracts": "*",
     "@pwsm/domain": "*",
     "@pwsm/fixtures": "*",
-    "hono": "*",
-    "zod": "*"
+    "hono": "^4.12.30",
+    "zod": "^4.4.3"
   }
 }
