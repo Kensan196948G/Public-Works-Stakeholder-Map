@@ -245,9 +245,13 @@ npm test
 | `npm test` | 単体・統合テスト（vitest） | ✅ 稼働 |
 | `npm run data:validate` | fixture の品質検査 | ✅ 稼働 |
 | `npm run build` | 全ワークスペースのビルド | ✅ 稼働 |
-| `npm run dev -w @pwsm/api` | API 開発起動（wrangler dev） | 🚧 Phase 1 |
+| `npm run dev -w @pwsm/web` | Web UI 開発起動（vite、API へプロキシ） | ✅ 稼働 |
+| `npm run dev -w @pwsm/api` | API 開発起動（wrangler dev）※ | ✅ 稼働 |
 | `npm run test:e2e` | E2E テスト | 🚧 Phase 1 |
 | `npm run db:migrate` | DB マイグレーション | 🚧 Phase 1（SQL は作成済み） |
+
+> ※ 仮想メモリ制限のある環境では workerd が起動できない場合があります（ADR-0001 追記参照）。
+> その場合、API の動作確認は統合テスト（`npm test`）で代替します。
 
 ### 📁 monorepo 構成
 
@@ -257,6 +261,7 @@ npm test
 | `packages/domain` | `@pwsm/domain` | 正規化・信頼度・CSV 無害化・ルール評価・鮮度判定 |
 | `data/fixtures` | `@pwsm/fixtures` | 架空 3 地域の検証用データセット |
 | `apps/api` | `@pwsm/api` | Workers API（health / metadata / 候補検索） |
+| `apps/web` | `@pwsm/web` | Web UI（検索フォーム・候補一覧・免責・CSV 出力） |
 | `db/migrations` | — | Neon PostgreSQL 初期スキーマ（5 スキーマ分離） |
 | `docs/adr` | — | アーキテクチャ決定記録 |
 
@@ -385,6 +390,7 @@ Issueには次の情報を含めてください。
 | 2026-07-18 | 🏗️ monorepo scaffold（contracts / domain / fixtures / api）構築 |
 | 2026-07-18 | 🗄️ DB 初期スキーマ（5 スキーマ分離 + 整合性 CHECK 制約）作成 |
 | 2026-07-18 | ✅ テスト 86 件通過・lint / typecheck / CI 整備 |
+| 2026-07-18 | 🖥️ Phase 1 着手: Web MVP（検索・候補一覧・免責・CSV 出力）実装 |
 
 ### ✅ 実装済み（Phase 0）
 

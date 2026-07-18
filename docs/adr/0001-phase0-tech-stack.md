@@ -44,6 +44,12 @@ vitest 3（vite 7 系）では発生しない。CI（GitHub Actions）には本�
 **再評価条件**: 実行環境の仮想メモリ制限が解除された場合、または vitest 4 系が
 WASM 予約を遅延化した場合に 4.x へ更新する。
 
+**追記（同制限の影響範囲）**: workerd（`wrangler dev` のローカル Workers runtime）も
+V8 sandbox の仮想アドレス空間予約により同環境では起動不能
+（`Fatal process out of memory: SegmentedTable::InitializeTable`）。
+このため API のローカル検証は Hono の `app.request()` による統合テストで行い、
+実 runtime での確認は CI / Cloudflare preview 環境で実施する。
+
 ### 4. fixture は JSON ではなく TypeScript パッケージ
 
 `data/fixtures` を `@pwsm/fixtures` ワークスペースとし、型検査（contracts の列挙型）

@@ -4,8 +4,8 @@ export default defineConfig({
   test: {
     // Each workspace keeps its tests next to sources under test/.
     include: [
-      'packages/*/test/**/*.test.ts',
-      'apps/*/test/**/*.test.ts',
+      'packages/*/test/**/*.test.{ts,tsx}',
+      'apps/*/test/**/*.test.{ts,tsx}',
       'data/fixtures/test/**/*.test.ts',
     ],
     environment: 'node',
