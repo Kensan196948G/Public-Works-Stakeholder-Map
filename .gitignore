@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.wrangler/
+*.tsbuildinfo
+
+# Environment — never commit real secrets (.env.example only)
+.env
+.env.*
+!.env.example
+
+# Logs / temp
+*.log
+coverage/
+.tmp/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Local state (session-scoped, not source of truth)
+reports/

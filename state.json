@@ -1,0 +1,38 @@
+{
+  "project": {
+    "name": "Public-Works-Stakeholder-Map",
+    "registered_at": "2026-07-18",
+    "start_date": "2026-07-18",
+    "release_deadline": "2027-01-18",
+    "phase_mode": "development"
+  },
+  "goal": "Phase 0 基盤構築: monorepo scaffold + contracts + domain + DB migrations + fixtures + API + CI を PR 化し STABLE 判定",
+  "phase": "Build",
+  "kpi": {
+    "success_rate_target": 0.9,
+    "ci_success_rate": 0.0,
+    "test_pass_rate": 0.0,
+    "security_critical": 0,
+    "blocker_count": 0
+  },
+  "execution": {
+    "max_duration_minutes": 300,
+    "session_started_at": "2026-07-18T10:19:00+09:00",
+    "repair_count": 0,
+    "max_repair": 3,
+    "same_error_limit": 2
+  },
+  "automation": {
+    "auto_issue_generation": true,
+    "self_evolution": true
+  },
+  "deploy": {
+    "ready": false
+  },
+  "completed_issues": [],
+  "blocked_issues": [],
+  "learning": {
+    "failure_patterns": [],
+    "success_patterns": []
+  }
+}
