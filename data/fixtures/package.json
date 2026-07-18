@@ -1,0 +1,20 @@
+{
+  "name": "@pwsm/fixtures",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "架空の検証用データセット（実在の機関・連絡先・管轄を一切含まない）",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@pwsm/contracts": "*",
+    "@pwsm/domain": "*"
+  }
+}

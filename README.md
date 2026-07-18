@@ -3,7 +3,7 @@
 > **公共工事ステークホルダー整理マップ**  
 > 工事場所と作業条件から、事前に確認したほうがよい関係機関を公開情報ベースで整理します。
 
-[![Status](https://img.shields.io/badge/status-planning-64748b)](#-開発状況)
+[![Status](https://img.shields.io/badge/status-phase0_scaffold-22c55e)](#%EF%B8%8F-開発状況)
 [![Data](https://img.shields.io/badge/data-public_only-0ea5e9)](#-データ方針)
 [![Decision](https://img.shields.io/badge/decision-support_not_determination-f59e0b)](#%EF%B8%8F-重要な注意)
 [![License](https://img.shields.io/badge/license-TBD-lightgrey)](#-ライセンス)
@@ -217,41 +217,48 @@ flowchart LR
 
 ## 🚀 開発を始める
 
-> このREADMEは設計段階の基準です。実装開始後、実際のpackage scriptsとCloudflare/Neon構成に合わせてコマンドを確定してください。
-
 ### 前提
 
-- Node.js：採用するLTS版
-- package manager：プロジェクトで選定しlockfileを固定
-- CloudflareアカウントとCLI
-- Neon PostgreSQLプロジェクト
-- GitHubリポジトリ
+- Node.js 22 以上（CI は Node 24）
+- npm（workspaces 使用、lockfile 固定）
+- CloudflareアカウントとCLI（デプロイ時のみ）
+- Neon PostgreSQLプロジェクト（DB 接続導入後）
 
-### 想定セットアップ
+### セットアップ
 
 ```bash
-git clone https://github.com/<OWNER>/Public-Works-Stakeholder-Map.git
+git clone https://github.com/Kensan196948G/Public-Works-Stakeholder-Map.git
 cd Public-Works-Stakeholder-Map
 cp .env.example .env.local
 npm ci
-npm run db:migrate
-npm run dev
+npm test
 ```
 
 `.env.local`に本番秘密情報をコピーしないでください。開発環境は架空fixtureと専用DBを使用します。
 
-### 想定コマンド
+### コマンド
 
-| コマンド | 用途 |
-|---|---|
-| `npm run dev` | Web/API開発起動 |
-| `npm run lint` | 静的検査 |
-| `npm run typecheck` | TypeScript型検査 |
-| `npm test` | 単体・結合テスト |
-| `npm run test:e2e` | E2Eテスト |
-| `npm run db:migrate` | DBマイグレーション |
-| `npm run data:validate` | fixture・ソース台帳の品質検査 |
-| `npm run build` | 本番ビルド |
+| コマンド | 用途 | 状態 |
+|---|---|---|
+| `npm run lint` | ESLint 静的検査 | ✅ 稼働 |
+| `npm run typecheck` | TypeScript 型検査（project references） | ✅ 稼働 |
+| `npm test` | 単体・統合テスト（vitest） | ✅ 稼働 |
+| `npm run data:validate` | fixture の品質検査 | ✅ 稼働 |
+| `npm run build` | 全ワークスペースのビルド | ✅ 稼働 |
+| `npm run dev -w @pwsm/api` | API 開発起動（wrangler dev） | 🚧 Phase 1 |
+| `npm run test:e2e` | E2E テスト | 🚧 Phase 1 |
+| `npm run db:migrate` | DB マイグレーション | 🚧 Phase 1（SQL は作成済み） |
+
+### 📁 monorepo 構成
+
+| パス | パッケージ | 責務 |
+|---|---|---|
+| `packages/contracts` | `@pwsm/contracts` | API 契約・列挙型の Zod スキーマ（単一の真実） |
+| `packages/domain` | `@pwsm/domain` | 正規化・信頼度・CSV 無害化・ルール評価・鮮度判定 |
+| `data/fixtures` | `@pwsm/fixtures` | 架空 3 地域の検証用データセット |
+| `apps/api` | `@pwsm/api` | Workers API（health / metadata / 候補検索） |
+| `db/migrations` | — | Neon PostgreSQL 初期スキーマ（5 スキーマ分離） |
+| `docs/adr` | — | アーキテクチャ決定記録 |
 
 ---
 
@@ -370,6 +377,23 @@ Issueには次の情報を含めてください。
 
 ## 🏷️ 開発状況
 
-**Status: Planning / Requirements & Detailed Design**
+**Status: Phase 0 — Foundation Scaffold 構築済み**
 
-次のゲートは、代表3地域の公式情報源台帳、利用条件、データ項目、手動取込fixtureを確定することです。全国を一度に埋めるより、少数地域を高品質に仕上げてから広げます。
+| 日付 | 内容 |
+|---|---|
+| 2026-07-18 | 📐 要件定義書・詳細設計仕様書 v1.0.0 確定 |
+| 2026-07-18 | 🏗️ monorepo scaffold（contracts / domain / fixtures / api）構築 |
+| 2026-07-18 | 🗄️ DB 初期スキーマ（5 スキーマ分離 + 整合性 CHECK 制約）作成 |
+| 2026-07-18 | ✅ テスト 86 件通過・lint / typecheck / CI 整備 |
+
+### ✅ 実装済み（Phase 0）
+
+- 📜 API 契約と列挙型（Zod、Web/API 共有の単一の真実）
+- 🧮 ドメインロジック: 正規化（NFKC・電話・URL）、信頼度スコア（説明可能な加減点方式）、CSV 数式注入対策、宣言的ルール評価、TTL 鮮度判定
+- 🌐 Workers API: `/api/v1/health/*`、`/metadata`、`/stakeholders/search`（架空 fixture ベース、免責常時付与、RFC 9457 エラー）
+- 🗄️ Neon PostgreSQL 初期マイグレーション SQL
+- 🤖 GitHub Actions CI（lint / typecheck / test / build / 依存監査）
+
+### 🚧 次のゲート（Phase 0 完了 → Phase 1）
+
+代表3地域の公式情報源台帳、利用条件、データ項目、手動取込fixtureを確定することです。全国を一度に埋めるより、少数地域を高品質に仕上げてから広げます。あわせて Neon 接続・PostGIS 空間検索・地図 UI（MapLibre）を Phase 1 で実装します。

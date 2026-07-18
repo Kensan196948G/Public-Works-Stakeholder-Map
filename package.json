@@ -1,0 +1,30 @@
+{
+  "name": "public-works-stakeholder-map",
+  "version": "0.1.0",
+  "private": true,
+  "description": "公共工事ステークホルダー整理マップ — 公開情報ベースの事前協議候補整理システム",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "data/fixtures"
+  ],
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "npm run build --workspaces --if-present",
+    "data:validate": "vitest run data/fixtures/test/dataset.test.ts"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.7.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.64.0",
+    "vitest": "^3.2.7"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "@pwsm/domain",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "候補抽出・正規化・信頼度・CSV 安全化などの純粋ドメインロジック",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "@pwsm/contracts": "*"
+  }
+}

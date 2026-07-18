@@ -1,0 +1,19 @@
+{
+  "name": "@pwsm/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Cloudflare Workers API — 候補検索・メタデータ・ヘルスチェック",
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "wrangler dev",
+    "deploy:preview": "wrangler versions upload"
+  },
+  "dependencies": {
+    "@pwsm/contracts": "*",
+    "@pwsm/domain": "*",
+    "@pwsm/fixtures": "*",
+    "hono": "*",
+    "zod": "*"
+  }
+}

@@ -1,0 +1,9 @@
+# Cloudflare Workers 設定（デプロイは人間の明示承認後に実行する）
+name = "pwsm-api"
+main = "src/index.ts"
+compatibility_date = "2026-07-01"
+
+[vars]
+APP_ENV = "local"
+
+# DATABASE_URL 等の秘密情報は wrangler secret put で登録し、このファイルへ書かない

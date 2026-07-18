@@ -1,0 +1,19 @@
+{
+  "name": "@pwsm/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "API 契約・列挙型・共有スキーマ（Web/API の単一の真実）",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "dependencies": {
+    "zod": "*"
+  }
+}
