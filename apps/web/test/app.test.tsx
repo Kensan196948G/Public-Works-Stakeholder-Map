@@ -4,6 +4,11 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { REQUIRED_DISCLAIMER, type SearchResponse } from '@pwsm/contracts';
 import { App } from '../src/App.js';
 
+// 地図（WebGL）は jsdom で動作しないためスタブする（実表示は WebUI 手動確認で検証）
+vi.mock('../src/components/MapPicker.js', () => ({
+  MapPicker: () => <div data-testid="map-stub" />,
+}));
+
 const searchResponse: SearchResponse = {
   queryId: 'q-ui-test',
   datasetVersion: '2026-07-18.fixture.1',

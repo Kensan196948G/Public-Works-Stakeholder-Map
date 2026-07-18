@@ -10,10 +10,15 @@
     "deploy:preview": "wrangler versions upload --env preview"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "@pwsm/contracts": "*",
     "@pwsm/domain": "*",
     "@pwsm/fixtures": "*",
     "hono": "^4.12.30",
     "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@hono/node-server": "^2.0.10",
+    "@types/node": "^26.1.1"
   }
 }

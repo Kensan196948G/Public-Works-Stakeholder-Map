@@ -11,6 +11,11 @@ import {
   type SearchResponse,
 } from '@pwsm/contracts';
 import { demoDataset } from '@pwsm/fixtures';
+import {
+  checkDatabaseReady,
+  fetchRuleVersion,
+  searchCandidatesDb,
+} from './repositories/db-repository.js';
 import { searchCandidates } from './repositories/fixture-repository.js';
 
 /**
@@ -27,7 +32,13 @@ export interface AppOptions {
 }
 
 export interface ApiContext {
-  Bindings: { APP_ENV?: string };
+  Bindings: {
+    APP_ENV?: string;
+    /** 設定時は Neon/PostGIS リポジトリを使用。未設定時は架空 fixture（Issue #10） */
+    DATABASE_URL?: string;
+    /** DB モード時のデータ版識別子（公開版切替で更新する） */
+    DATASET_VERSION?: string;
+  };
   Variables: { requestId: string };
 }
 
@@ -102,22 +113,39 @@ export function buildApp(options: AppOptions = {}) {
     await next();
   });
 
+  /** DB モード時のデータ版。公開版切替時に DATASET_VERSION を更新する */
+  function datasetVersion(env: ApiContext['Bindings'] | undefined): string {
+    if (env?.DATABASE_URL === undefined) return demoDataset.datasetVersion;
+    return env.DATASET_VERSION ?? 'db-unversioned';
+  }
+
   app.get('/health/live', (c) => c.json({ status: 'ok' }));
 
-  app.get('/health/ready', (c) =>
-    // fixture リポジトリは常時 ready。Neon 接続導入時に DB 準備確認を追加する
-    c.json({ status: 'ok', datasetVersion: demoDataset.datasetVersion }),
-  );
+  app.get('/health/ready', async (c) => {
+    const databaseUrl = c.env?.DATABASE_URL;
+    if (databaseUrl !== undefined) {
+      try {
+        await checkDatabaseReady(databaseUrl);
+      } catch {
+        // 接続情報等の内部詳細は返さない（§6.2: 秘密情報を返さない）
+        return c.json({ status: 'unavailable', datasetVersion: datasetVersion(c.env) }, 503);
+      }
+    }
+    return c.json({ status: 'ok', datasetVersion: datasetVersion(c.env) });
+  });
 
-  app.get('/metadata', (c) => {
+  app.get('/metadata', async (c) => {
     const rawEnv = c.env?.APP_ENV;
     const appEnv =
       rawEnv === 'preview' || rawEnv === 'staging' || rawEnv === 'production'
         ? rawEnv
         : 'local';
+    const databaseUrl = c.env?.DATABASE_URL;
+    const ruleVersion =
+      databaseUrl === undefined ? demoDataset.ruleVersion : await fetchRuleVersion(databaseUrl);
     const body: MetadataResponse = metadataResponseSchema.parse({
-      datasetVersion: demoDataset.datasetVersion,
-      ruleVersion: demoDataset.ruleVersion,
+      datasetVersion: datasetVersion(c.env),
+      ruleVersion,
       lastPublishedAt: null,
       disclaimer: REQUIRED_DISCLAIMER,
       appEnv,
@@ -148,14 +176,22 @@ export function buildApp(options: AppOptions = {}) {
       return problemResponse(requestId, 400, code, '入力内容を確認してください', detail);
     }
 
-    const candidates = searchCandidates(demoDataset, parsed.data, now());
+    const databaseUrl = c.env?.DATABASE_URL;
+    const result =
+      databaseUrl === undefined
+        ? {
+            candidates: searchCandidates(demoDataset, parsed.data, now()),
+            ruleVersion: demoDataset.ruleVersion,
+          }
+        : await searchCandidatesDb(databaseUrl, parsed.data, now());
+
     const body: SearchResponse = {
       queryId: crypto.randomUUID(),
-      datasetVersion: demoDataset.datasetVersion,
-      ruleVersion: demoDataset.ruleVersion,
+      datasetVersion: datasetVersion(c.env),
+      ruleVersion: result.ruleVersion,
       disclaimerRequired: true,
       disclaimer: REQUIRED_DISCLAIMER,
-      candidates,
+      candidates: result.candidates,
     };
     return c.json(body);
   });

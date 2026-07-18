@@ -1,5 +1,6 @@
 import { buildCsv } from '@pwsm/domain';
 import type { SearchResponse } from '@pwsm/contracts';
+import { DECISION_LABELS, type ChecklistEntries } from './checklist.js';
 import {
   CONFIDENCE_LABELS,
   ORGANIZATION_TYPE_LABELS,
@@ -12,7 +13,11 @@ import {
  * 出典・取得日時・免責・データ版・出力日時を必ず含める。
  * セルの無害化（数式注入対策）とエスケープは @pwsm/domain の buildCsv が行う。
  */
-export function buildCandidatesCsv(response: SearchResponse, exportedAt: Date): string {
+export function buildCandidatesCsv(
+  response: SearchResponse,
+  exportedAt: Date,
+  decisions: ChecklistEntries = {},
+): string {
   const rows: string[][] = [
     ['公共工事ステークホルダー整理マップ 候補一覧'],
     ['免責', response.disclaimer],
@@ -29,6 +34,8 @@ export function buildCandidatesCsv(response: SearchResponse, exportedAt: Date): 
       'データ精度',
       '推定区域',
       '一致理由',
+      '利用者判断',
+      '確認メモ',
       '出典タイトル',
       '出典URL',
       '原典確認日',
@@ -45,6 +52,13 @@ export function buildCandidatesCsv(response: SearchResponse, exportedAt: Date): 
         candidate.estimated ? '推定' : '',
         // 理由は先頭 evidence 行のみに出力し、重複行を避ける
         index === 0 ? candidate.reasons.join(' / ') : '',
+        (() => {
+          const state = decisions[candidate.organizationId]?.state;
+          return index === 0 && state !== undefined && state !== null
+            ? DECISION_LABELS[state]
+            : '';
+        })(),
+        index === 0 ? (decisions[candidate.organizationId]?.note ?? '') : '',
         evidence.title,
         evidence.url,
         candidate.sourceCheckedAt ?? '不明',

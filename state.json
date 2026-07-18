@@ -6,13 +6,13 @@
     "release_deadline": "2027-01-18",
     "phase_mode": "development"
   },
-  "goal": "次セッション: Issue #9 (MapLibre 地図) または Issue #10 後半 (DB リポジトリ実装・マッピング層) を実装し PR 化",
-  "phase": "Monitor",
+  "goal": "次セッション: Phase 2 — 実データ整備（代表3地域の公式情報源台帳・利用条件確定）、取込・レビュー・品質ダッシュボード（SCR-06〜09）、ブラウザ E2E",
+  "phase": "Release-Gate",
   "kpi": {
     "success_rate_target": 0.9,
     "ci_success_rate": 1.0,
     "test_pass_rate": 1.0,
-    "test_count": 104,
+    "test_count": 114,
     "security_critical": 0,
     "blocker_count": 0
   },
@@ -21,7 +21,7 @@
     "last_session": {
       "date": "2026-07-18",
       "started_at": "10:19",
-      "summary": "Phase 0 基盤 (PR #6) + Phase 1 Web MVP (PR #11) を merge。Neon プロジェクト作成・0001 を dev/main 両ブランチへ適用検証"
+      "summary": "Phase 0 基盤 + Phase 1 完成（PostGIS 実検索・地図・チェックリスト・検証用 WebUI・運用文書 4 種）。デモデータでのリリース直前状態に到達、本番デプロイのみ人間承認待ち"
     },
     "repair_count": 0,
     "max_repair": 3,
@@ -32,30 +32,34 @@
     "self_evolution": true
   },
   "deploy": {
-    "ready": false
+    "ready": true,
+    "scope": "デモデータ（架空 fixture/seed）による検証公開のみ。実データ公開は Phase 2 の情報源台帳確定後",
+    "runbook": "docs/operations/deploy-runbook.md",
+    "rollback": "docs/operations/rollback.md",
+    "checklist": "docs/operations/release-checklist.md",
+    "note": "本番デプロイ・本番公開は人間の明示承認と手動実行が必要（CTO は自動実行しない）"
   },
   "infra": {
     "github_repo": "Kensan196948G/Public-Works-Stakeholder-Map",
     "github_project": 48,
     "neon_project_id": "tiny-river-77604173",
     "neon_migrations_applied": ["0001_initial_schema.sql"],
+    "neon_seeds_applied": ["0001_demo_dataset.sql (dev)"],
     "neon_dev_branch": "br-calm-forest-auo4xou3"
   },
-  "completed_issues": [1, 2, 3, 4, 5, 7, 8],
+  "completed_issues": [1, 2, 3, 4, 5, 7, 8, 9, 10, 13, 14],
   "blocked_issues": [],
-  "open_issues": {
-    "9": "MapLibre 地図表示 (P2) — タイルソース利用条件の確認から",
-    "10": "Neon/PostGIS リポジトリ実装 (P2) — スキーマ適用済み、残りは DB リポジトリ層 + jurisdiction_asset_type マッピング"
-  },
   "learning": {
     "failure_patterns": [
-      "vitest 4 / workerd はローカルの ulimit -v 20GB 環境で V8 仮想メモリ予約により起動不能 → vitest 3 固定・API 検証は app.request() 統合テストで代替 (ADR-0001)",
-      "CodeRabbit CLI は organization spending cap で rate limit になる場合がある → GitHub 側 CodeRabbit チェック + 内部レビューエージェントで代替"
+      "vitest 4 / workerd はローカルの ulimit -v 20GB 環境で V8 仮想メモリ予約により起動不能 → vitest 3 固定・検証用 Node dev server (npm run webui) で代替 (ADR-0001)",
+      "CodeRabbit CLI は organization spending cap で rate limit になる場合がある → GitHub 側チェック + 内部レビューエージェントで代替",
+      "neon serverless driver は enum 配列 (custom OID) を文字列で返す → ::text[] キャスト必須"
     ],
     "success_patterns": [
       "クロック注入 (now: () => Date) で鮮度・期限超過テストを決定的に実行",
-      "fixture を TS ワークスペースパッケージ化し契約型で品質をコンパイル時検証",
-      "DB 制約 (§5.3) を dev ブランチ上で拒否動作まで実証してから main へ適用"
+      "fixture を単一の真実として seed SQL を自動生成 (ON CONFLICT DO UPDATE で再適用可能)",
+      "DB 制約 (§5.3) を dev ブランチ上で拒否動作まで実証してから main へ適用",
+      "文書作成・修正は subagent へ委譲しコンテキストを温存 (ops-docs-writer)"
     ]
   }
 }
