@@ -1,0 +1,18 @@
+{
+  "projectId": "06addf97-f8d3-4342-b347-05f3b6026481",
+  "shape": "package",
+  "pkg": "@pwsm/web",
+  "globalName": "PWSM",
+  "tsconfig": "tsconfig.json",
+  "cssEntry": "src/styles.css",
+  "componentSrcMap": {
+    "CandidateCard": "src/components/CandidateCard.tsx",
+    "SearchForm": "src/components/SearchForm.tsx",
+    "DisclaimerBanner": "src/components/DisclaimerBanner.tsx",
+    "SettingsPage": "src/components/SettingsPage.tsx",
+    "AuditPage": "src/components/AuditPage.tsx",
+    "MapPicker": null,
+    "App": null
+  },
+  "readmeHeader": ".design-sync/conventions.md"
+}
