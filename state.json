@@ -6,22 +6,22 @@
     "release_deadline": "2027-01-18",
     "phase_mode": "development"
   },
-  "goal": "次セッション: Phase 2 — 実データ整備（代表3地域の公式情報源台帳・利用条件確定）、取込・レビュー・品質ダッシュボード（SCR-06〜09）、ブラウザ E2E",
+  "goal": "v0.1.0 初回検証公開（デモデータ）: リリース PR のマージ判定 Y → merge・tag・GitHub Release → Neon main seed 適用 → DATABASE_URL 登録 → Worker pwsm-api 本番デプロイ → smoke test・安定化",
   "phase": "Release-Gate",
   "kpi": {
     "success_rate_target": 0.9,
     "ci_success_rate": 1.0,
     "test_pass_rate": 1.0,
-    "test_count": 114,
+    "test_count": 119,
     "security_critical": 0,
     "blocker_count": 0
   },
   "execution": {
     "max_duration_minutes": 300,
     "last_session": {
-      "date": "2026-07-18",
-      "started_at": "10:19",
-      "summary": "Phase 0 基盤 + Phase 1 完成（PostGIS 実検索・地図・チェックリスト・検証用 WebUI・運用文書 4 種）。デモデータでのリリース直前状態に到達、本番デプロイのみ人間承認待ち"
+      "date": "2026-07-24",
+      "started_at": "16:10",
+      "summary": "v0.1.0 リリース準備: Web を Workers Static Assets へ統合（単一オリジン）、eslint ignores 修正（ds-bundle）、preview デプロイ + smoke test 全通過、運用文書・release note 整備。マージ判定 Y/N 待ち"
     },
     "repair_count": 0,
     "max_repair": 3,
@@ -37,17 +37,37 @@
     "runbook": "docs/operations/deploy-runbook.md",
     "rollback": "docs/operations/rollback.md",
     "checklist": "docs/operations/release-checklist.md",
-    "note": "本番デプロイ・本番公開は人間の明示承認と手動実行が必要（CTO は自動実行しない）"
+    "note": "本番デプロイ・Secrets 登録・Neon main seed 適用は、リリース PR に明記しマージ判定 Y の承認範囲でのみ実行する"
   },
   "infra": {
     "github_repo": "Kensan196948G/Public-Works-Stakeholder-Map",
     "github_project": 48,
     "neon_project_id": "tiny-river-77604173",
-    "neon_migrations_applied": ["0001_initial_schema.sql"],
-    "neon_seeds_applied": ["0001_demo_dataset.sql (dev)"],
-    "neon_dev_branch": "br-calm-forest-auo4xou3"
+    "neon_migrations_applied": [
+      "0001_initial_schema.sql"
+    ],
+    "neon_seeds_applied": [
+      "0001_demo_dataset.sql (dev)"
+    ],
+    "neon_dev_branch": "br-calm-forest-auo4xou3",
+    "cloudflare_account_id": "4f1e888469df7e0b896bb4e211b12633",
+    "cloudflare_worker_production": "pwsm-api",
+    "cloudflare_worker_preview": "pwsm-api-preview",
+    "preview_url": "https://pwsm-api-preview.kensan1969.workers.dev"
   },
-  "completed_issues": [1, 2, 3, 4, 5, 7, 8, 9, 10, 13, 14],
+  "completed_issues": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    7,
+    8,
+    9,
+    10,
+    13,
+    14
+  ],
   "blocked_issues": [],
   "learning": {
     "failure_patterns": [

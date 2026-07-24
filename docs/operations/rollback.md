@@ -69,14 +69,11 @@ wrangler rollback [<VERSION_ID>]
 
 ## 2. 🌐 Web の版ロールバック
 
-| デプロイ方式 | ロールバック手順 |
-|---|---|
-| GitHub 連携（Cloudflare Pages） | Pages ダッシュボードで直前の成功デプロイを「Rollback / この版へ戻す」で再公開 |
-| 直接アップロード | 直前の正常ビルド成果物（`apps/web/dist`）を再取得し `wrangler pages deploy <dist> --project-name <PAGES_PROJECT>` |
+Web 資産は API と同一 Worker（`pwsm-api`）の Static Assets として version に同梱されるため、**§1 の Worker 版ロールバックで Web も同時に戻ります**（個別の Pages ロールバックは不要）。
 
 | ✅ | 確認項目 |
 |---|---|
-| ☐ | 戻した Web が本番 API を指す |
+| ☐ | 戻した version で `/`（index.html）と `/api/v1/health/ready` の両方が正常応答する |
 | ☐ | 免責・推定/鮮度表示が復帰後も常時表示される |
 
 ---

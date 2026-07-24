@@ -4,11 +4,11 @@
 |---|---|
 | 🎯 目的 | API（Cloudflare Workers）・Web（Cloudflare Pages 相当）・Neon 接続を本番へ安全に反映する手順を定める |
 | 👥 対象読者 | デプロイを実行する人間（オペレーター）・DevOps・承認者 |
-| 📅 最終更新日 | 2026-07-18 |
+| 📅 最終更新日 | 2026-07-24 |
 
-> 🚫 **本番デプロイ・本番公開・Secrets 登録は、必ず人間が手動で実行します（自動デプロイ禁止）。**
-> Claude / CTO は手順・判断材料の提示のみを行い、デプロイコマンドを自律実行しません。
-> 本手順は `docs/operations/release-checklist.md` の承認記録欄が記入済みであることを前提とします。
+> 🚫 **本番デプロイ・本番公開・Secrets 登録は、人間の明示承認なしに実行しません。**
+> 承認はリリース PR の「マージ判定 `Y`」へ集約します。`Y` は当該 PR に明記されたデプロイ・migration・Secrets 登録の**正確な範囲だけ**を一括承認したものであり、承認後の実作業は人間または CTO（Claude）が PR 記載の範囲内で実行できます。PR に記載のない本番操作は引き続き禁止です。
+> 本手順は `docs/operations/release-checklist.md` の確認記録（PR 本文上の記録で代替可）が済んでいることを前提とします。
 
 ---
 
@@ -19,9 +19,9 @@
 | デプロイ実行者 | 人間（承認済みオペレーター） |
 | 前提条件 | リリース前チェックリスト全 🔴 充足・承認者サイン済み |
 | API スタック | Cloudflare Workers（`apps/api`・Hono・Worker 名 `pwsm-api`） |
-| Web スタック | Vite + React（`apps/web`）→ 静的成果物を Cloudflare Pages 相当へ配置 |
+| Web スタック | Vite + React（`apps/web`）→ ビルド成果物を同一 Worker の **Static Assets** として API と同一オリジンで配信（`[assets]`・SPA fallback・`run_worker_first = ["/api/*"]`） |
 | DB | Neon PostgreSQL / PostGIS（プロジェクト `tiny-river-77604173`） |
-| 設定ファイル | `apps/api/wrangler.toml`（`[env.preview]` 分離済み・default env = 本番 `pwsm-api`） |
+| 設定ファイル | `apps/api/wrangler.toml`（`[env.preview]` 分離済み・default env = 本番 `pwsm-api`・Web assets は `../web/dist`） |
 | Secrets | Cloudflare Secrets（`DATABASE_URL` 等）。実値は本書に記載しない |
 | 必要ツール | Node.js（CI は 24 / ローカル 22+）・npm・`wrangler`（Cloudflare 認証済み） |
 
@@ -32,9 +32,8 @@ flowchart TB
     C --> D["✅ preview smoke test"]
     D --> E{"問題なし?"}
     E -->|No| Z["⛔ 中止 / 修正"]
-    E -->|Yes| F["🚀 API 本番デプロイ (人間)"]
-    F --> G["🌐 Web ビルド・配置 (人間)"]
-    G --> H["✅ 本番 smoke test"]
+    E -->|Yes| F["🚀 本番デプロイ（単一 Worker: API + Web assets）"]
+    F --> H["✅ 本番 smoke test"]
     H --> I{"合格?"}
     I -->|No| R["↩️ rollback.md へ"]
     I -->|Yes| J["📝 記録・Projects 更新"]
@@ -82,6 +81,10 @@ wrangler secret put DATABASE_URL
 wrangler secret put DATABASE_URL --env preview
 ```
 
+> 💡 **接続文字列を画面・履歴・会話ログへ出さない登録方法（推奨）**: Neon API キーを持つ環境で
+> `npx neonctl connection-string --project-id tiny-river-77604173 <branch/db/role 指定> | npx wrangler secret put DATABASE_URL`
+> のようにパイプで直接渡すと、値が端末表示・シェル履歴・作業ログに残らない。
+
 | ✅ | 確認項目 |
 |---|---|
 | ☐ | 本番と preview の接続文字列が別ブランチ・別値である |
@@ -102,27 +105,30 @@ wrangler secret put DATABASE_URL --env preview
 # preview 環境へバージョンをアップロード（本番トラフィックには影響しない）
 npm run deploy:preview
 #   = wrangler versions upload --env preview  →  Worker: pwsm-api-preview
+#   （初回のみ Worker が存在しないため wrangler deploy --env preview で作成する）
 ```
 
+- Web 資産（`apps/web/dist`）も同時にアップロードされる（事前にリポジトリルートで `npm run build` を実行しておく）。
 - 出力される preview URL / version ID を控える。
-- §5 の smoke test を **preview に対して** 先に実施する。
+- §6 の smoke test を **preview に対して** 先に実施する。
 
 ---
 
-## 4. 🚀 API（Workers）本番デプロイ手順 — 🚫 人間が実行
+## 4. 🚀 本番デプロイ手順（単一 Worker: API + Web assets）— 🚫 承認済み PR の範囲でのみ実行
 
-本番は default env（Worker 名 `pwsm-api`）です。段階公開（versions upload → deploy）を推奨します。
+本番は default env（Worker 名 `pwsm-api`）です。**API と Web 資産は同一 Worker として一括デプロイ**されます。段階公開（versions upload → deploy）を推奨します。
 
 ```bash
+# 事前: リポジトリルートで npm run build（apps/web/dist を最新化）
 # 作業ディレクトリ: apps/api
 
 # 方式A（推奨・段階公開）: バージョンをアップロードしてから本番へ昇格
-wrangler versions upload
+npm run deploy:production:upload    # = wrangler versions upload
 #   → 生成された version ID を控える（rollback 時に使用）
-wrangler versions deploy
+npm run deploy:production:promote   # = wrangler versions deploy
 #   → 昇格するバージョンとトラフィック割合を対話で指定（例: 新版 100%）
 
-# 方式B（簡易・即時全量）: 直接デプロイ
+# 方式B（簡易・即時全量）: 直接デプロイ（初回の Worker 作成時はこちら）
 # wrangler deploy
 ```
 
@@ -136,11 +142,13 @@ wrangler versions deploy
 
 ---
 
-## 5. 🌐 Web（Cloudflare Pages 相当）ビルド・配置手順 — 🚫 人間が実行
+## 5. 🌐 Web 配信の確認（Workers Static Assets 統合）
+
+Web は独立した Pages プロジェクトではなく、**§4 の Worker デプロイに同梱**されます（`wrangler.toml` の `[assets]` が `apps/web/dist` を配信）。個別の配置作業は不要です。
 
 ```bash
 # 作業ディレクトリ: リポジトリルート
-# Web を本番ビルド（成果物は apps/web/dist/）
+# Web を本番ビルド（成果物は apps/web/dist/ → §4 のデプロイに同梱される）
 npm run build -w @pwsm/web
 #   = vite build
 
@@ -148,18 +156,12 @@ npm run build -w @pwsm/web
 ls apps/web/dist
 ```
 
-配置は運用中の Cloudflare Pages プロジェクト設定に従います（いずれも人間が実行）。
-
-> 🔴 **main への merge を本番公開の契機にしません（`main merge ≠ 本番公開`）。** 自動デプロイ（Pages の自動プロダクション・デプロイ / merge 連動公開）は**無効化**し、本番反映は必ず人間が手動でプロモーションします。
-
-| 方式 | 概要 |
-|---|---|
-| 直接アップロード（推奨） | `wrangler pages deploy apps/web/dist --project-name <PAGES_PROJECT>` で人間が明示的に `dist/` を配置 |
-| GitHub 連携（プレビューのみ） | ブランチ / PR のプレビュー・ビルド確認に限定。**プロダクション・ブランチの自動公開は無効化**し、本番は人間が手動でプロモーションする |
+> 🔴 **main への merge を本番公開の契機にしません（`main merge ≠ 本番公開`）。** GitHub 連携による自動プロダクション・デプロイは使わず、本番反映は必ず §4 の手順（承認済み PR の範囲）で明示的に実行します。
 
 | ✅ | 確認項目 |
 |---|---|
-| ☐ | Web の API ベース URL が本番 API（`pwsm-api`）を指す設定である |
+| ☐ | Web と API が同一オリジン（`fetch('/api/v1/…')` の相対パスが本番 Worker に到達する） |
+| ☐ | `/` で `index.html` が配信され、SPA fallback（未知パス → index.html）が機能する |
 | ☐ | 免責表示・推定/鮮度表示がビルド成果物に含まれる |
 | ☐ | 公開範囲（管理系は Cloudflare Access 保護）が設計通り |
 
@@ -214,4 +216,4 @@ curl -fsS "<BASE_URL>/api/v1/metadata"
 - smoke test 失敗・重大な誤表示・5xx 急増を検知した場合、**直ちに `docs/operations/rollback.md`** に従い直前の正常版へ戻す。
 - 誤窓口表示・情報漏えい疑い・DB 障害などは `docs/operations/incident-response.md` の初動に従う。
 
-> 🚫 本番へ影響する再デプロイ・ロールバックの実行判断も人間が行う。CTO は手順と影響評価を提示する。
+> 🚫 本番へ影響する再デプロイ・ロールバックは、承認済み PR に記載された事前検証済み手順の範囲でのみ実行する（無制限な再デプロイは禁止）。範囲外の操作が必要になった場合は停止し、人間の判断を仰ぐ。
