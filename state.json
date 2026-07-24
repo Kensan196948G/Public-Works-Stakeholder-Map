@@ -7,7 +7,7 @@
     "phase_mode": "development"
   },
   "goal": "Phase 2 後半: 代表3地域の選定・利用条件確定（Issue #28 人間決裁）→ 台帳登録 → 手動取込 → 二者レビュー → データ版切替で実データ公開",
-  "phase": "Release-Gate",
+  "phase": "Stabilize",
   "kpi": {
     "success_rate_target": 0.9,
     "ci_success_rate": 1.0,
@@ -21,7 +21,7 @@
     "last_session": {
       "date": "2026-07-24",
       "started_at": "16:10",
-      "summary": "v0.1.0/v0.1.1/v0.2.0 リリース + Phase 2 管理機能（SCR-06〜08: データソース台帳・取込レビュー状態機械・品質ダッシュボード + data-registry 運用文書 + テスト16件）実装、マージ判定待ち"
+      "summary": "v0.1.0〜v0.3.0 リリース完了。Phase 2 管理機能（SCR-06〜08）本番反映済み（本番 403 ガード）。次: Issue #28 人間決裁 → 実データ投入"
     },
     "repair_count": 0,
     "max_repair": 3,
@@ -39,7 +39,7 @@
     "checklist": "docs/operations/release-checklist.md",
     "note": "本番デプロイ・Secrets 登録・Neon main seed 適用は、リリース PR に明記しマージ判定 Y の承認範囲でのみ実行する",
     "released": {
-      "version": "v0.2.0",
+      "version": "v0.3.0",
       "date": "2026-07-24",
       "production_url": "https://pwsm.mirai-dx-platform.com",
       "worker_version_id": "27efafd4-b08a-413c-8042-a2c36c4e0061",
@@ -50,7 +50,8 @@
       "access": "Cloudflare Access self_hosted (mirai-const.co.jp + 管理者メール, 24h)",
       "workers_dev": "無効化 (v0.1.1)",
       "observability": "有効化 (Issue #23)",
-      "note_v0.2.0": "住所検索オートコンプリート（FR-001 拡張・UI のみ・DB 変更なし)"
+      "note_v0.2.0": "住所検索オートコンプリート（FR-001 拡張・UI のみ・DB 変更なし)",
+      "note_v0.3.0": "Phase 2 管理機能 SCR-06〜08（本番では /admin/* 403 のまま・非本番で利用）"
     }
   },
   "infra": {
