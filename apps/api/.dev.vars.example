@@ -1,0 +1,4 @@
+# wrangler dev 用ローカル環境変数の見本（実値・秘密値は書かない）
+# 使い方: このファイルを .dev.vars にコピーして値を設定する（.dev.vars は gitignore 済み）
+APP_ENV = "local"
+# DATABASE_URL は設定しない（未設定 = fixture モード）。DB モード検証時のみ dev ブランチの値を設定する

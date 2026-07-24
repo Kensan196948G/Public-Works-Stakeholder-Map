@@ -1,14 +1,30 @@
-# Cloudflare Workers 設定（デプロイは人間の明示承認後に実行する）
+# Cloudflare Workers 設定 — default env が本番（Worker 名 pwsm-api）。
+# 本番デプロイは PR マージ承認（Y）に明記された範囲でのみ実行する（docs/operations/deploy-runbook.md 参照）
 name = "pwsm-api"
 main = "src/index.ts"
 compatibility_date = "2026-07-01"
 
+# Web（apps/web）のビルド成果物を同一オリジンで静的配信する（Workers Static Assets）。
+# Web は fetch('/api/v1/...') の相対パスで API を呼ぶため、単一 Worker への統合が前提。
+# /api/* のみ Worker（Hono）が処理し、それ以外は assets → SPA fallback。
+[assets]
+directory = "../web/dist"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
 [vars]
-APP_ENV = "local"
+# default env = 本番。ローカル開発は .dev.vars（gitignore 済み）で APP_ENV="local" を上書きする
+APP_ENV = "production"
 
 # preview 環境は明示的に分離した設定を使う（deploy:preview は --env preview で実行）
 [env.preview]
 name = "pwsm-api-preview"
+
+# assets は環境ごとに継承されないため preview にも明示定義する
+[env.preview.assets]
+directory = "../web/dist"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
 
 [env.preview.vars]
 APP_ENV = "preview"
