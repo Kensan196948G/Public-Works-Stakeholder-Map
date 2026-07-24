@@ -1,0 +1,22 @@
+{
+  "id": "tokyo-kouwan-madoguchi",
+  "region": "tokyo",
+  "organizationType": "port_admin",
+  "name": "東京都港湾局（お問い合わせ窓口一覧）",
+  "publisher": "東京都港湾局",
+  "baseUrl": "https://www.kouwan.metro.tokyo.lg.jp/inquiry/madoguchi",
+  "allowedHost": "www.kouwan.metro.tokyo.lg.jp",
+  "authority": "primary_official",
+  "format": "HTML",
+  "fetchMode": "manual",
+  "ttlDays": 90,
+  "license": {
+    "url": "https://www.metro.tokyo.lg.jp/policy/chosakuken",
+    "summary": "東京都公式HPの著作権ポリシー（制限型）。私的使用・引用等を除き無断複製・転用は不可。",
+    "reuse": "reference_only",
+    "confirmedAt": "2026-07-24",
+    "confirmedBy": "kensan1969（Issue #28 決裁・PR マージ承認で確定）"
+  },
+  "active": true,
+  "notes": "占用専用ページが公式サイト内に特定できず窓口案内を代表URLとした。港湾施設の占用実務は東京港港湾情報システム等の別系統。"
+}

@@ -1,0 +1,22 @@
+{
+  "id": "tokyo-kensetsu-road",
+  "region": "tokyo",
+  "organizationType": "road_admin",
+  "name": "東京都建設局（道路の管理）",
+  "publisher": "東京都建設局",
+  "baseUrl": "https://www.kensetsu.metro.tokyo.lg.jp/road/kanri",
+  "allowedHost": "www.kensetsu.metro.tokyo.lg.jp",
+  "authority": "primary_official",
+  "format": "HTML",
+  "fetchMode": "manual",
+  "ttlDays": 180,
+  "license": {
+    "url": "https://www.metro.tokyo.lg.jp/policy/chosakuken",
+    "summary": "東京都公式HPの著作権ポリシー（制限型）。私的使用・引用等を除き無断複製・転用は不可。政府標準利用規約/CC BY非適用。",
+    "reuse": "reference_only",
+    "confirmedAt": "2026-07-24",
+    "confirmedBy": "kensan1969（Issue #28 決裁・PR マージ承認で確定）"
+  },
+  "active": true,
+  "notes": "都道の道路占用が対象。占用申請様式は /application/youshiki/douro_senyo。同局が道路と河川を所管。"
+}

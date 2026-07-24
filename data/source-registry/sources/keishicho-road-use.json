@@ -1,0 +1,22 @@
+{
+  "id": "keishicho-road-use",
+  "region": "tokyo",
+  "organizationType": "police",
+  "name": "警視庁（道路使用許可申請手続き）",
+  "publisher": "警視庁",
+  "baseUrl": "https://www.keishicho.metro.tokyo.lg.jp/tetsuzuki/kotsu/road_permission.html",
+  "allowedHost": "www.keishicho.metro.tokyo.lg.jp",
+  "authority": "primary_official",
+  "format": "HTML",
+  "fetchMode": "manual",
+  "ttlDays": 90,
+  "license": {
+    "url": "https://www.keishicho.metro.tokyo.lg.jp/about/kenri_link.html",
+    "summary": "出典明示型（政府標準利用規約2.0準拠フォーマット）。利用時は「出典：警視庁ホームページ（URL）（利用年月日）」の記載が必要、編集・加工時はその旨明記。リンクは原則自由。",
+    "reuse": "standard_terms",
+    "confirmedAt": "2026-07-24",
+    "confirmedBy": "kensan1969（Issue #28 決裁・PR マージ承認で確定）"
+  },
+  "active": true,
+  "notes": "申請は使用場所を管轄する警察署の交通規制係。都公式HPとは別の独自著作権ページ（出典明示型）を持つ。"
+}

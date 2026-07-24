@@ -1,0 +1,22 @@
+{
+  "id": "yokohama-kasen-senyo",
+  "region": "yokohama",
+  "organizationType": "river_admin",
+  "name": "横浜市（河川・一般下水道（水路）占用等の手続き）",
+  "publisher": "横浜市（道路局河川部/下水道河川局）",
+  "baseUrl": "https://www.city.yokohama.lg.jp/kurashi/machizukuri-kankyo/kasen-gesuido/kasen/youchi/20200715131717128.html",
+  "allowedHost": "www.city.yokohama.lg.jp",
+  "authority": "primary_official",
+  "format": "HTML",
+  "fetchMode": "manual",
+  "ttlDays": 180,
+  "license": {
+    "url": "https://www.city.yokohama.lg.jp/aboutweb/sitepolicy.html",
+    "summary": "横浜市サイトポリシー（既定は制限型、CC BY表記ページのみ二次利用可）。",
+    "reuse": "reference_only",
+    "confirmedAt": "2026-07-24",
+    "confirmedBy": "kensan1969（Issue #28 決裁・PR マージ承認で確定）"
+  },
+  "active": true,
+  "notes": "市管理河川の占用。一級河川等の県管理河川は神奈川県（横浜川崎治水事務所）所管のため、対象河川の等級で管理者が分岐する。"
+}

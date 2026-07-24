@@ -11,6 +11,16 @@
 
 ## 📄 登録形式
 
-`sources/*.json` に 1 ソース 1 ファイルで登録する（スキーマ: `data/schemas/source-registry.schema.json` — Phase 2 で整備予定）。
+`sources/*.json` に 1 ソース 1 ファイルで登録する（スキーマ: `data/schemas/source-registry.schema.json`）。
+CI で自動検証される（`data/source-registry/test/registry.test.ts`: スキーマ準拠・id 一意・
+baseUrl と allowedHost の一致・license 未記録時の notes 必須）。
 
-現時点は架空データのみで開発しており、実ソースの登録は Phase 0 のソース台帳確定ゲートで行う。
+## 🗾 対象地域（2026-07-24 決裁・Issue #28）
+
+代表 3 地域: **東京都（区部）・横浜市・大阪市**。少数地域を高品質に仕上げてから拡大する。
+
+## ✅ 登録から公開まで
+
+1. 本台帳へ JSON 登録（利用条件は決裁後に `license` へ記録・`confirmedAt`/`confirmedBy` 必須）
+2. Neon `provenance.data_sources` へ登録し `dbId` を追記
+3. SCR-06 手動取込 → SCR-07 二者レビュー → データ版切替 PR（マージ判定 `Y`）で公開

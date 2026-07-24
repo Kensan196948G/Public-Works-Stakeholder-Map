@@ -1,0 +1,22 @@
+{
+  "id": "osaka-police-shinsei",
+  "region": "osaka",
+  "organizationType": "police",
+  "name": "大阪府警察（道路交通法等に基づく各種申請及び届出様式）",
+  "publisher": "大阪府警察本部",
+  "baseUrl": "https://www.police.pref.osaka.lg.jp/tetsuduki/dorokotsu/4971.html",
+  "allowedHost": "www.police.pref.osaka.lg.jp",
+  "authority": "primary_official",
+  "format": "HTML",
+  "fetchMode": "manual",
+  "ttlDays": 90,
+  "license": {
+    "url": "https://www.police.pref.osaka.lg.jp/8808.html",
+    "summary": "「このウェブサイトについて」（総務部広報課）。コンテンツの著作権は大阪府警察本部等に帰属し、私的使用・引用等を除き無断で転用・引用不可（制限型）。政府標準利用規約/CC BY非適用。",
+    "reuse": "reference_only",
+    "confirmedAt": "2026-07-24",
+    "confirmedBy": "kensan1969（Issue #28 決裁・PR マージ承認で確定）"
+  },
+  "active": true,
+  "notes": "道路使用許可申請は所轄警察署へ。令和7年12月15日よりe-Gov電子申請対応の案内あり。"
+}

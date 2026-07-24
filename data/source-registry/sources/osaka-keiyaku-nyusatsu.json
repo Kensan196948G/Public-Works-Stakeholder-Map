@@ -1,0 +1,22 @@
+{
+  "id": "osaka-keiyaku-nyusatsu",
+  "region": "osaka",
+  "organizationType": "issuer",
+  "name": "大阪市契約管財局（入札契約情報）",
+  "publisher": "大阪市契約管財局",
+  "baseUrl": "https://www.city.osaka.lg.jp/keiyakukanzai/category/3047-0-0-0-0-0-0-0-0-0.html",
+  "allowedHost": "www.city.osaka.lg.jp",
+  "authority": "primary_official",
+  "format": "HTML",
+  "fetchMode": "manual",
+  "ttlDays": 180,
+  "license": {
+    "url": "https://www.city.osaka.lg.jp/main/site_policy/0000000124.html",
+    "summary": "大阪市HP著作権・免責。政府標準利用規約（第2.0版）準拠・CC BY 4.0互換。出典記載を条件に複製・公衆送信・翻案等を自由に利用可（商用可）。第三者権利コンテンツを除く。",
+    "reuse": "standard_terms",
+    "confirmedAt": "2026-07-24",
+    "confirmedBy": "kensan1969（Issue #28 決裁・PR マージ承認で確定）"
+  },
+  "active": true,
+  "notes": "工事請負入札等情報は同局サイト内 category 3047-3。"
+}

@@ -1,0 +1,22 @@
+{
+  "id": "yokohama-road-senyo",
+  "region": "yokohama",
+  "organizationType": "road_admin",
+  "name": "横浜市（道路の占用）",
+  "publisher": "横浜市道路局",
+  "baseUrl": "https://www.city.yokohama.lg.jp/kurashi/machizukuri-kankyo/doro/kanri_senyo/senyo/",
+  "allowedHost": "www.city.yokohama.lg.jp",
+  "authority": "primary_official",
+  "format": "HTML",
+  "fetchMode": "manual",
+  "ttlDays": 180,
+  "license": {
+    "url": "https://www.city.yokohama.lg.jp/aboutweb/sitepolicy.html",
+    "summary": "横浜市サイトポリシー。既定は制限型（私的使用・引用等を除き無断複製・転用不可）。CC BY表記ページのみ出典表示で二次利用可。",
+    "reuse": "reference_only",
+    "confirmedAt": "2026-07-24",
+    "confirmedBy": "kensan1969（Issue #28 決裁・PR マージ承認で確定）"
+  },
+  "active": true,
+  "notes": "道路占用許可基準ページあり。実際の申請窓口は各区土木事務所。"
+}

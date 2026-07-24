@@ -1,0 +1,22 @@
+{
+  "id": "yokohama-kowan",
+  "region": "yokohama",
+  "organizationType": "port_admin",
+  "name": "横浜市港湾局（港湾局の紹介）",
+  "publisher": "横浜市港湾局",
+  "baseUrl": "https://www.city.yokohama.lg.jp/city-info/yokohamashi/org/kowan/",
+  "allowedHost": "www.city.yokohama.lg.jp",
+  "authority": "primary_official",
+  "format": "HTML",
+  "fetchMode": "manual",
+  "ttlDays": 90,
+  "license": {
+    "url": "https://www.city.yokohama.lg.jp/aboutweb/sitepolicy.html",
+    "summary": "横浜市サイトポリシー（既定は制限型、CC BY表記ページのみ二次利用可）。",
+    "reuse": "reference_only",
+    "confirmedAt": "2026-07-24",
+    "confirmedBy": "kensan1969（Issue #28 決裁・PR マージ承認で確定）"
+  },
+  "active": true,
+  "notes": "港湾管財課・施設管理課・水域管理課等が施設/水域を所管。占用等の個別手続は各課問合せ。"
+}
