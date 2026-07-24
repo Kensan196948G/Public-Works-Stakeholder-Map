@@ -432,6 +432,7 @@ Issueには次の情報を含めてください。
 | 2026-07-24 | 🚀 本番デプロイ構成を確定: Web を Worker Static Assets へ統合（単一オリジン）・preview 検証デプロイ + smoke test 通過・v0.1.0 リリース準備 |
 | 2026-07-24 | 🎉 **v0.1.0 本番リリース（架空デモデータの検証公開）**: PR #21 merge・tag/Release 作成・Neon main seed 適用・Worker `pwsm-api` デプロイ・本番 smoke test 通過 |
 | 2026-07-24 | 🔐 **v0.1.1**: 本番 URL を https://pwsm.mirai-dx-platform.com へ正式化・Cloudflare Access（Zero Trust）で関係者限定保護・workers.dev 経路廃止・Workers Logs 有効化 |
+| 2026-07-24 | 🔎 **v0.2.0**: 住所検索オートコンプリート（都道府県入力で候補を自動表示・キーボード選択対応・ARIA combobox） |
 
 ### 🚦 リリース状況（v0.1.0 公開済み・デモデータ）
 

@@ -12,7 +12,7 @@
     "success_rate_target": 0.9,
     "ci_success_rate": 1.0,
     "test_pass_rate": 1.0,
-    "test_count": 119,
+    "test_count": 125,
     "security_critical": 0,
     "blocker_count": 0
   },
@@ -21,7 +21,7 @@
     "last_session": {
       "date": "2026-07-24",
       "started_at": "16:10",
-      "summary": "v0.1.0 本番リリース + v0.1.1（カスタムドメイン pwsm.mirai-dx-platform.com・Cloudflare Access 保護・workers.dev 廃止・Workers Logs 有効化）"
+      "summary": "v0.1.0/v0.1.1 リリース + Access 保護検証 + v0.2.0 住所検索オートコンプリート（補完・ARIA combobox・テスト6件追加）"
     },
     "repair_count": 0,
     "max_repair": 3,
@@ -39,7 +39,7 @@
     "checklist": "docs/operations/release-checklist.md",
     "note": "本番デプロイ・Secrets 登録・Neon main seed 適用は、リリース PR に明記しマージ判定 Y の承認範囲でのみ実行する",
     "released": {
-      "version": "v0.1.1",
+      "version": "v0.2.0",
       "date": "2026-07-24",
       "production_url": "https://pwsm.mirai-dx-platform.com",
       "worker_version_id": "27efafd4-b08a-413c-8042-a2c36c4e0061",
@@ -49,7 +49,8 @@
       "secrets": "DATABASE_URL 登録済み (値は非表示・パイプ登録)",
       "access": "Cloudflare Access self_hosted (mirai-const.co.jp + 管理者メール, 24h)",
       "workers_dev": "無効化 (v0.1.1)",
-      "observability": "有効化 (Issue #23)"
+      "observability": "有効化 (Issue #23)",
+      "note_v0.2.0": "住所検索オートコンプリート（FR-001 拡張・UI のみ・DB 変更なし)"
     }
   },
   "infra": {
