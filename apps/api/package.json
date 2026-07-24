@@ -7,7 +7,9 @@
   "scripts": {
     "build": "tsc -b",
     "dev": "wrangler dev",
-    "deploy:preview": "wrangler versions upload --env preview"
+    "deploy:preview": "wrangler versions upload --env preview",
+    "deploy:production:upload": "wrangler versions upload",
+    "deploy:production:promote": "wrangler versions deploy"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

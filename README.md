@@ -126,8 +126,12 @@ flowchart TD
 
 ```mermaid
 flowchart TB
-    U["👥 利用者"] --> WEB["🌐 Cloudflare Pages"]
-    WEB --> API["⚙️ Cloudflare Workers API"]
+    U["👥 利用者"] --> WEB
+    U --> API
+    subgraph WK ["☁️ Cloudflare Worker pwsm-api（単一オリジン）"]
+        WEB["🌐 Web（Static Assets）"]
+        API["⚙️ API（Hono /api/*）"]
+    end
     API --> DB["🗄️ Neon PostgreSQL / PostGIS"]
     SRC["🏛️ 国・自治体等の公式情報"] --> JOB["🔄 取得・差分処理"]
     JOB --> STG["🧪 ステージング"]
@@ -425,6 +429,7 @@ Issueには次の情報を含めてください。
 | 2026-07-18 | 🐘 Neon プロジェクト作成・0001 スキーマを dev/main 両ブランチへ適用検証（制約拒否動作を実証） |
 | 2026-07-18 | 🗺️ 地図（MapLibre + 地理院タイル）・PostGIS 実検索・チェックリスト・運用文書 4 種を実装 |
 | 2026-07-18 | 🏠 住所検索（地理院 API）・システム設定・監査ログ画面・favicon を追加 |
+| 2026-07-24 | 🚀 本番デプロイ構成を確定: Web を Worker Static Assets へ統合（単一オリジン）・preview 検証デプロイ + smoke test 通過・v0.1.0 リリース準備 |
 
 ### 🚦 リリース準備状況（本番デプロイのみ人間承認待ち）
 
@@ -436,7 +441,7 @@ Issueには次の情報を含めてください。
 | 🧪 テスト | ✅ 110 件 + Neon 統合 4 件（環境変数ゲート） |
 | 🔐 セキュリティ | ✅ CSV 注入対策・URL 検証・CSP 系ヘッダー・依存監査 0 件 |
 | 📚 運用文書 | ✅ チェックリスト / デプロイ / ロールバック / 障害対応 |
-| 🚀 本番デプロイ | ⏸️ **人間の明示承認待ち**（`docs/operations/deploy-runbook.md` 参照） |
+| 🚀 本番デプロイ | ⏸️ **リリース PR のマージ判定 `Y` 待ち**（`Y` 承認後に PR 記載範囲でデプロイ。`docs/operations/deploy-runbook.md` 参照） |
 
 ### ✅ 実装済み（Phase 0 + Phase 1）
 
