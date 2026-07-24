@@ -22,6 +22,12 @@ const FETCH_RESULT_LABELS: Record<string, string> = {
   skipped: '⏭️ スキップ',
 };
 
+const FETCH_MODE_LABELS: Record<string, string> = {
+  manual: '手動',
+  scheduled: '定期',
+  api: 'API',
+};
+
 /**
  * SCR-06 データソース管理。台帳（取得方式・利用条件・最終取得・エラー）と手動取込の登録。
  * 利用条件が未記録のソースはデータ本体を複製せずリンク+索引に限定する（要件 §9.3）。
@@ -130,7 +136,7 @@ export function SourcesPage() {
                     </a>
                   </td>
                   <td>{AUTHORITY_LABELS[source.authority] ?? source.authority}</td>
-                  <td>{source.fetchMode === 'manual' ? '手動' : '自動'}</td>
+                  <td>{FETCH_MODE_LABELS[source.fetchMode] ?? source.fetchMode}</td>
                   <td>{source.ttlDays}日</td>
                   <td>
                     {source.licenseText ?? source.licenseUrl ?? (

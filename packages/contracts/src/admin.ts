@@ -7,8 +7,8 @@ import { sourceAuthoritySchema } from './enums.js';
  * 台帳には利用条件（license）を記録する（要件定義書 §9.3）。
  */
 
-/** 取得方式（DB enum provenance.fetch_mode と一致） */
-export const fetchModeSchema = z.enum(['manual', 'automated']);
+/** 取得方式（DB enum provenance.fetch_mode = manual / scheduled / api と一致） */
+export const fetchModeSchema = z.enum(['manual', 'scheduled', 'api']);
 export type FetchMode = z.infer<typeof fetchModeSchema>;
 
 /** 取込対象のエンティティ種別（staging.import_records.entity_kind） */
