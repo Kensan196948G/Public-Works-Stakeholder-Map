@@ -1,19 +1,32 @@
 import { Hono } from 'hono';
 import { secureHeaders } from 'hono/secure-headers';
 import {
+  adminImportsResponseSchema,
+  adminSourcesResponseSchema,
   auditEventsResponseSchema,
+  createImportRequestSchema,
   ERROR_CODES,
   GEOCODE_QUERY_MAX_LENGTH,
   geocodeResponseSchema,
+  importRecordSchema,
   metadataResponseSchema,
+  qualityReportSchema,
   REQUIRED_DISCLAIMER,
+  reviewRequestSchema,
+  reviewStateSchema,
   searchRequestSchema,
   type ErrorCode,
   type MetadataResponse,
   type ProblemDetails,
   type SearchResponse,
 } from '@pwsm/contracts';
+import { applyReviewAction } from '@pwsm/domain';
 import { demoDataset } from '@pwsm/fixtures';
+import {
+  createDbAdminRepository,
+  createFixtureAdminRepository,
+  type AdminRepository,
+} from './repositories/admin-repository.js';
 import {
   listAuditEvents,
   recordAuditEvent,
@@ -60,7 +73,7 @@ export interface ApiContext {
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 const PROBLEM_TYPE_BASE = 'https://public-works-map.example/errors';
 
-type ProblemStatus = 400 | 403 | 404 | 500 | 502;
+type ProblemStatus = 400 | 403 | 404 | 409 | 500 | 502;
 
 function problemResponse(
   requestId: string,
@@ -250,6 +263,195 @@ export function buildApp(options: AppOptions = {}) {
     const limit = Number.isInteger(rawLimit) ? Math.min(Math.max(rawLimit, 1), 200) : 50;
     const { events, store } = await listAuditEvents(c.env?.DATABASE_URL, limit);
     return c.json(auditEventsResponseSchema.parse({ events, store }));
+  });
+
+  /* ---------------- 管理系 API（SCR-06〜08、Phase 2） ---------------- */
+  // 認証・RBAC 導入までは本番で無効化し、Cloudflare Access + この 403 の 2 層で保護する（§9.2）
+  const fixtureAdminRepository = createFixtureAdminRepository(now);
+  function adminRepository(env: ApiContext['Bindings'] | undefined): AdminRepository {
+    return env?.DATABASE_URL === undefined
+      ? fixtureAdminRepository
+      : createDbAdminRepository(env.DATABASE_URL, now);
+  }
+
+  app.use('/admin/*', async (c, next) => {
+    if (c.env?.APP_ENV === 'production') {
+      return problemResponse(
+        c.get('requestId'),
+        403,
+        ERROR_CODES.FORBIDDEN,
+        '管理機能は利用できません',
+        '本番環境の管理機能は認証導入後に管理者のみへ提供されます',
+      );
+    }
+    await next();
+  });
+
+  // SCR-06: データソース台帳（取得方式・利用条件・最終取得・エラー）
+  app.get('/admin/sources', async (c) => {
+    const sources = await adminRepository(c.env).listSources();
+    return c.json(adminSourcesResponseSchema.parse({ sources }));
+  });
+
+  // SCR-07: 取込ステージング一覧（state フィルタ・新しい順）
+  app.get('/admin/imports', async (c) => {
+    const requestId = c.get('requestId');
+    const stateRaw = c.req.query('state');
+    const stateParsed = stateRaw === undefined ? undefined : reviewStateSchema.safeParse(stateRaw);
+    if (stateParsed !== undefined && !stateParsed.success) {
+      return problemResponse(
+        requestId,
+        400,
+        ERROR_CODES.INVALID_QUERY,
+        '入力内容を確認してください',
+        'state はレビュー状態のいずれかを指定してください',
+      );
+    }
+    const rawLimit = Number(c.req.query('limit') ?? 50);
+    const limit = Number.isInteger(rawLimit) ? Math.min(Math.max(rawLimit, 1), 200) : 50;
+    const records = await adminRepository(c.env).listImports(stateParsed?.data, limit);
+    return c.json(adminImportsResponseSchema.parse({ records }));
+  });
+
+  // SCR-06: 手動取込の登録（ステージングへ pending で追加。無レビュー公開禁止の入口）
+  app.post('/admin/imports', async (c) => {
+    const requestId = c.get('requestId');
+    let rawBody: unknown;
+    try {
+      rawBody = await c.req.json();
+    } catch {
+      return problemResponse(
+        requestId,
+        400,
+        ERROR_CODES.INVALID_BODY,
+        '入力内容を確認してください',
+        'リクエストボディが JSON として解釈できません',
+      );
+    }
+    const parsed = createImportRequestSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return problemResponse(
+        requestId,
+        400,
+        ERROR_CODES.INVALID_BODY,
+        '入力内容を確認してください',
+        'sourceId・entityKind・rawPayload を正しく指定してください',
+      );
+    }
+    const result = await adminRepository(c.env).createImport(parsed.data);
+    if (result === 'source_not_found') {
+      recordAudit(c, {
+        actor: 'operator',
+        action: 'admin.import.create',
+        targetKind: 'import',
+        result: 'failure',
+        correlationId: requestId,
+        metadata: { reason: 'source_not_found' },
+      });
+      return problemResponse(
+        requestId,
+        404,
+        ERROR_CODES.NOT_FOUND,
+        'データソースが見つかりません',
+        '指定された sourceId は台帳に登録されていません',
+      );
+    }
+    recordAudit(c, {
+      actor: 'operator',
+      action: 'admin.import.create',
+      targetKind: 'import',
+      result: 'success',
+      correlationId: requestId,
+      metadata: { importId: result.id, entityKind: result.entityKind },
+    });
+    return c.json(importRecordSchema.parse(result), 201);
+  });
+
+  // SCR-07: レビュー操作。状態機械（domain）で遷移を検証し、全操作を監査へ記録する
+  app.post('/admin/imports/:id/review', async (c) => {
+    const requestId = c.get('requestId');
+    const id = c.req.param('id');
+    let rawBody: unknown;
+    try {
+      rawBody = await c.req.json();
+    } catch {
+      return problemResponse(
+        requestId,
+        400,
+        ERROR_CODES.INVALID_BODY,
+        '入力内容を確認してください',
+        'リクエストボディが JSON として解釈できません',
+      );
+    }
+    const parsed = reviewRequestSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return problemResponse(
+        requestId,
+        400,
+        ERROR_CODES.INVALID_BODY,
+        '入力内容を確認してください',
+        'action にはレビュー操作のいずれかを指定してください',
+      );
+    }
+    const repository = adminRepository(c.env);
+    const record = await repository.getImport(id);
+    if (record === null) {
+      return problemResponse(
+        requestId,
+        404,
+        ERROR_CODES.NOT_FOUND,
+        '取込レコードが見つかりません',
+        '指定された ID のステージングレコードは存在しません',
+      );
+    }
+    const nextState = applyReviewAction(record.reviewState, parsed.data.action);
+    if (nextState === null) {
+      recordAudit(c, {
+        actor: 'operator',
+        action: 'admin.import.review',
+        targetKind: 'import',
+        result: 'denied',
+        correlationId: requestId,
+        metadata: { importId: id, reviewAction: parsed.data.action, from: record.reviewState },
+      });
+      return problemResponse(
+        requestId,
+        409,
+        ERROR_CODES.CONFLICT,
+        'この操作は現在の状態では実行できません',
+        `状態 ${record.reviewState} に ${parsed.data.action} は適用できません`,
+      );
+    }
+    const updated = await repository.updateImportState(id, nextState, parsed.data.note);
+    if (updated === null) {
+      return problemResponse(
+        requestId,
+        404,
+        ERROR_CODES.NOT_FOUND,
+        '取込レコードが見つかりません',
+        'レビュー確定前にレコードが削除された可能性があります',
+      );
+    }
+    recordAudit(c, {
+      actor: 'operator',
+      action: 'admin.import.review',
+      targetKind: 'import',
+      result: 'success',
+      correlationId: requestId,
+      metadata: {
+        importId: id,
+        reviewAction: parsed.data.action,
+        from: record.reviewState,
+        to: nextState,
+      },
+    });
+    return c.json(importRecordSchema.parse(updated));
+  });
+
+  // SCR-08: 品質ダッシュボード（欠損・期限超過・出典保有・取込状態）
+  app.get('/admin/quality', async (c) => {
+    const report = await adminRepository(c.env).qualityReport(datasetVersion(c.env));
+    return c.json(qualityReportSchema.parse(report));
   });
 
   app.post('/stakeholders/search', async (c) => {
