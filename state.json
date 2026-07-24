@@ -6,13 +6,13 @@
     "release_deadline": "2027-01-18",
     "phase_mode": "development"
   },
-  "goal": "次セッション: Phase 2 — 実データ整備（代表3地域の公式情報源台帳・利用条件確定）、取込・レビュー・品質ダッシュボード（SCR-06〜09）、認証・RBAC 検討、ブラウザ E2E",
-  "phase": "Stabilize",
+  "goal": "Phase 2 後半: 代表3地域の選定・利用条件確定（Issue #28 人間決裁）→ 台帳登録 → 手動取込 → 二者レビュー → データ版切替で実データ公開",
+  "phase": "Release-Gate",
   "kpi": {
     "success_rate_target": 0.9,
     "ci_success_rate": 1.0,
     "test_pass_rate": 1.0,
-    "test_count": 125,
+    "test_count": 141,
     "security_critical": 0,
     "blocker_count": 0
   },
@@ -21,7 +21,7 @@
     "last_session": {
       "date": "2026-07-24",
       "started_at": "16:10",
-      "summary": "v0.1.0/v0.1.1 リリース + Access 保護検証 + v0.2.0 住所検索オートコンプリート（補完・ARIA combobox・テスト6件追加）"
+      "summary": "v0.1.0/v0.1.1/v0.2.0 リリース + Phase 2 管理機能（SCR-06〜08: データソース台帳・取込レビュー状態機械・品質ダッシュボード + data-registry 運用文書 + テスト16件）実装、マージ判定待ち"
     },
     "repair_count": 0,
     "max_repair": 3,
