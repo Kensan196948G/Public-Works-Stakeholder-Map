@@ -21,7 +21,7 @@
     "last_session": {
       "date": "2026-07-24",
       "started_at": "16:10",
-      "summary": "v0.1.0 本番リリース完了: PR #21 merge・tag v0.1.0・GitHub Release・Neon main seed 適用・Worker pwsm-api デプロイ・DATABASE_URL パイプ登録・本番 smoke test 通過。DATASET_VERSION 設定の軽微修正を安定化で反映"
+      "summary": "v0.1.0 本番リリース + v0.1.1（カスタムドメイン pwsm.mirai-dx-platform.com・Cloudflare Access 保護・workers.dev 廃止・Workers Logs 有効化）"
     },
     "repair_count": 0,
     "max_repair": 3,
@@ -39,14 +39,17 @@
     "checklist": "docs/operations/release-checklist.md",
     "note": "本番デプロイ・Secrets 登録・Neon main seed 適用は、リリース PR に明記しマージ判定 Y の承認範囲でのみ実行する",
     "released": {
-      "version": "v0.1.0",
+      "version": "v0.1.1",
       "date": "2026-07-24",
-      "production_url": "https://pwsm-api.kensan1969.workers.dev",
+      "production_url": "https://pwsm.mirai-dx-platform.com",
       "worker_version_id": "27efafd4-b08a-413c-8042-a2c36c4e0061",
       "merge_commit": "7893de7",
       "pr": 21,
       "neon_seed_main": "0001_demo_dataset.sql 適用済み (2026-07-24)",
-      "secrets": "DATABASE_URL 登録済み (値は非表示・パイプ登録)"
+      "secrets": "DATABASE_URL 登録済み (値は非表示・パイプ登録)",
+      "access": "Cloudflare Access self_hosted (mirai-const.co.jp + 管理者メール, 24h)",
+      "workers_dev": "無効化 (v0.1.1)",
+      "observability": "有効化 (Issue #23)"
     }
   },
   "infra": {
@@ -65,7 +68,8 @@
     "cloudflare_worker_production": "pwsm-api",
     "cloudflare_worker_preview": "pwsm-api-preview",
     "preview_url": "https://pwsm-api-preview.kensan1969.workers.dev",
-    "production_url": "https://pwsm-api.kensan1969.workers.dev"
+    "production_url": "https://pwsm.mirai-dx-platform.com",
+    "cloudflare_zone": "mirai-dx-platform.com (e375e651e49a40801a305b89e297bff0)"
   },
   "completed_issues": [
     1,

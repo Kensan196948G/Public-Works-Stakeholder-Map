@@ -4,6 +4,17 @@ name = "pwsm-api"
 main = "src/index.ts"
 compatibility_date = "2026-07-01"
 
+# 本番はカスタムドメインへ一本化（Cloudflare Access で保護）。
+# workers.dev 経由の非保護アクセス経路は無効化する
+workers_dev = false
+routes = [
+  { pattern = "pwsm.mirai-dx-platform.com", custom_domain = true }
+]
+
+# Workers Logs（本番ログ・エラー率・レイテンシ照会。Issue #23）
+[observability]
+enabled = true
+
 # Web（apps/web）のビルド成果物を同一オリジンで静的配信する（Workers Static Assets）。
 # Web は fetch('/api/v1/...') の相対パスで API を呼ぶため、単一 Worker への統合が前提。
 # /api/* のみ Worker（Hono）が処理し、それ以外は assets → SPA fallback。
@@ -19,8 +30,10 @@ APP_ENV = "production"
 DATASET_VERSION = "2026-07-18.demo.1"
 
 # preview 環境は明示的に分離した設定を使う（deploy:preview は --env preview で実行）
+# preview は workers.dev で配信を継続する（custom domain なし・fixture モード）
 [env.preview]
 name = "pwsm-api-preview"
+workers_dev = true
 
 # assets は環境ごとに継承されないため preview にも明示定義する
 [env.preview.assets]
