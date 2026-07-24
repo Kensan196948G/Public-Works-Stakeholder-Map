@@ -431,6 +431,7 @@ Issueには次の情報を含めてください。
 | 2026-07-18 | 🏠 住所検索（地理院 API）・システム設定・監査ログ画面・favicon を追加 |
 | 2026-07-24 | 🚀 本番デプロイ構成を確定: Web を Worker Static Assets へ統合（単一オリジン）・preview 検証デプロイ + smoke test 通過・v0.1.0 リリース準備 |
 | 2026-07-24 | 🎉 **v0.1.0 本番リリース（架空デモデータの検証公開）**: PR #21 merge・tag/Release 作成・Neon main seed 適用・Worker `pwsm-api` デプロイ・本番 smoke test 通過 |
+| 2026-07-24 | 🔐 **v0.1.1**: 本番 URL を https://pwsm.mirai-dx-platform.com へ正式化・Cloudflare Access（Zero Trust）で関係者限定保護・workers.dev 経路廃止・Workers Logs 有効化 |
 
 ### 🚦 リリース状況（v0.1.0 公開済み・デモデータ）
 
@@ -442,7 +443,7 @@ Issueには次の情報を含めてください。
 | 🧪 テスト | ✅ 110 件 + Neon 統合 4 件（環境変数ゲート） |
 | 🔐 セキュリティ | ✅ CSV 注入対策・URL 検証・CSP 系ヘッダー・依存監査 0 件 |
 | 📚 運用文書 | ✅ チェックリスト / デプロイ / ロールバック / 障害対応 |
-| 🚀 本番デプロイ | ✅ **v0.1.0 公開済み**（2026-07-24・Worker `pwsm-api`・デモデータ。運用は `docs/operations/` 参照） |
+| 🚀 本番デプロイ | ✅ **v0.1.1 公開済み**（2026-07-24・https://pwsm.mirai-dx-platform.com ・Cloudflare Access 保護・デモデータ。運用は `docs/operations/` 参照） |
 
 ### ✅ 実装済み（Phase 0 + Phase 1）
 
