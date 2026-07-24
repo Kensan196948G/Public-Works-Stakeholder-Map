@@ -1,10 +1,17 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { AssetType, GeocodeResult, ImpactType, SearchRequest, WorkType } from '@pwsm/contracts';
 import { assetTypeSchema, impactTypeSchema, workTypeSchema } from '@pwsm/contracts';
 import { ApiError, geocode } from '../api.js';
 import { ASSET_TYPE_LABELS, IMPACT_TYPE_LABELS, WORK_TYPE_LABELS } from '../labels.js';
 
-/** 架空デモ地点（fixture の 3 地域に対応） */
+/** 補完の自動検索を開始する最小文字数（都道府県名の最短 2 文字に対応） */
+const AUTOCOMPLETE_MIN_LENGTH = 2;
+/** 打鍵から自動検索までの待機時間。地理院 API への過剰リクエストを防ぐ */
+const AUTOCOMPLETE_DEBOUNCE_MS = 400;
+
+/** 架空デモ地点（fixture の 3 地域に対応）。
+ *  実在住所の検索結果は架空の管轄ポリゴンとヒットしないため、
+ *  実データ整備（Phase 2）完了までデモ検証の主経路として維持する */
 const DEMO_LOCATIONS = [
   { label: 'みらい市中央地区（デモ）', lat: 35.05, lon: 139.05 },
   { label: 'みらい市臨海地区（デモ）', lat: 34.95, lon: 139.05 },
@@ -76,32 +83,72 @@ export function SearchForm({
   const [addressResults, setAddressResults] = useState<GeocodeResult[] | null>(null);
   const [addressError, setAddressError] = useState<string | null>(null);
   const [addressSearching, setAddressSearching] = useState(false);
+  /** 補完候補リストの開閉と、キーボード操作中のハイライト位置 */
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  /** リクエスト連番。古い応答が新しい応答を上書きしないよう最後の発行のみ反映する */
+  const requestSeqRef = useRef(0);
+  /** 候補選択で入力値を書き換えた直後の自動再検索を 1 回だけ抑止する */
+  const suppressAutoSearchRef = useRef(false);
 
-  async function handleAddressSearch() {
-    const query = addressQuery.trim();
-    if (query === '') return;
+  async function runAddressSearch(query: string) {
+    const seq = ++requestSeqRef.current;
     setAddressSearching(true);
-    setAddressError(null);
-    setAddressResults(null);
     try {
       const response = await geocode(query);
+      if (seq !== requestSeqRef.current) return; // 古い応答は破棄
       setAddressResults(response.results);
-      if (response.results.length === 0) {
-        setAddressError('該当する住所が見つかりませんでした。表記を変えてお試しください。');
-      }
+      setSuggestionsOpen(response.results.length > 0);
+      setActiveIndex(response.results.length > 0 ? 0 : -1);
+      setAddressError(
+        response.results.length === 0
+          ? '該当する住所が見つかりませんでした。表記を変えてお試しください。'
+          : null,
+      );
     } catch (e) {
+      if (seq !== requestSeqRef.current) return;
+      setSuggestionsOpen(false);
       setAddressError(
         e instanceof ApiError ? e.message : '住所検索に失敗しました。時間をおいて再度お試しください。',
       );
     } finally {
-      setAddressSearching(false);
+      if (seq === requestSeqRef.current) setAddressSearching(false);
     }
+  }
+
+  /** 補完: 入力が止まってから自動検索する（FR-001 拡張・都道府県などの部分入力に対応） */
+  useEffect(() => {
+    if (suppressAutoSearchRef.current) {
+      suppressAutoSearchRef.current = false;
+      return;
+    }
+    const query = addressQuery.trim();
+    if (query.length < AUTOCOMPLETE_MIN_LENGTH) {
+      setSuggestionsOpen(false);
+      setAddressResults(null);
+      setAddressError(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      void runAddressSearch(query);
+    }, AUTOCOMPLETE_DEBOUNCE_MS);
+    return () => clearTimeout(timer);
+  }, [addressQuery]);
+
+  function handleAddressSearch() {
+    const query = addressQuery.trim();
+    if (query === '') return;
+    setAddressError(null);
+    void runAddressSearch(query);
   }
 
   function handleAddressSelect(result: GeocodeResult) {
     onLatChange(result.location.lat.toFixed(6));
     onLonChange(result.location.lon.toFixed(6));
     setAddressResults(null);
+    setSuggestionsOpen(false);
+    setActiveIndex(-1);
+    suppressAutoSearchRef.current = true;
     setAddressQuery(result.label);
   }
   const [workTypes, setWorkTypes] = useState<WorkType[]>([]);
@@ -129,20 +176,43 @@ export function SearchForm({
           <div className="address-search">
             <input
               type="text"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded={suggestionsOpen}
+              aria-controls="address-suggestions"
+              aria-activedescendant={
+                suggestionsOpen && activeIndex >= 0 ? `address-option-${activeIndex}` : undefined
+              }
               value={addressQuery}
               onChange={(e) => setAddressQuery(e.target.value)}
-              placeholder="例: 千代田区霞が関一丁目"
+              placeholder="例: 東京都、千代田区霞が関一丁目"
               maxLength={100}
+              onBlur={() => setSuggestionsOpen(false)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                const results = addressResults ?? [];
+                if (e.key === 'ArrowDown' && suggestionsOpen && results.length > 0) {
                   e.preventDefault();
-                  void handleAddressSearch();
+                  setActiveIndex((i) => (i + 1) % results.length);
+                } else if (e.key === 'ArrowUp' && suggestionsOpen && results.length > 0) {
+                  e.preventDefault();
+                  setActiveIndex((i) => (i - 1 + results.length) % results.length);
+                } else if (e.key === 'Escape' && suggestionsOpen) {
+                  e.preventDefault();
+                  setSuggestionsOpen(false);
+                } else if (e.key === 'Enter') {
+                  e.preventDefault();
+                  const active = suggestionsOpen && activeIndex >= 0 ? results[activeIndex] : undefined;
+                  if (active !== undefined) {
+                    handleAddressSelect(active);
+                  } else {
+                    handleAddressSearch();
+                  }
                 }
               }}
             />
             <button
               type="button"
-              onClick={() => void handleAddressSearch()}
+              onClick={() => handleAddressSearch()}
               disabled={addressSearching || addressQuery.trim() === ''}
             >
               {addressSearching ? '検索中…' : '住所検索'}
@@ -154,13 +224,23 @@ export function SearchForm({
             {addressError}
           </p>
         )}
-        {addressResults !== null && addressResults.length > 0 && (
-          <ul className="address-results" aria-label="住所候補">
-            {addressResults.map((result) => (
-              <li key={`${result.label}-${result.location.lat}-${result.location.lon}`}>
-                <button type="button" onClick={() => handleAddressSelect(result)}>
-                  📍 {result.label}
-                </button>
+        {suggestionsOpen && addressResults !== null && addressResults.length > 0 && (
+          <ul className="address-results" id="address-suggestions" role="listbox" aria-label="住所候補">
+            {addressResults.map((result, index) => (
+              <li
+                key={`${result.label}-${result.location.lat}-${result.location.lon}`}
+                id={`address-option-${index}`}
+                role="option"
+                aria-selected={index === activeIndex}
+                className={index === activeIndex ? 'active' : undefined}
+                onMouseEnter={() => setActiveIndex(index)}
+                onMouseDown={(e) => {
+                  // blur によるリスト閉鎖より先に選択を確定させる
+                  e.preventDefault();
+                  handleAddressSelect(result);
+                }}
+              >
+                📍 {result.label}
               </li>
             ))}
           </ul>

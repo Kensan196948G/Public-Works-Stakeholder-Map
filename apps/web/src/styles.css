@@ -410,16 +410,18 @@ dd {
   border-top: 1px solid var(--color-border);
 }
 
-.address-results button {
+.address-results li {
   display: block;
   width: 100%;
   text-align: left;
   background: #fff;
   color: var(--color-text);
   font-size: 0.85rem;
-  border-radius: 0;
+  padding: 0.35rem 0.7rem;
+  cursor: pointer;
 }
 
-.address-results button:hover {
+.address-results li:hover,
+.address-results li.active {
   background: #e0f2fe;
 }
