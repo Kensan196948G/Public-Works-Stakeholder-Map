@@ -3,7 +3,7 @@
 > **公共工事ステークホルダー整理マップ**  
 > 工事場所と作業条件から、事前に確認したほうがよい関係機関を公開情報ベースで整理します。
 
-[![Status](https://img.shields.io/badge/status-phase0_scaffold-22c55e)](#️-開発状況)
+[![Status](https://img.shields.io/badge/status-v0.1.0_released_(demo)-22c55e)](#️-開発状況)
 [![Data](https://img.shields.io/badge/data-public_only-0ea5e9)](#-データ方針)
 [![Decision](https://img.shields.io/badge/decision-support_not_determination-f59e0b)](#%EF%B8%8F-重要な注意)
 [![License](https://img.shields.io/badge/license-TBD-lightgrey)](#-ライセンス)
@@ -430,8 +430,9 @@ Issueには次の情報を含めてください。
 | 2026-07-18 | 🗺️ 地図（MapLibre + 地理院タイル）・PostGIS 実検索・チェックリスト・運用文書 4 種を実装 |
 | 2026-07-18 | 🏠 住所検索（地理院 API）・システム設定・監査ログ画面・favicon を追加 |
 | 2026-07-24 | 🚀 本番デプロイ構成を確定: Web を Worker Static Assets へ統合（単一オリジン）・preview 検証デプロイ + smoke test 通過・v0.1.0 リリース準備 |
+| 2026-07-24 | 🎉 **v0.1.0 本番リリース（架空デモデータの検証公開）**: PR #21 merge・tag/Release 作成・Neon main seed 適用・Worker `pwsm-api` デプロイ・本番 smoke test 通過 |
 
-### 🚦 リリース準備状況（本番デプロイのみ人間承認待ち）
+### 🚦 リリース状況（v0.1.0 公開済み・デモデータ）
 
 | 領域 | 状態 |
 |---|---|
@@ -441,7 +442,7 @@ Issueには次の情報を含めてください。
 | 🧪 テスト | ✅ 110 件 + Neon 統合 4 件（環境変数ゲート） |
 | 🔐 セキュリティ | ✅ CSV 注入対策・URL 検証・CSP 系ヘッダー・依存監査 0 件 |
 | 📚 運用文書 | ✅ チェックリスト / デプロイ / ロールバック / 障害対応 |
-| 🚀 本番デプロイ | ⏸️ **リリース PR のマージ判定 `Y` 待ち**（`Y` 承認後に PR 記載範囲でデプロイ。`docs/operations/deploy-runbook.md` 参照） |
+| 🚀 本番デプロイ | ✅ **v0.1.0 公開済み**（2026-07-24・Worker `pwsm-api`・デモデータ。運用は `docs/operations/` 参照） |
 
 ### ✅ 実装済み（Phase 0 + Phase 1）
 

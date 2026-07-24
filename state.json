@@ -6,8 +6,8 @@
     "release_deadline": "2027-01-18",
     "phase_mode": "development"
   },
-  "goal": "v0.1.0 初回検証公開（デモデータ）: リリース PR のマージ判定 Y → merge・tag・GitHub Release → Neon main seed 適用 → DATABASE_URL 登録 → Worker pwsm-api 本番デプロイ → smoke test・安定化",
-  "phase": "Release-Gate",
+  "goal": "次セッション: Phase 2 — 実データ整備（代表3地域の公式情報源台帳・利用条件確定）、取込・レビュー・品質ダッシュボード（SCR-06〜09）、認証・RBAC 検討、ブラウザ E2E",
+  "phase": "Stabilize",
   "kpi": {
     "success_rate_target": 0.9,
     "ci_success_rate": 1.0,
@@ -21,7 +21,7 @@
     "last_session": {
       "date": "2026-07-24",
       "started_at": "16:10",
-      "summary": "v0.1.0 リリース準備: Web を Workers Static Assets へ統合（単一オリジン）、eslint ignores 修正（ds-bundle）、preview デプロイ + smoke test 全通過、運用文書・release note 整備。マージ判定 Y/N 待ち"
+      "summary": "v0.1.0 本番リリース完了: PR #21 merge・tag v0.1.0・GitHub Release・Neon main seed 適用・Worker pwsm-api デプロイ・DATABASE_URL パイプ登録・本番 smoke test 通過。DATASET_VERSION 設定の軽微修正を安定化で反映"
     },
     "repair_count": 0,
     "max_repair": 3,
@@ -37,7 +37,17 @@
     "runbook": "docs/operations/deploy-runbook.md",
     "rollback": "docs/operations/rollback.md",
     "checklist": "docs/operations/release-checklist.md",
-    "note": "本番デプロイ・Secrets 登録・Neon main seed 適用は、リリース PR に明記しマージ判定 Y の承認範囲でのみ実行する"
+    "note": "本番デプロイ・Secrets 登録・Neon main seed 適用は、リリース PR に明記しマージ判定 Y の承認範囲でのみ実行する",
+    "released": {
+      "version": "v0.1.0",
+      "date": "2026-07-24",
+      "production_url": "https://pwsm-api.kensan1969.workers.dev",
+      "worker_version_id": "27efafd4-b08a-413c-8042-a2c36c4e0061",
+      "merge_commit": "7893de7",
+      "pr": 21,
+      "neon_seed_main": "0001_demo_dataset.sql 適用済み (2026-07-24)",
+      "secrets": "DATABASE_URL 登録済み (値は非表示・パイプ登録)"
+    }
   },
   "infra": {
     "github_repo": "Kensan196948G/Public-Works-Stakeholder-Map",
@@ -47,13 +57,15 @@
       "0001_initial_schema.sql"
     ],
     "neon_seeds_applied": [
-      "0001_demo_dataset.sql (dev)"
+      "0001_demo_dataset.sql (dev)",
+      "0001_demo_dataset.sql (main, 2026-07-24)"
     ],
     "neon_dev_branch": "br-calm-forest-auo4xou3",
     "cloudflare_account_id": "4f1e888469df7e0b896bb4e211b12633",
     "cloudflare_worker_production": "pwsm-api",
     "cloudflare_worker_preview": "pwsm-api-preview",
-    "preview_url": "https://pwsm-api-preview.kensan1969.workers.dev"
+    "preview_url": "https://pwsm-api-preview.kensan1969.workers.dev",
+    "production_url": "https://pwsm-api.kensan1969.workers.dev"
   },
   "completed_issues": [
     1,

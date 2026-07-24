@@ -15,6 +15,8 @@ run_worker_first = ["/api/*"]
 [vars]
 # default env = 本番。ローカル開発は .dev.vars（gitignore 済み）で APP_ENV="local" を上書きする
 APP_ENV = "production"
+# DB モード時のデータ版識別子（デモ seed の公開版。公開版切替で更新する）
+DATASET_VERSION = "2026-07-18.demo.1"
 
 # preview 環境は明示的に分離した設定を使う（deploy:preview は --env preview で実行）
 [env.preview]
