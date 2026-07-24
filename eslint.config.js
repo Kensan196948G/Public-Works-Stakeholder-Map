@@ -3,7 +3,21 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['**/dist/**', '**/dist-types/**', '**/node_modules/**', '**/.wrangler/**', 'coverage/**'] },
+  {
+    ignores: [
+      '**/dist/**',
+      '**/dist-types/**',
+      '**/node_modules/**',
+      '**/.wrangler/**',
+      'coverage/**',
+      // design-sync のローカル生成物（gitignore 済み・CI 対象外）— lint 対象から除外して CI と整合させる
+      'ds-bundle/**',
+      '.ds-sync/**',
+      '.design-sync/**',
+      // ClaudeOS 運用ファイル（アプリコードではない）
+      '.claude/**',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
