@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://public-works-map.example/schemas/source-registry.schema.json",
+  "title": "公式情報源台帳エントリ（data/source-registry/sources/*.json）",
+  "description": "公開情報源ごとに出典・利用条件・取得方式・TTL を記録する。利用条件（license）が未記録のソースはデータ本体を複製せずリンク+索引に限定する（要件 §9.3）。DB の provenance.data_sources と 1:1 対応。",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "region",
+    "organizationType",
+    "name",
+    "publisher",
+    "baseUrl",
+    "allowedHost",
+    "authority",
+    "format",
+    "fetchMode",
+    "ttlDays",
+    "active"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "台帳内で一意のスラッグ（例: tokyo-kensetsu-road）。DB 登録時に UUID を採番し dbId へ記録する",
+      "pattern": "^[a-z0-9][a-z0-9-]{2,63}$"
+    },
+    "dbId": {
+      "type": "string",
+      "description": "Neon provenance.data_sources.id（登録後に記録）",
+      "format": "uuid"
+    },
+    "region": {
+      "type": "string",
+      "description": "代表地域スラッグ",
+      "enum": ["tokyo", "yokohama", "osaka"]
+    },
+    "organizationType": {
+      "type": "string",
+      "description": "対応する機関種別（contracts の organizationType と整合）",
+      "enum": [
+        "issuer",
+        "road_admin",
+        "river_admin",
+        "port_admin",
+        "police",
+        "prefecture",
+        "municipality"
+      ]
+    },
+    "name": { "type": "string", "minLength": 1 },
+    "publisher": { "type": "string", "minLength": 1 },
+    "baseUrl": {
+      "type": "string",
+      "description": "目的（事前協議・窓口案内・管轄情報）に近い公式ページ URL（https のみ）",
+      "pattern": "^https://"
+    },
+    "allowedHost": {
+      "type": "string",
+      "description": "取得を許可する FQDN（SSRF 対策・§8.2）。baseUrl のホストと一致すること",
+      "pattern": "^[a-z0-9.-]+$"
+    },
+    "authority": {
+      "type": "string",
+      "description": "DB enum provenance.source_authority と一致",
+      "enum": ["primary_official", "official_catalog", "secondary_open"]
+    },
+    "format": { "type": "string", "enum": ["HTML", "PDF", "CSV", "JSON", "XLSX", "API"] },
+    "fetchMode": {
+      "type": "string",
+      "description": "DB enum provenance.fetch_mode と一致。Phase 2 は manual のみ",
+      "enum": ["manual", "scheduled", "api"]
+    },
+    "ttlDays": {
+      "type": "integer",
+      "description": "再確認期限（日）。窓口 90 / 管轄・契約 180 を目安",
+      "minimum": 1,
+      "maximum": 730
+    },
+    "license": {
+      "type": "object",
+      "description": "利用条件（§9.3）。未記録の場合はリンク+索引限定で運用する",
+      "additionalProperties": false,
+      "required": ["url", "summary", "confirmedAt"],
+      "properties": {
+        "url": { "type": "string", "pattern": "^https://" },
+        "summary": {
+          "type": "string",
+          "description": "準拠規約（政府標準利用規約 2.0 / CC BY 4.0 等）・出典表示義務・再配布条件の要約",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "confirmedAt": {
+          "type": "string",
+          "description": "利用条件を確認した日（人間決裁日）",
+          "format": "date"
+        },
+        "confirmedBy": { "type": "string", "description": "確認者（決裁記録との対応）" }
+      }
+    },
+    "active": { "type": "boolean" },
+    "notes": { "type": "string", "maxLength": 1000 }
+  }
+}
