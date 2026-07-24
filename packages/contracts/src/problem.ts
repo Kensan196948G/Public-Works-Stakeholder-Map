@@ -13,6 +13,7 @@ export const errorCodeSchema = z.enum([
   'INVALID_QUERY',
   'FORBIDDEN',
   'NOT_FOUND',
+  'CONFLICT',
   'UPSTREAM_ERROR',
   'INTERNAL_ERROR',
 ]);

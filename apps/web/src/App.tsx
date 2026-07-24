@@ -12,15 +12,21 @@ import {
 import { buildCandidatesCsv, downloadCsv } from './csv.js';
 import { loadSettings, type AppSettings } from './settings.js';
 import { AuditPage } from './components/AuditPage.js';
+import { QualityPage } from './components/QualityPage.js';
+import { ReviewPage } from './components/ReviewPage.js';
+import { SourcesPage } from './components/SourcesPage.js';
 import { CandidateCard } from './components/CandidateCard.js';
 import { DisclaimerBanner } from './components/DisclaimerBanner.js';
 import { SearchForm } from './components/SearchForm.js';
 import { SettingsPage } from './components/SettingsPage.js';
 
-type PageId = 'search' | 'settings' | 'audit';
+type PageId = 'search' | 'sources' | 'review' | 'quality' | 'settings' | 'audit';
 
 const PAGES: readonly { id: PageId; label: string }[] = [
   { id: 'search', label: '🔎 検索' },
+  { id: 'sources', label: '🗂️ データソース' },
+  { id: 'review', label: '📝 取込レビュー' },
+  { id: 'quality', label: '📊 品質' },
   { id: 'settings', label: '⚙️ システム設定' },
   { id: 'audit', label: '📜 監査ログ' },
 ];
@@ -119,6 +125,24 @@ export function App() {
       {page === 'audit' && (
         <section className="pane">
           <AuditPage />
+        </section>
+      )}
+
+      {page === 'sources' && (
+        <section className="pane">
+          <SourcesPage />
+        </section>
+      )}
+
+      {page === 'review' && (
+        <section className="pane">
+          <ReviewPage />
+        </section>
+      )}
+
+      {page === 'quality' && (
+        <section className="pane">
+          <QualityPage />
         </section>
       )}
 

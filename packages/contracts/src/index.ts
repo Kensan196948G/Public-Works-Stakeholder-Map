@@ -4,3 +4,4 @@ export * from './problem.js';
 export * from './metadata.js';
 export * from './geocode.js';
 export * from './audit.js';
+export * from './admin.js';
