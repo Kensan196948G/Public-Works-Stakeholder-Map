@@ -12,6 +12,8 @@ import { z } from 'zod';
 const licenseSchema = z.object({
   url: z.string().startsWith('https://'),
   summary: z.string().min(1).max(500),
+  /** standard_terms: 出典表示で再利用可 / reference_only: 本文複製不可（リンク+索引限定・§9.3） */
+  reuse: z.enum(['standard_terms', 'reference_only']),
   confirmedAt: z.iso.date(),
   confirmedBy: z.string().optional(),
 });

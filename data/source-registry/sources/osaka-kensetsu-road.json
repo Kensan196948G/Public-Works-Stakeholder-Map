@@ -1,0 +1,22 @@
+{
+  "id": "osaka-kensetsu-road",
+  "region": "osaka",
+  "organizationType": "road_admin",
+  "name": "大阪市建設局（道路占用許可申請）",
+  "publisher": "大阪市建設局",
+  "baseUrl": "https://www.city.osaka.lg.jp/kensetsu/page/0000370606.html",
+  "allowedHost": "www.city.osaka.lg.jp",
+  "authority": "primary_official",
+  "format": "HTML",
+  "fetchMode": "manual",
+  "ttlDays": 180,
+  "license": {
+    "url": "https://www.city.osaka.lg.jp/main/site_policy/0000000124.html",
+    "summary": "大阪市HP著作権・免責（政府標準利用規約2.0/CC BY互換・商用可・出典記載条件）。",
+    "reuse": "standard_terms",
+    "confirmedAt": "2026-07-24",
+    "confirmedBy": "kensan1969（Issue #28 決裁・PR マージ承認で確定）"
+  },
+  "active": true,
+  "notes": "認定道路への足場・仮囲等の設置に占用許可。建設局道路河川部道路課等。"
+}

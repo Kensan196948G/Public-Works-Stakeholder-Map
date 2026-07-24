@@ -1,0 +1,22 @@
+{
+  "id": "tokyo-zaimu-keiyaku",
+  "region": "tokyo",
+  "organizationType": "issuer",
+  "name": "東京都財務局（契約情報）",
+  "publisher": "東京都財務局",
+  "baseUrl": "https://www.zaimu.metro.tokyo.lg.jp/keiyaku",
+  "allowedHost": "www.zaimu.metro.tokyo.lg.jp",
+  "authority": "primary_official",
+  "format": "HTML",
+  "fetchMode": "manual",
+  "ttlDays": 180,
+  "license": {
+    "url": "https://www.metro.tokyo.lg.jp/policy/chosakuken",
+    "summary": "東京都公式HPの著作権ポリシー（制限型）。私的使用・引用等の著作権法上認められた場合を除き無断複製・転用は不可。政府標準利用規約/CC BY非適用。転載は各ページ問合せ先へ要相談。",
+    "reuse": "reference_only",
+    "confirmedAt": "2026-07-24",
+    "confirmedBy": "kensan1969（Issue #28 決裁・PR マージ承認で確定）"
+  },
+  "active": true,
+  "notes": "財務局は東京都統一CMS上にあり著作権方針は都庁総合HPに集約。実手続は東京都電子調達システムへ誘導。"
+}

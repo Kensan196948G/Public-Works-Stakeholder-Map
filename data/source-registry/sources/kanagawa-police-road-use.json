@@ -1,0 +1,22 @@
+{
+  "id": "kanagawa-police-road-use",
+  "region": "yokohama",
+  "organizationType": "police",
+  "name": "神奈川県警察（道路使用の手続）",
+  "publisher": "神奈川県警察本部",
+  "baseUrl": "https://www.police.pref.kanagawa.jp/tetsuzuki/kotsukankei/mesf1016.html",
+  "allowedHost": "www.police.pref.kanagawa.jp",
+  "authority": "primary_official",
+  "format": "HTML",
+  "fetchMode": "manual",
+  "ttlDays": 90,
+  "license": {
+    "url": "https://www.police.pref.kanagawa.jp/guidance.html",
+    "summary": "政府標準利用規約（第2.0版）準拠・CC BY 4.0互換。出典記載を条件に複製・公衆送信・翻案等を自由に利用可（商用可）。第三者著作物は要事前照会。令和7年9月1日制定。",
+    "reuse": "standard_terms",
+    "confirmedAt": "2026-07-24",
+    "confirmedBy": "kensan1969（Issue #28 決裁・PR マージ承認で確定）"
+  },
+  "active": true,
+  "notes": "申請は道路使用場所を管轄する各警察署の道路使用窓口。県内2管轄以上は出発地/主使用地の警察署へ。"
+}

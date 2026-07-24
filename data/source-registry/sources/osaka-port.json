@@ -1,0 +1,22 @@
+{
+  "id": "osaka-port",
+  "region": "osaka",
+  "organizationType": "port_admin",
+  "name": "大阪港湾局",
+  "publisher": "大阪港湾局（大阪市・大阪府の港湾管理を一元化した組織）",
+  "baseUrl": "https://www.city.osaka.lg.jp/port/",
+  "allowedHost": "www.city.osaka.lg.jp",
+  "authority": "primary_official",
+  "format": "HTML",
+  "fetchMode": "manual",
+  "ttlDays": 90,
+  "license": {
+    "url": "https://www.city.osaka.lg.jp/main/site_policy/0000000124.html",
+    "summary": "大阪市HP著作権・免責（政府標準利用規約2.0/CC BY互換・商用可・出典記載条件）。",
+    "reuse": "standard_terms",
+    "confirmedAt": "2026-07-24",
+    "confirmedBy": "kensan1969（Issue #28 決裁・PR マージ承認で確定）"
+  },
+  "active": true,
+  "notes": "2020/10に大阪市港湾局と大阪府港湾局を統合。大阪港と府営港湾8港を管理。掲載実体のある city.osaka.lg.jp を正本とした。"
+}

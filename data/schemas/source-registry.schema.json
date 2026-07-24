@@ -81,7 +81,7 @@
       "type": "object",
       "description": "利用条件（§9.3）。未記録の場合はリンク+索引限定で運用する",
       "additionalProperties": false,
-      "required": ["url", "summary", "confirmedAt"],
+      "required": ["url", "summary", "reuse", "confirmedAt"],
       "properties": {
         "url": { "type": "string", "pattern": "^https://" },
         "summary": {
@@ -89,6 +89,11 @@
           "description": "準拠規約（政府標準利用規約 2.0 / CC BY 4.0 等）・出典表示義務・再配布条件の要約",
           "minLength": 1,
           "maxLength": 500
+        },
+        "reuse": {
+          "type": "string",
+          "description": "standard_terms: 政府標準利用規約 2.0 / CC BY 4.0 互換（出典表示で再利用・商用可）。reference_only: 制限型（私的使用・引用除き無断複製不可）— 本文を複製せずリンク+出典+最小索引情報のみ保持する（§9.3）",
+          "enum": ["standard_terms", "reference_only"]
         },
         "confirmedAt": {
           "type": "string",
