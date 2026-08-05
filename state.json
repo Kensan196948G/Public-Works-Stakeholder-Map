@@ -42,16 +42,18 @@
       "version": "v0.4.0",
       "date": "2026-08-05",
       "production_url": "https://pwsm.mirai-dx-platform.com",
-      "worker_version_id": "（デプロイ後に更新）",
-      "merge_commit": "1ec491c",
-      "pr": 38,
+      "worker_version_id": "a05a968e-a91c-41d0-8eeb-f3cab6cbf216",
+      "merge_commit": "bd1090d",
+      "pr": [38, 40],
+      "tag": "v0.4.0",
+      "release_url": "https://github.com/Kensan196948G/Public-Works-Stakeholder-Map/releases/tag/v0.4.0",
       "neon_migrations_main": ["0001_initial_schema.sql", "0002_feedback.sql (2026-08-05)"],
       "neon_seed_main": "0001_demo_dataset.sql 適用済み (2026-07-24)",
       "secrets": "DATABASE_URL 登録済み (値は非表示・パイプ登録)",
       "access": "Cloudflare Access self_hosted (mirai-const.co.jp + 管理者メール, 24h)",
       "workers_dev": "無効化 (v0.1.1)",
       "observability": "有効化 (Issue #23)",
-      "note_v0.4.0": "検索UX・協働機能パック（絞り込み/印刷/フィードバック/URL共有/地図ハイライト/チェックリストJSON/Origin検査・キャッシュ）"
+      "note_v0.4.0": "検索UX・協働機能パック（絞り込み/印刷/フィードバック/URL共有/地図ハイライト/チェックリストJSON/Origin検査・キャッシュ）。本番スモークで検出した /map/jurisdictions 非UUID 500 は PR #40 で修正・再デプロイ済み"
     }
   },
   "infra": {
