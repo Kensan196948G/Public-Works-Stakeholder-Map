@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { secureHeaders } from 'hono/secure-headers';
 import {
   adminImportsResponseSchema,
@@ -54,6 +54,14 @@ import {
   GeocodeUpstreamError,
   geocodeAddress,
 } from './services/geocode.js';
+import {
+  AUTH_HEADER,
+  authConfigFromEnv,
+  hasRole,
+  verifyAccessJwt,
+  type AccessClaims,
+  type AdminRole,
+} from './services/access-auth.js';
 
 /**
  * Workers API 本体（詳細設計仕様書 §6）。
@@ -77,14 +85,26 @@ export interface ApiContext {
     DATABASE_URL?: string;
     /** DB モード時のデータ版識別子（公開版切替で更新する） */
     DATASET_VERSION?: string;
+    /** Cloudflare Access JWT 検証（Issue #34）。"true" で有効化 */
+    AUTH_ENABLED?: string;
+    AUTH_AUDIENCE?: string;
+    AUTH_JWKS_URL?: string;
+    AUTH_CERT_PEM?: string;
+    AUTH_ADMIN_EMAILS?: string;
+    AUTH_REVIEWER_EMAILS?: string;
+    AUTH_EDITOR_EMAILS?: string;
   };
-  Variables: { requestId: string };
+  Variables: {
+    requestId: string;
+    /** JWT 検証済みの利用者（認証有効時のみ設定） */
+    actor?: AccessClaims;
+  };
 }
 
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 const PROBLEM_TYPE_BASE = 'https://public-works-map.example/errors';
 
-type ProblemStatus = 400 | 403 | 404 | 409 | 500 | 502;
+type ProblemStatus = 400 | 401 | 403 | 404 | 409 | 500 | 502;
 
 function problemResponse(
   requestId: string,
@@ -154,6 +174,64 @@ export function buildApp(options: AppOptions = {}) {
     } catch {
       // Workers 以外（Node/テスト）では executionCtx が無い — promise は投げっぱなしで良い
     }
+  }
+
+  /** 認証ガード（Issue #34・設計 §11）。無効時は従来の環境ガードにフォールバックする */
+  function requireRole(minimum: AdminRole) {
+    return async (c: Context<ApiContext>, next: () => Promise<void>) => {
+      const requestId = c.get('requestId');
+      const config = authConfigFromEnv(c.env);
+      if (!config.enabled) {
+        if (c.env?.APP_ENV === 'production') {
+          return problemResponse(
+            requestId,
+            403,
+            ERROR_CODES.FORBIDDEN,
+            '管理機能は利用できません',
+            '本番環境の管理機能は認証導入後に管理者のみへ提供されます',
+          );
+        }
+        return next();
+      }
+      const claims = await resolveActor(c);
+      if (claims === null) {
+        return problemResponse(
+          requestId,
+          401,
+          ERROR_CODES.UNAUTHORIZED,
+          '認証が必要です',
+          'Cloudflare Access の認証情報がありません。再ログインしてお試しください',
+        );
+      }
+      c.set('actor', claims);
+      if (!hasRole(claims, minimum)) {
+        recordAudit(c, {
+          actor: claims.email ?? claims.sub,
+          action: 'admin.access_denied',
+          targetKind: 'admin',
+          result: 'denied',
+          correlationId: requestId,
+          metadata: { requiredRole: minimum, actualRole: claims.role },
+        });
+        return problemResponse(
+          requestId,
+          403,
+          ERROR_CODES.FORBIDDEN,
+          '権限がありません',
+          `この操作には ${minimum} 以上の権限が必要です`,
+        );
+      }
+      await next();
+    };
+  }
+
+  /** 認証が有効な場合のみ JWT を検証してアクターを返す（無効時・未認証は null） */
+  async function resolveActor(c: Context<ApiContext>): Promise<AccessClaims | null> {
+    const config = authConfigFromEnv(c.env);
+    if (!config.enabled) return null;
+    const token = c.req.header(AUTH_HEADER);
+    if (token === undefined) return null;
+    return verifyAccessJwt(token, config, now(), geocodeFetch);
   }
 
   app.use(secureHeaders());
@@ -372,6 +450,26 @@ export function buildApp(options: AppOptions = {}) {
   // 監査ログ閲覧（SCR-09 先行）。認証・RBAC 導入までは production で無効化する
   app.get('/audit-events', async (c) => {
     const requestId = c.get('requestId');
+    const config = authConfigFromEnv(c.env);
+    const actor = await resolveActor(c);
+    if (config.enabled && actor !== undefined) {
+      if (actor !== null && hasRole(actor, 'admin')) {
+        c.set('actor', actor);
+        const rawLimit = Number(c.req.query('limit') ?? 50);
+        const limit = Number.isInteger(rawLimit) ? Math.min(Math.max(rawLimit, 1), 200) : 50;
+        const { events, store } = await listAuditEvents(c.env?.DATABASE_URL, limit);
+        return c.json(auditEventsResponseSchema.parse({ events, store }));
+      }
+      return problemResponse(
+        requestId,
+        actor === null ? 401 : 403,
+        actor === null ? ERROR_CODES.UNAUTHORIZED : ERROR_CODES.FORBIDDEN,
+        actor === null ? '認証が必要です' : '監査ログは閲覧できません',
+        actor === null
+          ? 'Cloudflare Access の認証情報がありません'
+          : '監査ログの閲覧は管理者のみへ提供されます',
+      );
+    }
     if (c.env?.APP_ENV === 'production') {
       return problemResponse(
         requestId,
@@ -396,27 +494,14 @@ export function buildApp(options: AppOptions = {}) {
       : createDbAdminRepository(env.DATABASE_URL, now);
   }
 
-  app.use('/admin/*', async (c, next) => {
-    if (c.env?.APP_ENV === 'production') {
-      return problemResponse(
-        c.get('requestId'),
-        403,
-        ERROR_CODES.FORBIDDEN,
-        '管理機能は利用できません',
-        '本番環境の管理機能は認証導入後に管理者のみへ提供されます',
-      );
-    }
-    await next();
-  });
-
   // SCR-06: データソース台帳（取得方式・利用条件・最終取得・エラー）
-  app.get('/admin/sources', async (c) => {
+  app.get('/admin/sources', requireRole('editor'), async (c) => {
     const sources = await adminRepository(c.env).listSources();
     return c.json(adminSourcesResponseSchema.parse({ sources }));
   });
 
   // SCR-07: 取込ステージング一覧（state フィルタ・新しい順）
-  app.get('/admin/imports', async (c) => {
+  app.get('/admin/imports', requireRole('reviewer'), async (c) => {
     const requestId = c.get('requestId');
     const stateRaw = c.req.query('state');
     const stateParsed = stateRaw === undefined ? undefined : reviewStateSchema.safeParse(stateRaw);
@@ -436,7 +521,7 @@ export function buildApp(options: AppOptions = {}) {
   });
 
   // SCR-06: 手動取込の登録（ステージングへ pending で追加。無レビュー公開禁止の入口）
-  app.post('/admin/imports', async (c) => {
+  app.post('/admin/imports', requireRole('editor'), async (c) => {
     const requestId = c.get('requestId');
     let rawBody: unknown;
     try {
@@ -490,9 +575,9 @@ export function buildApp(options: AppOptions = {}) {
   });
 
   // SCR-07: レビュー操作。状態機械（domain）で遷移を検証し、全操作を監査へ記録する
-  app.post('/admin/imports/:id/review', async (c) => {
+  app.post('/admin/imports/:id/review', requireRole('reviewer'), async (c) => {
     const requestId = c.get('requestId');
-    const id = c.req.param('id');
+    const id = c.req.param('id') ?? '';
     let rawBody: unknown;
     try {
       rawBody = await c.req.json();
@@ -513,6 +598,30 @@ export function buildApp(options: AppOptions = {}) {
         ERROR_CODES.INVALID_BODY,
         '入力内容を確認してください',
         'action にはレビュー操作のいずれかを指定してください',
+      );
+    }
+    // 公開承認（approve）は admin のみ（設計 §9.3・four-eyes 運用の基盤）
+    const actor = c.get('actor');
+    const config = authConfigFromEnv(c.env);
+    if (
+      parsed.data.action === 'approve' &&
+      config.enabled &&
+      !hasRole(actor ?? null, 'admin')
+    ) {
+      recordAudit(c, {
+        actor: actor?.email ?? 'unknown',
+        action: 'admin.import.review',
+        targetKind: 'import',
+        result: 'denied',
+        correlationId: requestId,
+        metadata: { importId: id, reviewAction: 'approve', reason: 'admin_required' },
+      });
+      return problemResponse(
+        requestId,
+        403,
+        ERROR_CODES.FORBIDDEN,
+        '権限がありません',
+        '公開承認は管理者のみ実行できます',
       );
     }
     const repository = adminRepository(c.env);
@@ -571,7 +680,7 @@ export function buildApp(options: AppOptions = {}) {
   });
 
   // SCR-08: 品質ダッシュボード（欠損・期限超過・出典保有・取込状態）
-  app.get('/admin/quality', async (c) => {
+  app.get('/admin/quality', requireRole('reviewer'), async (c) => {
     const report = await adminRepository(c.env).qualityReport(datasetVersion(c.env));
     c.header('Cache-Control', 'no-store');
     return c.json(qualityReportSchema.parse(report));

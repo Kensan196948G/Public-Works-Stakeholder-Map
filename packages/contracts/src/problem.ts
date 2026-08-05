@@ -11,6 +11,7 @@ export const errorCodeSchema = z.enum([
   'INVALID_COORDINATE',
   'INVALID_RADIUS',
   'INVALID_QUERY',
+  'UNAUTHORIZED',
   'FORBIDDEN',
   'NOT_FOUND',
   'CONFLICT',
