@@ -36,8 +36,8 @@ test('絞り込みで件数が減る（種別フィルタ）', async ({ page }) 
   await expect(page.locator('.candidate-card').first()).toBeVisible();
   const before = await page.locator('.candidate-card').count();
 
-  // 「警察」に絞り込む
-  await page.getByLabel('種別').selectOption({ label: '警察' });
+  // 条件未選択の検索では発注者＋自治体窓口が候補になるため「自治体窓口」で絞り込む
+  await page.getByLabel('種別').selectOption({ label: '自治体窓口' });
   await expect(page.locator('.candidate-card').first()).toBeVisible();
   const after = await page.locator('.candidate-card').count();
   expect(after).toBeGreaterThan(0);
