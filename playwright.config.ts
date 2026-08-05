@@ -20,7 +20,8 @@ export default defineConfig({
     },
   },
   webServer: {
-    command: 'npm run webui',
+    // PORT を固定して待機 URL と一致させる（空きポート自動選択は Playwright から検出不能のため）
+    command: 'PORT=8788 npm run webui',
     url: 'http://localhost:8788/',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
