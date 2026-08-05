@@ -316,6 +316,10 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/demo/0001_demo_dataset.sql
 | `docs/adr` | — | アーキテクチャ決定記録 |
 | `docs/operations` | — | 📚 運用文書（リリース前チェックリスト・デプロイ手順・ロールバック・障害対応） |
 | `docs/openapi.yaml` | — | 🔌 公開 API 仕様（OpenAPI 3.1・Issue #37） |
+| `docs/operations/slo-alerts.md` | — | 📈 SLI／SLO・アラート閾値・通知・エスカレーション |
+| `docs/operations/backup-restore.md` | — | 🗄️ バックアップ・復旧・RPO／RTO・復元試験記録 |
+| `docs/operations/certificates-secrets.md` | — | 🔐 証明書・Secrets・API キーの管理とローテーション |
+| `docs/operations/operations-ledger.md` | — | 📋 運用台帳（日次〜年次の点検項目・担当・証跡） |
 
 ---
 
