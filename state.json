@@ -43,8 +43,8 @@
       "version": "v0.4.2",
       "date": "2026-08-05",
       "production_url": "https://pwsm.mirai-dx-platform.com",
-      "worker_version_id": "（v0.4.2 デプロイ後に更新）",
-      "merge_commit": "（記録PRマージ後）",
+      "worker_version_id": "13c4359a-96f0-4891-addb-6055bd34ab65",
+      "merge_commit": "0f8a0dd",
       "pr": [38, 40, 42, 43, 44, 45, 47, 48],
       "tag": "v0.4.2",
       "release_url": "https://github.com/Kensan196948G/Public-Works-Stakeholder-Map/releases/tag/v0.4.2",
@@ -58,7 +58,7 @@
       "access": "Cloudflare Access self_hosted (mirai-const.co.jp + 管理者メール, 24h)",
       "workers_dev": "無効化 (v0.1.1)",
       "observability": "有効化 (Issue #23)",
-      "note_v0.4.2": "認証・RBAC 本番有効化（Access aud/JWKS 自動取得・admin=kensan1969）＋ #32 第二・三段（組織 staging 16件 pending・N03 取込ツール）"
+      "note_v0.4.2": "認証・RBAC 本番有効化（Access aud/JWKS 自動取得・admin=kensan1969・本番JWT検証成功）＋ #32 第二・三段（組織 staging 16件 pending・N03 取込ツール）。wrangler deploy で AUTH vars 同期（versions upload では vars が未反映だったため）"
     }
   },
   "infra": {
