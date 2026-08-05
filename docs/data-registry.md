@@ -80,6 +80,10 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/registry/0003_n03_jurisdicti
 - 生成物は `pending` + `quality_flags: ["geometry_pending_review"]`（境界の正確性はレビューで確認）
 - 情報源は台帳の `mlit-ksj-n03`（`region: national`・利用条件確定済み）を参照
 - 都道府県コード・市区町村フィルタ、Polygon/MultiPolygon → WKT 変換、座標範囲検証に対応
+- **市町村単位への集約対応（2026-08-05）**: N03 は市町村が多数のポリゴン片に分割されているため、
+  `N03_007`（市区町村コード）で MultiPolygon へ集約して 1 レコードとして登録する
+- **所属未定地（N03_007 なし）**: 都道府県名からコードを解決して `13-unknown` 等で登録し、
+  `city_unassigned` / `geometry_invalid` フラグでレビュー対象を明示する（実データで 1 件の自己交差を検出済み）
 - テスト: `data/source-registry/test/n03-import.test.ts`
 
 > 残作業: N03 実データの取得・変換・レビュー、公式ページからの窓口（office / contact_point）
