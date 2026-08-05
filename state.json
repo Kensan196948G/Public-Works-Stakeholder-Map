@@ -6,7 +6,7 @@
     "release_deadline": "2027-01-18",
     "phase_mode": "development"
   },
-  "goal": "v0.4.0 機能強化（Draft PR 作成済み: 絞り込み/印刷/フィードバック/URL共有/地図ハイライト/チェックリストJSON/Origin検査）→ 次: Issue #32 実データ投入 + 認証/RBAC",
+  "goal": "v0.4.0 本番リリース反映 → 次: Issue #32 実データ投入（情報源台帳 seed・取込仕様） + #34 認証/RBAC + #36 ライセンス",
   "phase": "Monitor",
   "kpi": {
     "success_rate_target": 0.9,
@@ -39,19 +39,19 @@
     "checklist": "docs/operations/release-checklist.md",
     "note": "本番デプロイ・Secrets 登録・Neon main seed 適用は、リリース PR に明記しマージ判定 Y の承認範囲でのみ実行する",
     "released": {
-      "version": "v0.3.0",
-      "date": "2026-07-24",
+      "version": "v0.4.0",
+      "date": "2026-08-05",
       "production_url": "https://pwsm.mirai-dx-platform.com",
-      "worker_version_id": "27efafd4-b08a-413c-8042-a2c36c4e0061",
-      "merge_commit": "7893de7",
-      "pr": 21,
+      "worker_version_id": "（デプロイ後に更新）",
+      "merge_commit": "1ec491c",
+      "pr": 38,
+      "neon_migrations_main": ["0001_initial_schema.sql", "0002_feedback.sql (2026-08-05)"],
       "neon_seed_main": "0001_demo_dataset.sql 適用済み (2026-07-24)",
       "secrets": "DATABASE_URL 登録済み (値は非表示・パイプ登録)",
       "access": "Cloudflare Access self_hosted (mirai-const.co.jp + 管理者メール, 24h)",
       "workers_dev": "無効化 (v0.1.1)",
       "observability": "有効化 (Issue #23)",
-      "note_v0.2.0": "住所検索オートコンプリート（FR-001 拡張・UI のみ・DB 変更なし)",
-      "note_v0.3.0": "Phase 2 管理機能 SCR-06〜08（本番では /admin/* 403 のまま・非本番で利用）"
+      "note_v0.4.0": "検索UX・協働機能パック（絞り込み/印刷/フィードバック/URL共有/地図ハイライト/チェックリストJSON/Origin検査・キャッシュ）"
     }
   },
   "infra": {
