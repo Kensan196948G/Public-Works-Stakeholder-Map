@@ -519,6 +519,166 @@ dd {
 .state-badge.state-quarantined { background: #fef3c7; }
 .state-badge.state-in_review { background: #dbeafe; }
 
+/* --- 候補一覧の絞り込み（FR-008） --- */
+.candidate-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.9rem;
+  align-items: center;
+  background: #f1f5f9;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  margin-bottom: 0.75rem;
+}
+
+.candidate-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: #334155;
+}
+
+.candidate-toolbar select {
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.candidate-toolbar .toolbar-check {
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+
+.candidate-toolbar .toolbar-count {
+  margin: 0 0 0 auto;
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+.success {
+  color: #15803d;
+  font-weight: 600;
+}
+
+/* --- フィードバック（FR-017） --- */
+.feedback-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-width: 38rem;
+}
+
+.feedback-form input[type='url'],
+.feedback-form select,
+.feedback-form textarea {
+  display: block;
+  width: 100%;
+  padding: 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+/* --- チェックリスト JSON 入出力 --- */
+.settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.file-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  background: #0369a1;
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.file-upload input {
+  display: none;
+}
+
+/* --- 印刷・PDF 出力（FR-010） --- */
+.print-area {
+  display: none;
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+
+  .app {
+    max-width: none;
+    padding: 0;
+  }
+
+  /* 画面用 UI を印刷から除外する（visibility 方式でレイアウト崩れを防ぐ） */
+  body * {
+    visibility: hidden;
+  }
+
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+
+  .print-area {
+    display: block;
+    position: absolute;
+    inset: 0;
+    padding: 0.5cm;
+  }
+
+  .print-area table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 8pt;
+    page-break-inside: auto;
+  }
+
+  .print-area th,
+  .print-area td {
+    border: 1px solid #334155;
+    padding: 2px 4px;
+    text-align: left;
+    vertical-align: top;
+    word-break: break-word;
+  }
+
+  .print-area th {
+    background: #e2e8f0;
+  }
+
+  .print-area tr {
+    page-break-inside: avoid;
+  }
+
+  .print-area h1 {
+    font-size: 13pt;
+    margin: 0 0 0.2cm;
+  }
+
+  .print-area p {
+    font-size: 9pt;
+    margin: 0.1cm 0;
+  }
+
+  .print-disclaimer {
+    border: 1px solid #b45309;
+    background: #fef3c7;
+    padding: 0.15cm;
+  }
+}
+
 .review-note {
   font-size: 0.85rem;
   color: #475569;

@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import type { AssetType, GeocodeResult, ImpactType, SearchRequest, WorkType } from '@pwsm/contracts';
+import type {
+  AssetType,
+  GeocodeResult,
+  ImpactType,
+  SearchPurpose,
+  SearchRequest,
+  WorkType,
+} from '@pwsm/contracts';
 import { assetTypeSchema, impactTypeSchema, workTypeSchema } from '@pwsm/contracts';
 import { ApiError, geocode } from '../api.js';
 import { ASSET_TYPE_LABELS, IMPACT_TYPE_LABELS, WORK_TYPE_LABELS } from '../labels.js';
@@ -8,6 +15,15 @@ import { ASSET_TYPE_LABELS, IMPACT_TYPE_LABELS, WORK_TYPE_LABELS } from '../labe
 const AUTOCOMPLETE_MIN_LENGTH = 2;
 /** 打鍵から自動検索までの待機時間。地理院 API への過剰リクエストを防ぐ */
 const AUTOCOMPLETE_DEBOUNCE_MS = 400;
+
+/** 検索条件一式（App が保持し URL 共有に使う） */
+export interface SearchConditions {
+  radiusMeters: number;
+  workTypes: WorkType[];
+  assetTypes: AssetType[];
+  impactTypes: ImpactType[];
+  purpose: SearchPurpose;
+}
 
 /** 架空デモ地点（fixture の 3 地域に対応）。
  *  実在住所の検索結果は架空の管轄ポリゴンとヒットしないため、
@@ -26,8 +42,9 @@ interface SearchFormProps {
   lon: string;
   onLatChange: (value: string) => void;
   onLonChange: (value: string) => void;
-  /** システム設定の既定検索半径（m） */
-  initialRadius: number;
+  /** 検索条件（App 管理）。URL 復元・共有のため制御化する */
+  conditions: SearchConditions;
+  onConditionsChange: (next: SearchConditions) => void;
 }
 
 function CheckboxGroup<T extends string>({
@@ -76,9 +93,9 @@ export function SearchForm({
   lon,
   onLatChange,
   onLonChange,
-  initialRadius,
+  conditions,
+  onConditionsChange,
 }: SearchFormProps) {
-  const [radius, setRadius] = useState(String(initialRadius));
   const [addressQuery, setAddressQuery] = useState('');
   const [addressResults, setAddressResults] = useState<GeocodeResult[] | null>(null);
   const [addressError, setAddressError] = useState<string | null>(null);
@@ -151,19 +168,15 @@ export function SearchForm({
     suppressAutoSearchRef.current = true;
     setAddressQuery(result.label);
   }
-  const [workTypes, setWorkTypes] = useState<WorkType[]>([]);
-  const [assetTypes, setAssetTypes] = useState<AssetType[]>([]);
-  const [impactTypes, setImpactTypes] = useState<ImpactType[]>([]);
-
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
     onSearch({
       location: { lat: Number(lat), lon: Number(lon) },
-      radiusMeters: Number(radius),
-      workTypes,
-      assetTypes,
-      impactTypes,
-      purpose: 'pre_consultation',
+      radiusMeters: conditions.radiusMeters,
+      workTypes: conditions.workTypes,
+      assetTypes: conditions.assetTypes,
+      impactTypes: conditions.impactTypes,
+      purpose: conditions.purpose,
     });
   }
 
@@ -277,7 +290,19 @@ export function SearchForm({
         </label>
         <label>
           検索半径（m）
-          <input type="number" min="0" max="5000" value={radius} onChange={(e) => setRadius(e.target.value)} />
+          <input
+            type="number"
+            min="0"
+            max="5000"
+            value={conditions.radiusMeters}
+            onChange={(e) => {
+              const value = Number(e.target.value);
+              onConditionsChange({
+                ...conditions,
+                radiusMeters: Number.isFinite(value) ? value : 0,
+              });
+            }}
+          />
         </label>
       </fieldset>
 
@@ -285,22 +310,22 @@ export function SearchForm({
         legend="🏗️ 工事対象"
         options={assetTypeSchema.options}
         labels={ASSET_TYPE_LABELS}
-        selected={assetTypes}
-        onChange={setAssetTypes}
+        selected={conditions.assetTypes}
+        onChange={(assetTypes) => onConditionsChange({ ...conditions, assetTypes })}
       />
       <CheckboxGroup
         legend="🚧 作業内容"
         options={workTypeSchema.options}
         labels={WORK_TYPE_LABELS}
-        selected={workTypes}
-        onChange={setWorkTypes}
+        selected={conditions.workTypes}
+        onChange={(workTypes) => onConditionsChange({ ...conditions, workTypes })}
       />
       <CheckboxGroup
         legend="🌏 周辺影響"
         options={impactTypeSchema.options}
         labels={IMPACT_TYPE_LABELS}
-        selected={impactTypes}
-        onChange={setImpactTypes}
+        selected={conditions.impactTypes}
+        onChange={(impactTypes) => onConditionsChange({ ...conditions, impactTypes })}
       />
 
       <button type="submit" disabled={searching}>

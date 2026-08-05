@@ -3,6 +3,7 @@ import type {
   BoundaryPrecision,
   Candidate,
   ConfidenceGrade,
+  JurisdictionMapResponse,
   OrganizationType,
   RecordStatus,
   SearchRequest,
@@ -293,4 +294,65 @@ export async function searchCandidatesDb(
     candidates,
     ruleVersion: rules.reduce((max, rule) => Math.max(max, rule.version), 0),
   };
+}
+
+/** 候補機関の公開管轄区域を GeoJSON で返す（FR-003 拡張・DB モード）。 */
+export async function fetchJurisdictionMapDb(
+  databaseUrl: string,
+  organizationIds: readonly string[],
+  datasetVersion: string,
+): Promise<JurisdictionMapResponse> {
+  const sql = neon(databaseUrl);
+  const rows = (await sql`
+    SELECT
+      o.id AS organization_id,
+      o.canonical_name AS organization_name,
+      j.asset_name,
+      j.precision::text AS precision,
+      j.estimated,
+      ST_AsGeoJSON(j.geometry) AS geometry
+    FROM core.jurisdictions j
+    JOIN core.organizations o ON o.id = j.organization_id
+    WHERE o.id = ANY(${organizationIds})
+      AND j.status = 'published'
+      AND o.status = 'published'
+      AND j.geometry IS NOT NULL
+    ORDER BY o.canonical_name, j.asset_name
+  `) as {
+    organization_id: string;
+    organization_name: string;
+    asset_name: string | null;
+    precision: string;
+    estimated: boolean;
+    geometry: string | null;
+  }[];
+
+  const features = rows
+    .map((row) => {
+      let geometry: Record<string, unknown> | null = null;
+      if (row.geometry !== null) {
+        try {
+          const parsed: unknown = JSON.parse(row.geometry);
+          if (typeof parsed === 'object' && parsed !== null) {
+            geometry = parsed as Record<string, unknown>;
+          }
+        } catch {
+          // 不正な GeoJSON はハイライト対象から外す（候補一覧自体は影響を受けない）
+        }
+      }
+      return {
+        type: 'Feature' as const,
+        properties: {
+          organizationId: row.organization_id,
+          organizationName: row.organization_name,
+          assetName: row.asset_name,
+          precision: row.precision,
+          estimated: row.estimated,
+        },
+        geometry,
+      };
+    })
+    .slice(0, 500);
+
+  return { type: 'FeatureCollection', datasetVersion, features };
 }

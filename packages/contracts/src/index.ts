@@ -5,3 +5,5 @@ export * from './metadata.js';
 export * from './geocode.js';
 export * from './audit.js';
 export * from './admin.js';
+export * from './feedback.js';
+export * from './map.js';

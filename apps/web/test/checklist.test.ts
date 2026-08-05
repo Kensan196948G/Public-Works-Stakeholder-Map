@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   CHECKLIST_STORAGE_KEY,
+  exportChecklistJson,
+  importChecklistJson,
   loadChecklist,
   saveChecklist,
   updateEntry,
@@ -61,5 +63,40 @@ describe('checklist（FR-009 / 設計 §10）', () => {
     saveChecklist(storage, { 'org-1': { state: 'candidate', note: '', decidedAt: NOW.toISOString() } }, NOW);
     saveChecklist(storage, {}, NOW);
     expect(storage.getItem(CHECKLIST_STORAGE_KEY)).toBeNull();
+  });
+
+  it('exportChecklistJson → importChecklistJson の round trip', () => {
+    const entries: ChecklistEntries = {
+      'org-1': { state: 'candidate', note: '確認済み', decidedAt: NOW.toISOString() },
+    };
+    const raw = exportChecklistJson(entries, NOW);
+    expect(importChecklistJson(raw, NOW)).toEqual(entries);
+  });
+
+  it('不正 JSON・版違い・期限切れは null を返す', () => {
+    expect(importChecklistJson('{broken', NOW)).toBeNull();
+    expect(importChecklistJson('{"version":2,"exportedAt":"2026-07-18T00:00:00Z","entries":{}}', NOW)).toBeNull();
+    const expired = exportChecklistJson(
+      { 'org-1': { state: 'candidate', note: '', decidedAt: NOW.toISOString() } },
+      NOW,
+    );
+    expect(
+      importChecklistJson(expired, new Date(NOW.getTime() + 8 * 86_400_000)),
+    ).toBeNull();
+  });
+
+  it('不正なエントリだけ除外して復元する', () => {
+    const raw = JSON.stringify({
+      version: 1,
+      exportedAt: NOW.toISOString(),
+      entries: {
+        'org-ok': { state: 'excluded', note: '', decidedAt: NOW.toISOString() },
+        'org-bad': { state: 'invalid', note: '', decidedAt: NOW.toISOString() },
+        'org-missing': { state: null, note: 123, decidedAt: NOW.toISOString() },
+      },
+    });
+    expect(importChecklistJson(raw, NOW)).toEqual({
+      'org-ok': { state: 'excluded', note: '', decidedAt: NOW.toISOString() },
+    });
   });
 });

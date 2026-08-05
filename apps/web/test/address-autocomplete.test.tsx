@@ -3,7 +3,10 @@ import { useState } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import type { GeocodeResponse } from '@pwsm/contracts';
-import { SearchForm } from '../src/components/SearchForm.js';
+import {
+  SearchForm,
+  type SearchConditions,
+} from '../src/components/SearchForm.js';
 import { geocode } from '../src/api.js';
 
 vi.mock('../src/api.js', () => ({
@@ -27,6 +30,13 @@ const geocodeResponse = {
 function Harness() {
   const [lat, setLat] = useState('35');
   const [lon, setLon] = useState('139');
+  const [conditions, setConditions] = useState<SearchConditions>({
+    radiusMeters: 500,
+    workTypes: [],
+    assetTypes: [],
+    impactTypes: [],
+    purpose: 'pre_consultation',
+  });
   return (
     <>
       <SearchForm
@@ -36,7 +46,8 @@ function Harness() {
         lon={lon}
         onLatChange={setLat}
         onLonChange={setLon}
-        initialRadius={500}
+        conditions={conditions}
+        onConditionsChange={setConditions}
       />
       <output data-testid="latlon">{`${lat},${lon}`}</output>
     </>

@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import type { SearchRequest, SearchResponse } from '@pwsm/contracts';
-import { ApiError, searchStakeholders } from './api.js';
+import { ApiError, fetchJurisdictionMap, searchStakeholders } from './api.js';
 import {
   getChecklistStorage,
   loadChecklist,
@@ -16,14 +16,35 @@ import { QualityPage } from './components/QualityPage.js';
 import { ReviewPage } from './components/ReviewPage.js';
 import { SourcesPage } from './components/SourcesPage.js';
 import { CandidateCard } from './components/CandidateCard.js';
+import { CandidateToolbar } from './components/CandidateToolbar.js';
 import { DisclaimerBanner } from './components/DisclaimerBanner.js';
+import { FeedbackPage } from './components/FeedbackPage.js';
+import { PrintView } from './components/PrintView.js';
 import { SearchForm } from './components/SearchForm.js';
 import { SettingsPage } from './components/SettingsPage.js';
+import {
+  DEFAULT_FILTERS,
+  filterCandidates,
+  sortCandidates,
+  type CandidateFilters,
+  type CandidateSort,
+} from './filters.js';
+import { DEFAULT_PURPOSE, decodeSearchQuery, encodeSearchQuery, type UrlSearchState } from './urlState.js';
+import type { JurisdictionMapResponse } from '@pwsm/contracts';
+import type { SearchConditions } from './components/SearchForm.js';
 
-type PageId = 'search' | 'sources' | 'review' | 'quality' | 'settings' | 'audit';
+type PageId =
+  | 'search'
+  | 'sources'
+  | 'review'
+  | 'quality'
+  | 'settings'
+  | 'audit'
+  | 'feedback';
 
 const PAGES: readonly { id: PageId; label: string }[] = [
   { id: 'search', label: '🔎 検索' },
+  { id: 'feedback', label: '💬 フィードバック' },
   { id: 'sources', label: '🗂️ データソース' },
   { id: 'review', label: '📝 取込レビュー' },
   { id: 'quality', label: '📊 品質' },
@@ -36,14 +57,42 @@ const MapPicker = lazy(() =>
   import('./components/MapPicker.js').then((m) => ({ default: m.MapPicker })),
 );
 
+const DEFAULT_URL_STATE: UrlSearchState = {
+  lat: 35.05,
+  lon: 139.05,
+  radiusMeters: 500,
+  workTypes: [],
+  assetTypes: [],
+  impactTypes: [],
+  purpose: DEFAULT_PURPOSE,
+};
+
 export function App() {
   const [page, setPage] = useState<PageId>('search');
   const [settings, setSettings] = useState<AppSettings>(() => loadSettings());
-  const [lat, setLat] = useState('35.05');
-  const [lon, setLon] = useState('139.05');
+  // URL の検索条件を初期状態として復元する（§10: URL query での共有）。
+  // 半径が URL に無い場合はシステム設定の既定値を使う
+  const initial = decodeSearchQuery(window.location.search, {
+    ...DEFAULT_URL_STATE,
+    radiusMeters: settings.defaultRadiusMeters,
+  });
+  const [lat, setLat] = useState(String(initial.lat));
+  const [lon, setLon] = useState(String(initial.lon));
+  const [conditions, setConditions] = useState<SearchConditions>({
+    radiusMeters: initial.radiusMeters,
+    workTypes: [...initial.workTypes],
+    assetTypes: [...initial.assetTypes],
+    impactTypes: [...initial.impactTypes],
+    purpose: initial.purpose,
+  });
   const [response, setResponse] = useState<SearchResponse | null>(null);
+  const [highlightRegions, setHighlightRegions] =
+    useState<JurisdictionMapResponse | null>(null);
+  const [mapError, setMapError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
+  const [filters, setFilters] = useState<CandidateFilters>(DEFAULT_FILTERS);
+  const [sort, setSort] = useState<CandidateSort>('default');
   // チェックリストは local storage で 7 日間保持する（FR-009 / §10）。
   // lazy initializer で保存済みデータを先に読み込み、初期値 {} による上書きを防ぐ
   const [checklist, setChecklist] = useState<ChecklistEntries>(() =>
@@ -56,8 +105,39 @@ export function App() {
   async function handleSearch(request: SearchRequest) {
     setSearching(true);
     setError(null);
+    setHighlightRegions(null);
+    setMapError(null);
     try {
-      setResponse(await searchStakeholders(request));
+      const result = await searchStakeholders(request);
+      setResponse(result);
+      // URL へ検索条件を反映（実案件名・個人情報は含めない）
+      const urlState: UrlSearchState = {
+        lat: request.location.lat,
+        lon: request.location.lon,
+        radiusMeters: request.radiusMeters,
+        workTypes: request.workTypes,
+        assetTypes: request.assetTypes,
+        impactTypes: request.impactTypes,
+        purpose: request.purpose ?? DEFAULT_PURPOSE,
+      };
+      const query = encodeSearchQuery(urlState);
+      const nextUrl = `${window.location.pathname}${query === '' ? '' : `?${query}`}`;
+      window.history.replaceState(null, '', nextUrl);
+      // 候補機関の管轄区域を地図ハイライト用に取得（失敗しても候補一覧は表示する）
+      if (result.candidates.length > 0) {
+        try {
+          const mapResponse = await fetchJurisdictionMap(
+            result.candidates.map((c) => c.organizationId),
+          );
+          setHighlightRegions(mapResponse);
+        } catch (e) {
+          setMapError(
+            e instanceof ApiError
+              ? e.message
+              : '管轄区域の地図表示に失敗しました。候補一覧はそのまま利用できます。',
+          );
+        }
+      }
     } catch (e) {
       setResponse(null);
       setError(e instanceof ApiError ? e.message : '検索に失敗しました。時間をおいて再度お試しください。');
@@ -81,6 +161,15 @@ export function App() {
       buildCandidatesCsv(response, stamp, checklist),
     );
   }
+
+  function handlePrint() {
+    window.print();
+  }
+
+  const visibleCandidates = sortCandidates(
+    filterCandidates(response?.candidates ?? [], filters),
+    sort,
+  );
 
   const latNumber = Number(lat);
   const lonNumber = Number(lon);
@@ -118,6 +207,7 @@ export function App() {
             settings={settings}
             onSettingsChange={setSettings}
             onChecklistCleared={() => setChecklist({})}
+            onChecklistImported={setChecklist}
           />
         </section>
       )}
@@ -146,6 +236,12 @@ export function App() {
         </section>
       )}
 
+      {page === 'feedback' && (
+        <section className="pane">
+          <FeedbackPage />
+        </section>
+      )}
+
       <main className={`layout${page === 'search' ? '' : ' hidden'}`}>
         <section className="pane pane-form" aria-label="検索条件">
           <SearchForm
@@ -155,20 +251,27 @@ export function App() {
             lon={lon}
             onLatChange={setLat}
             onLonChange={setLon}
-            initialRadius={settings.defaultRadiusMeters}
+            conditions={conditions}
+            onConditionsChange={setConditions}
           />
         </section>
 
         <section className="pane pane-results" aria-label="地図と候補一覧">
           <Suspense fallback={<p className="placeholder">🗺️ 地図を読み込み中…</p>}>
-            <MapPicker
-              location={mapLocation}
-              onPick={(picked) => {
-                setLat(picked.lat.toFixed(6));
-                setLon(picked.lon.toFixed(6));
-              }}
-            />
-          </Suspense>
+              <MapPicker
+                location={mapLocation}
+                highlightRegions={highlightRegions}
+                onPick={(picked) => {
+                  setLat(picked.lat.toFixed(6));
+                  setLon(picked.lon.toFixed(6));
+                }}
+              />
+            </Suspense>
+            {mapError !== null && (
+              <p className="error" role="alert">
+                ⚠️ {mapError}
+              </p>
+            )}
 
           <div aria-live="polite">
             {error !== null && (
@@ -191,6 +294,13 @@ export function App() {
                   >
                     📄 CSV 出力
                   </button>
+                  <button
+                    type="button"
+                    onClick={handlePrint}
+                    disabled={response.candidates.length === 0}
+                  >
+                    🖨️ 印刷 / PDF
+                  </button>
                 </div>
 
                 {response.candidates.length === 0 ? (
@@ -199,18 +309,31 @@ export function App() {
                     しません。地点・条件を変更するか、該当地域の自治体窓口へ直接ご確認ください。
                   </p>
                 ) : (
-                  <div className="candidate-list">
-                    {response.candidates.map((candidate) => (
-                      <CandidateCard
-                        key={candidate.organizationId}
-                        candidate={candidate}
-                        decision={checklist[candidate.organizationId]}
-                        onDecisionChange={(patch) =>
-                          handleDecisionChange(candidate.organizationId, patch)
-                        }
-                      />
-                    ))}
-                  </div>
+                  <>
+                    <CandidateToolbar
+                      candidates={response.candidates}
+                      filters={filters}
+                      onFiltersChange={setFilters}
+                      sort={sort}
+                      onSortChange={setSort}
+                      visibleCount={visibleCandidates.length}
+                    />
+                    <div className="candidate-list">
+                      {visibleCandidates.map((candidate) => (
+                        <CandidateCard
+                          key={candidate.organizationId}
+                          candidate={candidate}
+                          decision={checklist[candidate.organizationId]}
+                          onDecisionChange={(patch) =>
+                            handleDecisionChange(candidate.organizationId, patch)
+                          }
+                        />
+                      ))}
+                    </div>
+                    {visibleCandidates.length === 0 && (
+                      <p>現在の絞り込み条件に一致する候補がありません。</p>
+                    )}
+                  </>
                 )}
               </>
             )}
@@ -223,6 +346,9 @@ export function App() {
           </div>
         </section>
       </main>
+      {response !== null && response.candidates.length > 0 && (
+        <PrintView response={response} checklist={checklist} exportedAt={new Date()} />
+      )}
     </div>
   );
 }

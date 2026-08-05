@@ -2,8 +2,11 @@ import {
   adminImportsResponseSchema,
   adminSourcesResponseSchema,
   auditEventsResponseSchema,
+  feedbackRequestSchema,
+  feedbackResponseSchema,
   geocodeResponseSchema,
   importRecordSchema,
+  jurisdictionMapResponseSchema,
   metadataResponseSchema,
   problemDetailsSchema,
   qualityReportSchema,
@@ -13,7 +16,10 @@ import {
   type AuditEventsResponse,
   type CreateImportRequest,
   type GeocodeResponse,
+  type FeedbackRequest,
+  type FeedbackResponse,
   type ImportRecord,
+  type JurisdictionMapResponse,
   type MetadataResponse,
   type QualityReport,
   type ReviewRequest,
@@ -71,6 +77,34 @@ export async function fetchMetadata(): Promise<MetadataResponse> {
     await throwProblem(res, 'メタデータの取得に失敗しました。');
   }
   return metadataResponseSchema.parse(await res.json());
+}
+
+/** 検索結果の候補機関が持つ管轄区域（地図ハイライト用 GeoJSON） */
+export async function fetchJurisdictionMap(
+  organizationIds: readonly string[],
+): Promise<JurisdictionMapResponse> {
+  const res = await fetch(
+    `/api/v1/map/jurisdictions?organizationIds=${encodeURIComponent(organizationIds.join(','))}`,
+  );
+  if (!res.ok) {
+    await throwProblem(res, '管轄区域の取得に失敗しました。');
+  }
+  return jurisdictionMapResponseSchema.parse(await res.json());
+}
+
+/** フィードバック送信（FR-017） */
+export async function submitFeedback(
+  request: FeedbackRequest,
+): Promise<FeedbackResponse> {
+  const res = await fetch('/api/v1/feedback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(feedbackRequestSchema.parse(request)),
+  });
+  if (!res.ok) {
+    await throwProblem(res, 'フィードバックの送信に失敗しました。');
+  }
+  return feedbackResponseSchema.parse(await res.json());
 }
 
 /** 監査イベント一覧（非本番のみ。認証導入後に管理者向けへ移行） */

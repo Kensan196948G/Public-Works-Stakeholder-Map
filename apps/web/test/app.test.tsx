@@ -62,25 +62,65 @@ describe('App（SCR-02/03 スモークテスト）', () => {
   it('検索実行で候補カードが表示され、推定区域の注意が出る', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue(
-        new Response(JSON.stringify(searchResponse), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        }),
-      ),
+      vi.fn().mockImplementation((input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes('/api/v1/map/jurisdictions')) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                type: 'FeatureCollection',
+                datasetVersion: '2026-07-18.fixture.1',
+                features: [
+                  {
+                    type: 'Feature',
+                    properties: {
+                      organizationId: 'org-demo-0006',
+                      organizationName: 'あおぞら県警察 みらい警察署（デモ）',
+                      assetName: 'あおぞら町河川沿い地区（デモ）',
+                      precision: 'estimated',
+                      estimated: true,
+                    },
+                    geometry: {
+                      type: 'Polygon',
+                      coordinates: [
+                        [
+                          [139.1, 35],
+                          [139.2, 35],
+                          [139.2, 35.1],
+                          [139.1, 35.1],
+                          [139.1, 35],
+                        ],
+                      ],
+                    },
+                  },
+                ],
+              }),
+              { status: 200, headers: { 'Content-Type': 'application/json' } },
+            ),
+          );
+        }
+        return Promise.resolve(
+          new Response(JSON.stringify(searchResponse), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        );
+      }),
     );
 
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: '候補を検索' }));
 
     await waitFor(() => {
-      expect(screen.getByText('あおぞら県警察 みらい警察署（デモ）')).toBeTruthy();
+      // 候補カードと印刷用テーブルの両方に表示されるため複数一致を許容する
+      expect(screen.getAllByText('あおぞら県警察 みらい警察署（デモ）').length).toBeGreaterThan(0);
     });
     // 断定しないラベルと推定区域の注意（§17.2 ケース2）
     expect(screen.getByText('候補です — 正式確認が必要')).toBeTruthy();
     expect(screen.getByText(/管轄区域は推定です/)).toBeTruthy();
     // 出典リンクは noopener noreferrer
-    const link = screen.getByRole('link', { name: /警察署管轄区域データ/ });
+    const link = screen.getAllByRole('link', { name: /警察署管轄区域データ/ })[0];
+    expect(link).toBeDefined();
     expect(link.getAttribute('rel')).toBe('noopener noreferrer');
   });
 
