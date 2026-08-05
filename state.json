@@ -6,7 +6,7 @@
     "release_deadline": "2027-01-18",
     "phase_mode": "development"
   },
-  "goal": "v0.4.0 本番リリース反映 → 次: Issue #32 実データ投入（情報源台帳 seed・取込仕様） + #34 認証/RBAC + #36 ライセンス",
+  "goal": "Issue #32 第一段完了: 情報源台帳 15 機関を Neon main 登録済み → 次: 組織/窓口/管轄ポリゴン整備・取込・二者レビュー・データ版切替",
   "phase": "Monitor",
   "kpi": {
     "success_rate_target": 0.9,
@@ -23,6 +23,7 @@
       "started_at": "16:10",
       "summary": "v0.1.0〜v0.3.0 リリース（本番 pwsm.mirai-dx-platform.com・Access 保護・SCR-06〜08 管理機能）+ 住所検索補完 + 情報源台帳 15 機関確定（Issue #28 全決裁・PR #31）。次: Issue #32 実データ投入"
     },
+    "v0.4.1_note": "Issue #32 第一段（台帳登録 seed・dev/main 適用）・#34 認証/RBAC コード実装（既定無効）・#36 MITライセンスを完了。残: 実データの組織/管轄整備・E2E(#35)・OpenAPI(#37)",
     "repair_count": 0,
     "max_repair": 3,
     "same_error_limit": 2
