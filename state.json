@@ -40,10 +40,10 @@
     "checklist": "docs/operations/release-checklist.md",
     "note": "本番デプロイ・Secrets 登録・Neon main seed 適用は、リリース PR に明記しマージ判定 Y の承認範囲でのみ実行する",
     "released": {
-      "version": "v0.4.0",
+      "version": "v0.4.1",
       "date": "2026-08-05",
       "production_url": "https://pwsm.mirai-dx-platform.com",
-      "worker_version_id": "a05a968e-a91c-41d0-8eeb-f3cab6cbf216",
+      "worker_version_id": "（v0.4.1 デプロイ後に更新）",
       "merge_commit": "bd1090d",
       "pr": [38, 40],
       "tag": "v0.4.0",
