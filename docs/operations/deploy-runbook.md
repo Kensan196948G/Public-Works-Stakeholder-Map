@@ -4,7 +4,7 @@
 |---|---|
 | 🎯 目的 | API（Cloudflare Workers）・Web（Cloudflare Pages 相当）・Neon 接続を本番へ安全に反映する手順を定める |
 | 👥 対象読者 | デプロイを実行する人間（オペレーター）・DevOps・承認者 |
-| 📅 最終更新日 | 2026-07-24 |
+| 📅 最終更新日 | 2026-08-05 |
 
 > 🚫 **本番デプロイ・本番公開・Secrets 登録は、人間の明示承認なしに実行しません。**
 > 承認はリリース PR の「マージ判定 `Y`」へ集約します。`Y` は当該 PR に明記されたデプロイ・migration・Secrets 登録の**正確な範囲だけ**を一括承認したものであり、承認後の実作業は人間または CTO（Claude）が PR 記載の範囲内で実行できます。PR に記載のない本番操作は引き続き禁止です。
@@ -139,6 +139,12 @@ npm run deploy:production:promote   # = wrangler versions deploy
 | ☐ | `compatibility_date`（`wrangler.toml`）が意図通り |
 
 > 💡 段階公開（方式A）を使うと、`rollback.md` の「版ロールバック」で旧 version ID へ即時に戻せます。
+
+> ⚠️ **環境変数（`[vars]`）を変更するリリースでは方式A（versions upload）は使わないこと**
+> （2026-08-05 v0.4.2 で実証）。`wrangler versions upload` は `[vars]` の変更を
+> バージョンのバインディングへ反映しません（`AUTH_ENABLED` 等が旧値のままになる）。
+> **vars を含む変更は方式B（`wrangler deploy`）を使用**し、設定同期込みでデプロイしてください。
+> コードのみの変更であれば方式A（versions）で問題ありません。
 
 ---
 
