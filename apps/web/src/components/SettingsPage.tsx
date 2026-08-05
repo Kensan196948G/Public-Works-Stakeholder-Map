@@ -1,17 +1,31 @@
 import { useEffect, useState } from 'react';
 import type { MetadataResponse } from '@pwsm/contracts';
 import { ApiError, fetchMetadata } from '../api.js';
-import { CHECKLIST_STORAGE_KEY, getChecklistStorage } from '../checklist.js';
+import {
+  CHECKLIST_STORAGE_KEY,
+  exportChecklistJson,
+  getChecklistStorage,
+  importChecklistJson,
+  loadChecklist,
+  type ChecklistEntries,
+} from '../checklist.js';
 import { saveSettings, type AppSettings } from '../settings.js';
 
 interface SettingsPageProps {
   settings: AppSettings;
   onSettingsChange: (settings: AppSettings) => void;
   onChecklistCleared: () => void;
+  /** 復元したチェックリストを App 状態へ反映する */
+  onChecklistImported: (entries: ChecklistEntries) => void;
 }
 
 /** システム設定（Issue #17）。設定はブラウザ内のみで保持する。 */
-export function SettingsPage({ settings, onSettingsChange, onChecklistCleared }: SettingsPageProps) {
+export function SettingsPage({
+  settings,
+  onSettingsChange,
+  onChecklistCleared,
+  onChecklistImported,
+}: SettingsPageProps) {
   const [metadata, setMetadata] = useState<MetadataResponse | null>(null);
   const [metadataError, setMetadataError] = useState<string | null>(null);
   const [radiusText, setRadiusText] = useState(String(settings.defaultRadiusMeters));
@@ -42,6 +56,33 @@ export function SettingsPage({ settings, onSettingsChange, onChecklistCleared }:
     getChecklistStorage().removeItem(CHECKLIST_STORAGE_KEY);
     onChecklistCleared();
     setSavedNote('✅ チェックリストを削除しました');
+  }
+
+  function handleExportChecklist() {
+    const entries = loadChecklist(getChecklistStorage(), new Date());
+    const blob = new Blob([exportChecklistJson(entries, new Date())], {
+      type: 'application/json;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `pwsm-checklist-${new Date().toISOString().slice(0, 10)}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    setSavedNote('✅ チェックリストを JSON で書き出しました');
+  }
+
+  function handleImportChecklist(file: File | undefined) {
+    if (file === undefined) return;
+    void file.text().then((raw) => {
+      const entries = importChecklistJson(raw, new Date());
+      if (entries === null) {
+        setSavedNote('⚠️ チェックリスト JSON の形式が正しくないか、作成から7日以上経過しています');
+        return;
+      }
+      onChecklistImported(entries);
+      setSavedNote(`✅ ${Object.keys(entries).length} 件のチェックリストを復元しました`);
+    });
   }
 
   return (
@@ -87,6 +128,19 @@ export function SettingsPage({ settings, onSettingsChange, onChecklistCleared }:
         <p className="settings-note">
           チェックリスト（候補の判断・メモ）はこのブラウザ内にのみ保存され、7 日で自動失効します。
         </p>
+        <div className="settings-actions">
+          <button type="button" onClick={handleExportChecklist}>
+            📤 チェックリストを JSON 出力
+          </button>
+          <label className="file-upload">
+            📥 チェックリストを復元
+            <input
+              type="file"
+              accept="application/json,.json"
+              onChange={(e) => handleImportChecklist(e.target.files?.[0])}
+            />
+          </label>
+        </div>
         <button type="button" onClick={handleClearChecklist}>
           チェックリストを全消去
         </button>

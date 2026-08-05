@@ -2,7 +2,7 @@ import type { FeatureCollection } from 'geojson';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useEffect, useRef } from 'react';
-import type { Location } from '@pwsm/contracts';
+import type { JurisdictionMapResponse, Location } from '@pwsm/contracts';
 import { demoDataset } from '@pwsm/fixtures';
 
 /**
@@ -15,6 +15,8 @@ import { demoDataset } from '@pwsm/fixtures';
 interface MapPickerProps {
   location: Location;
   onPick: (location: Location) => void;
+  /** 検索結果の候補機関が持つ管轄区域（GeoJSON）。null ならハイライトしない */
+  highlightRegions?: JurisdictionMapResponse | null;
 }
 
 const GSI_STYLE: maplibregl.StyleSpecification = {
@@ -52,13 +54,51 @@ const DEMO_REGIONS_GEOJSON: FeatureCollection = {
   })),
 };
 
-export function MapPicker({ location, onPick }: MapPickerProps) {
+export function MapPicker({ location, onPick, highlightRegions }: MapPickerProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markerRef = useRef<maplibregl.Marker | null>(null);
+  const highlightRef = useRef<JurisdictionMapResponse | null | undefined>(highlightRegions);
+  highlightRef.current = highlightRegions;
   // クリックハンドラから常に最新の onPick を呼ぶための参照
   const onPickRef = useRef(onPick);
   onPickRef.current = onPick;
+
+  /** ハイライトレイヤーを現在の highlightRef の内容へ合わせる（style 読込済み前提） */
+  function applyHighlight(map: maplibregl.Map): void {
+    const regions = highlightRef.current;
+    if (regions === null || regions === undefined) {
+      for (const layerId of ['highlight-regions-fill', 'highlight-regions-line']) {
+        if (map.getLayer(layerId) !== undefined) map.removeLayer(layerId);
+      }
+      if (map.getSource('highlight-regions') !== undefined) {
+        map.removeSource('highlight-regions');
+      }
+      return;
+    }
+    if (map.getSource('highlight-regions') === undefined) {
+      map.addSource('highlight-regions', {
+        type: 'geojson',
+        data: regions as unknown as FeatureCollection,
+      });
+      map.addLayer({
+        id: 'highlight-regions-fill',
+        type: 'fill',
+        source: 'highlight-regions',
+        paint: { 'fill-color': '#b45309', 'fill-opacity': 0.18 },
+      });
+      map.addLayer({
+        id: 'highlight-regions-line',
+        type: 'line',
+        source: 'highlight-regions',
+        paint: { 'line-color': '#b45309', 'line-width': 2, 'line-dasharray': [3, 2] },
+      });
+    } else {
+      (map.getSource('highlight-regions') as maplibregl.GeoJSONSource).setData(
+        regions as unknown as FeatureCollection,
+      );
+    }
+  }
 
   useEffect(() => {
     if (containerRef.current === null || mapRef.current !== null) return;
@@ -85,6 +125,7 @@ export function MapPicker({ location, onPick }: MapPickerProps) {
         source: 'demo-regions',
         paint: { 'line-color': '#0369a1', 'line-width': 1.5, 'line-dasharray': [2, 2] },
       });
+      applyHighlight(map);
     });
 
     map.on('click', (e) => {
@@ -110,11 +151,20 @@ export function MapPicker({ location, onPick }: MapPickerProps) {
     mapRef.current?.easeTo({ center: [location.lon, location.lat], duration: 400 });
   }, [location.lat, location.lon]);
 
+  // 検索結果の管轄区域をハイライトする（FR-003 拡張）。
+  // 地図の style 読込前に描画を試みても失敗するため、style 読込後に初期化する
+  useEffect(() => {
+    const map = mapRef.current;
+    if (map === null || !map.isStyleLoaded()) return;
+    applyHighlight(map);
+  }, [highlightRegions]);
+
   return (
     <div className="map-picker">
       <div ref={containerRef} className="map-container" aria-label="地図（クリックで地点指定）" />
       <p className="map-note">
-        🗺️ 地図クリックで地点を設定できます。点線の枠は検証用の架空デモ区域です。
+        🗺️ 地図クリックで地点を設定できます。青の点線は検証用の架空デモ区域、オレンジは
+        検索結果の管轄区域です。
       </p>
     </div>
   );

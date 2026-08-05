@@ -6,9 +6,15 @@ import {
   auditEventsResponseSchema,
   createImportRequestSchema,
   ERROR_CODES,
+  FEEDBACK_MESSAGE_MAX_LENGTH,
+  FEEDBACK_MESSAGE_MIN_LENGTH,
   GEOCODE_QUERY_MAX_LENGTH,
+  MAX_MAP_ORGANIZATION_IDS,
   geocodeResponseSchema,
+  feedbackResponseSchema,
+  feedbackRequestSchema,
   importRecordSchema,
+  jurisdictionMapResponseSchema,
   metadataResponseSchema,
   qualityReportSchema,
   REQUIRED_DISCLAIMER,
@@ -34,10 +40,15 @@ import {
 } from './repositories/audit-repository.js';
 import {
   checkDatabaseReady,
+  fetchJurisdictionMapDb,
   fetchRuleVersion,
   searchCandidatesDb,
 } from './repositories/db-repository.js';
-import { searchCandidates } from './repositories/fixture-repository.js';
+import {
+  buildFixtureJurisdictionMap,
+  searchCandidates,
+} from './repositories/fixture-repository.js';
+import { recordFeedback } from './repositories/feedback-repository.js';
 import {
   GEOCODER_ATTRIBUTION,
   GeocodeUpstreamError,
@@ -159,15 +170,56 @@ export function buildApp(options: AppOptions = {}) {
     await next();
   });
 
+  // CSRF 対策（§12.1 / §11 認証設計）: 状態変更 API へのクロスオリジン POST を拒否する。
+  // Origin ヘッダーが無い curl 等の API クライアントは許可する（ブラウザは通常付与する）。
+  app.use(async (c, next) => {
+    const origin = c.req.header('origin');
+    if (origin !== undefined) {
+      let originHost: string;
+      try {
+        originHost = new URL(origin).host;
+      } catch {
+        return problemResponse(
+          c.get('requestId'),
+          403,
+          ERROR_CODES.FORBIDDEN,
+          'リクエストが拒否されました',
+          'Origin ヘッダーの形式が正しくありません',
+        );
+      }
+      // リクエスト URL のホストと比較する（Host ヘッダー改変・Proxy 経由でも安定）
+      const requestHost = new URL(c.req.url).host;
+      if (originHost !== requestHost) {
+        return problemResponse(
+          c.get('requestId'),
+          403,
+          ERROR_CODES.FORBIDDEN,
+          'リクエストが拒否されました',
+          '異なるオリジンからの操作は許可されていません',
+        );
+      }
+    }
+    await next();
+  });
+
+  /** 公開 GET 応答のキャッシュ方針（§13）: メタデータ類は短時間キャッシュする */
+  function cachePublic(c: { header: (name: string, value: string) => void }, seconds: number) {
+    c.header('Cache-Control', `public, max-age=${seconds}`);
+  }
+
   /** DB モード時のデータ版。公開版切替時に DATASET_VERSION を更新する */
   function datasetVersion(env: ApiContext['Bindings'] | undefined): string {
     if (env?.DATABASE_URL === undefined) return demoDataset.datasetVersion;
     return env.DATASET_VERSION ?? 'db-unversioned';
   }
 
-  app.get('/health/live', (c) => c.json({ status: 'ok' }));
+  app.get('/health/live', (c) => {
+    cachePublic(c, 60);
+    return c.json({ status: 'ok' });
+  });
 
   app.get('/health/ready', async (c) => {
+    cachePublic(c, 60);
     const databaseUrl = c.env?.DATABASE_URL;
     if (databaseUrl !== undefined) {
       try {
@@ -181,6 +233,7 @@ export function buildApp(options: AppOptions = {}) {
   });
 
   app.get('/metadata', async (c) => {
+    cachePublic(c, 300);
     const rawEnv = c.env?.APP_ENV;
     const appEnv =
       rawEnv === 'preview' || rawEnv === 'staging' || rawEnv === 'production'
@@ -197,6 +250,75 @@ export function buildApp(options: AppOptions = {}) {
       appEnv,
     });
     return c.json(body);
+  });
+
+  // FR-017: フィードバック受付（公開 API・本番でも利用可）
+  app.post('/feedback', async (c) => {
+    const requestId = c.get('requestId');
+    let rawBody: unknown;
+    try {
+      rawBody = await c.req.json();
+    } catch {
+      return problemResponse(
+        requestId,
+        400,
+        ERROR_CODES.INVALID_BODY,
+        '入力内容を確認してください',
+        'リクエストボディが JSON として解釈できません',
+      );
+    }
+    const parsed = feedbackRequestSchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return problemResponse(
+        requestId,
+        400,
+        ERROR_CODES.INVALID_BODY,
+        '入力内容を確認してください',
+        `報告内容は${FEEDBACK_MESSAGE_MIN_LENGTH}〜${FEEDBACK_MESSAGE_MAX_LENGTH}文字で、種別を選択してください`,
+      );
+    }
+    const result = await recordFeedback(
+      c.env?.DATABASE_URL,
+      {
+        category: parsed.data.category,
+        message: parsed.data.message,
+        sourceUrl: parsed.data.sourceUrl ?? null,
+        datasetVersion: datasetVersion(c.env),
+      },
+      now(),
+    );
+    // 監査ログへは本文・URL を記録しない（§12.2 プライバシー最小化）
+    recordAudit(c, {
+      actor: 'anonymous',
+      action: 'feedback.submit',
+      targetKind: 'feedback',
+      result: 'success',
+      correlationId: requestId,
+      metadata: { feedbackId: result.id, category: parsed.data.category },
+    });
+    return c.json(feedbackResponseSchema.parse(result), 202);
+  });
+
+  // FR-003 拡張: 検索結果の候補機関が持つ公開管轄区域（地図ハイライト用 GeoJSON）
+  app.get('/map/jurisdictions', async (c) => {
+    const requestId = c.get('requestId');
+    const rawIds = (c.req.query('organizationIds') ?? '').split(',').map((s) => s.trim());
+    const ids = rawIds.filter((s) => s !== '');
+    if (ids.length === 0 || ids.length > MAX_MAP_ORGANIZATION_IDS) {
+      return problemResponse(
+        requestId,
+        400,
+        ERROR_CODES.INVALID_QUERY,
+        '入力内容を確認してください',
+        `organizationIds は1〜${MAX_MAP_ORGANIZATION_IDS}件をカンマ区切りで指定してください`,
+      );
+    }
+    const body =
+      c.env?.DATABASE_URL === undefined
+        ? buildFixtureJurisdictionMap(demoDataset, ids, datasetVersion(c.env))
+        : await fetchJurisdictionMapDb(c.env.DATABASE_URL, ids, datasetVersion(c.env));
+    cachePublic(c, 300);
+    return c.json(jurisdictionMapResponseSchema.parse(body));
   });
 
   // 住所検索（FR-001）。クエリは監査・ログへ記録しない（プライバシー最小化）
@@ -451,6 +573,7 @@ export function buildApp(options: AppOptions = {}) {
   // SCR-08: 品質ダッシュボード（欠損・期限超過・出典保有・取込状態）
   app.get('/admin/quality', async (c) => {
     const report = await adminRepository(c.env).qualityReport(datasetVersion(c.env));
+    c.header('Cache-Control', 'no-store');
     return c.json(qualityReportSchema.parse(report));
   });
 

@@ -23,6 +23,7 @@ interface StoredChecklist {
 }
 
 export const CHECKLIST_STORAGE_KEY = 'pwsm-checklist-v1';
+export const CHECKLIST_EXPORT_KEY = 'pwsm-checklist-export-v1';
 const TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>;
@@ -134,6 +135,65 @@ export function updateEntry(
     result[organizationId] = next;
   }
   return result;
+}
+
+/**
+ * チェックリストを JSON 文字列としてエクスポートする（FR-009 拡張: バックアップ・共有）。
+ * 実案件名・個人情報は含めない運用のため、自由記述メモは利用者の責任で管理する。
+ */
+export function exportChecklistJson(entries: ChecklistEntries, now: Date): string {
+  const payload = {
+    version: 1,
+    exportedAt: now.toISOString(),
+    entries,
+  };
+  return JSON.stringify(payload, null, 2);
+}
+
+/** JSON からチェックリストを復元する。形式不正・期限切れは null（呼び出し側で案内する）。 */
+export function importChecklistJson(raw: string, now: Date): ChecklistEntries | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  if (typeof parsed !== 'object' || parsed === null) return null;
+  const payload = parsed as {
+    version?: unknown;
+    exportedAt?: unknown;
+    entries?: unknown;
+  };
+  if (payload.version !== 1 || typeof payload.exportedAt !== 'string') return null;
+  const exportedAt = Date.parse(payload.exportedAt);
+  if (Number.isNaN(exportedAt) || now.getTime() - exportedAt > TTL_MS) return null;
+  if (typeof payload.entries !== 'object' || payload.entries === null) return null;
+
+  const entries: ChecklistEntries = {};
+  for (const [key, value] of Object.entries(payload.entries)) {
+    if (typeof value !== 'object' || value === null) continue;
+    const entry = value as {
+      state?: unknown;
+      note?: unknown;
+      decidedAt?: unknown;
+    };
+    if (
+      (entry.state === null ||
+        entry.state === 'candidate' ||
+        entry.state === 'needs_inquiry' ||
+        entry.state === 'excluded') &&
+      typeof entry.note === 'string' &&
+      typeof entry.decidedAt === 'string' &&
+      !Number.isNaN(Date.parse(entry.decidedAt))
+    ) {
+      entries[key] = {
+        state: entry.state as DecisionState | null,
+        note: entry.note,
+        decidedAt: entry.decidedAt,
+      };
+    }
+  }
+  return entries;
 }
 
 export const DECISION_LABELS: Record<DecisionState, string> = {

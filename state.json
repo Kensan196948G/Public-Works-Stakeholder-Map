@@ -6,13 +6,13 @@
     "release_deadline": "2027-01-18",
     "phase_mode": "development"
   },
-  "goal": "次セッション: Issue #32 — 実データ投入（Neon 台帳登録・組織/管轄整備・N03ポリゴン設計・取込・二者レビュー・データ版切替 PR）",
+  "goal": "v0.4.0 機能強化（Draft PR 作成済み: 絞り込み/印刷/フィードバック/URL共有/地図ハイライト/チェックリストJSON/Origin検査）→ 次: Issue #32 実データ投入 + 認証/RBAC",
   "phase": "Monitor",
   "kpi": {
     "success_rate_target": 0.9,
     "ci_success_rate": 1.0,
     "test_pass_rate": 1.0,
-    "test_count": 144,
+    "test_count": 172,
     "security_critical": 0,
     "blocker_count": 0
   },

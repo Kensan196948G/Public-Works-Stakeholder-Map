@@ -1,4 +1,11 @@
-import type { Candidate, ConfidenceGrade, Location, OrganizationType, SearchRequest } from '@pwsm/contracts';
+import type {
+  Candidate,
+  ConfidenceGrade,
+  JurisdictionMapResponse,
+  Location,
+  OrganizationType,
+  SearchRequest,
+} from '@pwsm/contracts';
 import { calculateConfidence, calculateFreshnessDue, evaluateRules } from '@pwsm/domain';
 import type { DemoDataset, DemoRegion } from '@pwsm/fixtures';
 
@@ -121,4 +128,45 @@ export function searchCandidates(
       a.name.localeCompare(b.name, 'ja'),
   );
   return candidates;
+}
+
+/** 検索結果の候補機関が持つ区域を GeoJSON（Polygon）で返す（FR-003 拡張・fixture モード）。 */
+export function buildFixtureJurisdictionMap(
+  dataset: DemoDataset,
+  organizationIds: readonly string[],
+  datasetVersion: string,
+): JurisdictionMapResponse {
+  const idSet = new Set(organizationIds);
+  const features: JurisdictionMapResponse['features'] = [];
+  for (const org of dataset.organizations) {
+    if (!idSet.has(org.id) || org.reviewStatus !== 'published') continue;
+    for (const regionCode of org.regionCodes) {
+      const region = dataset.regions.find((r) => r.code === regionCode);
+      if (region === undefined) continue;
+      const { minLat, maxLat, minLon, maxLon } = region.bbox;
+      features.push({
+        type: 'Feature',
+        properties: {
+          organizationId: org.id,
+          organizationName: org.name,
+          assetName: region.name,
+          precision: org.precision,
+          estimated: org.estimated,
+        },
+        geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [minLon, minLat],
+              [maxLon, minLat],
+              [maxLon, maxLat],
+              [minLon, maxLat],
+              [minLon, minLat],
+            ],
+          ],
+        },
+      });
+    }
+  }
+  return { type: 'FeatureCollection', datasetVersion, features };
 }

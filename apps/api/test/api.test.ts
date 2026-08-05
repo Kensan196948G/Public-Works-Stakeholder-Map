@@ -1,6 +1,12 @@
-import { describe, expect, it } from 'vitest';
-import { searchResponseSchema, REQUIRED_DISCLAIMER } from '@pwsm/contracts';
+import { beforeEach, describe, expect, it } from 'vitest';
+import {
+  feedbackResponseSchema,
+  jurisdictionMapResponseSchema,
+  searchResponseSchema,
+  REQUIRED_DISCLAIMER,
+} from '@pwsm/contracts';
 import { buildApp } from '../src/app.js';
+import { clearMemoryFeedback } from '../src/repositories/feedback-repository.js';
 
 /** 固定クロック: 2026-07-18。fixture の鮮度・期限判定を決定的にする */
 const FIXED_NOW = new Date('2026-07-18T00:00:00Z');
@@ -10,6 +16,14 @@ function searchRequest(body: unknown): Request {
   return new Request('http://localhost/api/v1/stakeholders/search', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+function searchRequestWithOrigin(body: unknown, origin: string): Request {
+  return new Request('http://localhost/api/v1/stakeholders/search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Origin: origin },
     body: JSON.stringify(body),
   });
 }
@@ -217,5 +231,114 @@ describe('X-Request-ID 相関 ID（§6.1）', () => {
     const issued = res.headers.get('x-request-id');
     expect(issued).not.toBe('bad id with spaces!!');
     expect(issued).toMatch(/^[0-9a-f-]{36}$/);
+  });
+});
+
+describe('POST /feedback（FR-017）', () => {
+  beforeEach(() => {
+    clearMemoryFeedback();
+  });
+
+  it('正当な報告は 202 と受付番号を返す', async () => {
+    const res = await app.request('http://localhost/api/v1/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Origin: 'http://localhost' },
+      body: JSON.stringify({
+        category: 'broken_link',
+        message: 'あおぞら町建設課のリンクが404になっています（デモ報告）',
+        sourceUrl: 'https://example.com/demo/aozora-town/kensetsu',
+      }),
+    });
+    expect(res.status).toBe(202);
+    const body = feedbackResponseSchema.parse(await res.json());
+    expect(body.status).toBe('received');
+    expect(body.reference).toMatch(/^FB-/);
+  });
+
+  it('短すぎる本文・不正種別・不正 URL は 400', async () => {
+    const short = await app.request('http://localhost/api/v1/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category: 'other', message: '短い' }),
+    });
+    expect(short.status).toBe(400);
+
+    const badCategory = await app.request('http://localhost/api/v1/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category: 'spam', message: '十分な長さの本文です' }),
+    });
+    expect(badCategory.status).toBe(400);
+
+    const badUrl = await app.request('http://localhost/api/v1/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        category: 'other',
+        message: '十分な長さの本文です',
+        sourceUrl: 'not-a-url',
+      }),
+    });
+    expect(badUrl.status).toBe(400);
+  });
+});
+
+describe('GET /map/jurisdictions（FR-003 拡張）', () => {
+  it('指定機関の区域を FeatureCollection で返す（fixture モード）', async () => {
+    const res = await app.request(
+      '/api/v1/map/jurisdictions?organizationIds=org-demo-0006,org-demo-0005',
+    );
+    expect(res.status).toBe(200);
+    const body = jurisdictionMapResponseSchema.parse(await res.json());
+    expect(body.type).toBe('FeatureCollection');
+    const orgIds = new Set(body.features.map((f) => f.properties.organizationId));
+    expect(orgIds.has('org-demo-0006')).toBe(true);
+    expect(orgIds.has('org-demo-0005')).toBe(true);
+    // 警察は推定区域として properties に反映される
+    const police = body.features.find((f) => f.properties.organizationId === 'org-demo-0006');
+    expect(police?.properties.estimated).toBe(true);
+  });
+
+  it('未知 ID は空 FeatureCollection、ID 未指定・過多は 400', async () => {
+    const empty = await app.request('/api/v1/map/jurisdictions?organizationIds=unknown-org');
+    expect(empty.status).toBe(200);
+    expect((await empty.json()).features).toEqual([]);
+
+    const missing = await app.request('/api/v1/map/jurisdictions');
+    expect(missing.status).toBe(400);
+
+    const tooMany = await app.request(
+      `/api/v1/map/jurisdictions?organizationIds=${Array.from({ length: 51 }, (_, i) => `org-${i}`).join(',')}`,
+    );
+    expect(tooMany.status).toBe(400);
+  });
+});
+
+describe('Origin 検査（CSRF 対策 §12.1）とキャッシュヘッダー（§13）', () => {
+  it('同一オリジンの POST は許可される', async () => {
+    const res = await app.request(
+      searchRequestWithOrigin(
+        { location: { lat: 35.05, lon: 139.05 }, assetTypes: ['road'] },
+        'http://localhost',
+      ),
+    );
+    expect(res.status).toBe(200);
+  });
+
+  it('異なるオリジンの POST は 403 で拒否される', async () => {
+    const res = await app.request(
+      searchRequestWithOrigin(
+        { location: { lat: 35.05, lon: 139.05 } },
+        'https://evil.example.com',
+      ),
+    );
+    expect(res.status).toBe(403);
+    const body = (await res.json()) as { code: string };
+    expect(body.code).toBe('FORBIDDEN');
+  });
+
+  it('metadata は public cache ヘッダーを付与する', async () => {
+    const res = await app.request('/api/v1/metadata');
+    expect(res.headers.get('cache-control')).toBe('public, max-age=300');
   });
 });
