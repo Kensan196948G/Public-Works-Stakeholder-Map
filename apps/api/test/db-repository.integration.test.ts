@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { searchCandidatesDb } from '../src/repositories/db-repository.js';
+import {
+  fetchJurisdictionMapDb,
+  searchCandidatesDb,
+} from '../src/repositories/db-repository.js';
 
 /**
  * Neon/PostGIS 統合テスト（Issue #10）。
@@ -96,5 +99,38 @@ describe.skipIf(databaseUrl === undefined)('searchCandidatesDb（Neon dev ブラ
       FIXED_NOW,
     );
     expect(result.candidates).toHaveLength(0);
+  });
+
+  it('fetchJurisdictionMapDb: 検索結果の UUID で FeatureCollection を返す', async () => {
+    const search = await searchCandidatesDb(
+      url,
+      {
+        location: { lat: 35.05, lon: 139.05 },
+        radiusMeters: 500,
+        workTypes: ['traffic_restriction'],
+        assetTypes: ['road'],
+        impactTypes: [],
+        purpose: 'pre_consultation',
+      },
+      FIXED_NOW,
+    );
+    const ids = search.candidates.map((c) => c.organizationId);
+    expect(ids.length).toBeGreaterThan(0);
+    const map = await fetchJurisdictionMapDb(url, ids, 'integration-test');
+    expect(map.type).toBe('FeatureCollection');
+    const returnedIds = new Set(map.features.map((f) => f.properties.organizationId));
+    for (const id of ids) {
+      expect(returnedIds.has(id)).toBe(true);
+    }
+  });
+
+  it('fetchJurisdictionMapDb: 非 UUID 形式 ID は 500 にせず空を返す', async () => {
+    const map = await fetchJurisdictionMapDb(
+      url,
+      ['org-demo-0006', 'not-a-uuid'],
+      'integration-test',
+    );
+    expect(map.type).toBe('FeatureCollection');
+    expect(map.features).toEqual([]);
   });
 });

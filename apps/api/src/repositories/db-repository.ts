@@ -303,6 +303,13 @@ export async function fetchJurisdictionMapDb(
   datasetVersion: string,
 ): Promise<JurisdictionMapResponse> {
   const sql = neon(databaseUrl);
+  // DB の id は uuid のため、形式不正な ID は型エラー（500）にせず対象外にする。
+  // UI は検索応答の organizationId（uuid）を渡すが、直接 API 呼び出しでも安全に空結果を返す。
+  const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const validIds = organizationIds.filter((id) => UUID_PATTERN.test(id));
+  if (validIds.length === 0) {
+    return { type: 'FeatureCollection', datasetVersion, features: [] };
+  }
   const rows = (await sql`
     SELECT
       o.id AS organization_id,
@@ -313,7 +320,7 @@ export async function fetchJurisdictionMapDb(
       ST_AsGeoJSON(j.geometry) AS geometry
     FROM core.jurisdictions j
     JOIN core.organizations o ON o.id = j.organization_id
-    WHERE o.id = ANY(${organizationIds})
+    WHERE o.id = ANY(${validIds}::uuid[])
       AND j.status = 'published'
       AND o.status = 'published'
       AND j.geometry IS NOT NULL
