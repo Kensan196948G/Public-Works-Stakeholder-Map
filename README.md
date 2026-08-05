@@ -3,7 +3,7 @@
 > **公共工事ステークホルダー整理マップ**  
 > 工事場所と作業条件から、事前に確認したほうがよい関係機関を公開情報ベースで整理します。
 
-[![Status](https://img.shields.io/badge/status-v0.4.0_preview_(dev)-0ea5e9)](#️-開発状況)
+[![Status](https://img.shields.io/badge/status-v0.4.0_released_(demo)-22c55e)](#️-開発状況)
 [![Data](https://img.shields.io/badge/data-public_only-0ea5e9)](#-データ方針)
 [![Decision](https://img.shields.io/badge/decision-support_not_determination-f59e0b)](#%EF%B8%8F-重要な注意)
 [![License](https://img.shields.io/badge/license-TBD-lightgrey)](#-ライセンス)
@@ -451,6 +451,7 @@ Issueには次の情報を含めてください。
 | 2026-07-24 | 🔎 **v0.2.0**: 住所検索オートコンプリート（都道府県入力で候補を自動表示・キーボード選択対応・ARIA combobox） |
 | 2026-07-24 | 🗂️ **Phase 2 管理機能（SCR-06〜08）**: データソース台帳・取込レビュー（状態機械）・品質ダッシュボード + 実データ整備手順（docs/data-registry.md）を実装 |
 | 2026-08-05 | 🚀 **v0.4.0 機能強化（PR 準備中）**: 候補絞り込み・並び替え（FR-008）、印刷/PDF出力（FR-010）、フィードバック（FR-017）、検索条件URL共有、管轄区域の地図ハイライト（FR-003拡張）、チェックリストJSON入出力、Origin検査・キャッシュヘッダー |
+| 2026-08-05 | 🎉 **v0.4.0 本番リリース**: 検索UX・協働機能パックを本番デプロイ（migration 0002 適用済み・免責/プライバシー設計は維持） |
 
 ### 🚦 リリース状況（v0.1.0 公開済み・デモデータ）
 
