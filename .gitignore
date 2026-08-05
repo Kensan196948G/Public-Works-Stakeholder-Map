@@ -22,6 +22,8 @@ build/
 *.log
 coverage/
 .tmp/
+test-results/
+playwright-report/
 
 # OS / editor
 .DS_Store

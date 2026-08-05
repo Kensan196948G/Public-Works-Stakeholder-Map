@@ -275,7 +275,7 @@ npm test
 | `npm run seed:generate` | 架空デモデータの seed SQL 生成（fixture が単一の真実） | ✅ 稼働 |
 | `npm run dev -w @pwsm/web` | Web UI 開発起動（vite、API へプロキシ） | ✅ 稼働 |
 | `npm run dev -w @pwsm/api` | API 開発起動（wrangler dev）※ | ✅ 稼働 |
-| `npm run test:e2e` | ブラウザ E2E テスト | 🚧 Phase 2 |
+| `npm run test:e2e` | ブラウザ E2E テスト（Playwright・CI で実行） | ✅ CI 稼働（ローカルは要 Chromium・仮想メモリ制限環境では起動不可） |
 
 > ※ 仮想メモリ制限のある環境では workerd が起動できない場合があります（ADR-0001 追記参照）。
 > その場合は `npm run webui`（Node サーバー）を使用してください。
@@ -315,6 +315,7 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/demo/0001_demo_dataset.sql
 | `db/seeds/demo` | — | 架空デモデータ seed（fixture から自動生成） |
 | `docs/adr` | — | アーキテクチャ決定記録 |
 | `docs/operations` | — | 📚 運用文書（リリース前チェックリスト・デプロイ手順・ロールバック・障害対応） |
+| `docs/openapi.yaml` | — | 🔌 公開 API 仕様（OpenAPI 3.1・Issue #37） |
 
 ---
 
