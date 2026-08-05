@@ -6,8 +6,8 @@
 | 👥 対象読者 | 管理者・IT/DX 運用者 |
 | 📅 最終更新日 | 2026-08-05 |
 
-> ⚠️ 本機能はコード・テスト実装済みですが、**既定では無効**です（`AUTH_ENABLED=false`）。
-> 有効化は Secrets / env の設定と本番 Access ポリシーの確認が必要です。
+> ✅ **本番有効化済み（v0.4.2・2026-08-05）**。値は Cloudflare Access アプリ「pwsm」の
+> 設定から自動取得した公開情報です。Access を迂回した直接リクエストは 401 になります。
 
 ## 1. 動作概要
 
@@ -29,10 +29,10 @@ flowchart LR
 | 環境変数 | 内容 | 例 |
 |---|---|---|
 | `AUTH_ENABLED` | `true` で有効化 | `true` |
-| `AUTH_AUDIENCE` | Access アプリの audience | `https://<team>.cloudflareaccess.com` |
-| `AUTH_JWKS_URL` | Access の公開鍵（JWKS） | `https://<team>.cloudflareaccess.com/cdn-cgi/access/certs` |
+| `AUTH_AUDIENCE` | Access アプリの audience | `03c85fb8…69c`（本番設定値は wrangler.toml 参照） |
+| `AUTH_JWKS_URL` | Access の公開鍵（JWKS） | `https://pwsm.mirai-dx-platform.com/cdn-cgi/access/certs` |
 | `AUTH_CERT_PEM` | 代替の公開鍵 PEM（Secret 管理推奨） | 複数行 PEM |
-| `AUTH_ADMIN_EMAILS` | admin ロール（カンマ区切り） | `a@example.com,b@example.com` |
+| `AUTH_ADMIN_EMAILS` | admin ロール（カンマ区切り） | `kensan1969@gmail.com` |
 | `AUTH_REVIEWER_EMAILS` | reviewer ロール | `r@example.com` |
 | `AUTH_EDITOR_EMAILS` | editor ロール | `e@example.com` |
 
@@ -55,6 +55,11 @@ flowchart LR
 3. `AUTH_ENABLED=true` を設定してデプロイする
 4. 管理画面（`/admin/*`）へ Access 経由でアクセスし、ロール別動作を確認する
 5. 監査ログで `admin.access_denied` が記録されることを確認する
+
+> 📝 **本番の現行設定（2026-08-05）**: `AUTH_ENABLED=true` / audience / JWKS URL / admin は
+> `kensan1969@gmail.com`。Access ポリシーで許可されている `mirai-const.co.jp` ドメインの利用者は
+> 現状 viewer として扱われます（reviewer/editor は `AUTH_REVIEWER_EMAILS` / `AUTH_EDITOR_EMAILS` へ
+> 追加すると昇格します。ドメイン単位のロール判定は将来拡張候補）。
 
 > 本番への反映はリリース PR に設定・影響・rollback を明記し、マージ判定 `Y` の範囲で実施します。
 

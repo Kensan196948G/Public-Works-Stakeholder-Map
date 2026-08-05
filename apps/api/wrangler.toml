@@ -29,12 +29,15 @@ APP_ENV = "production"
 # DB モード時のデータ版識別子（デモ seed の公開版。公開版切替で更新する）
 DATASET_VERSION = "2026-07-18.demo.1"
 
-# アプリ内 RBAC（Issue #34）。既定は無効（従来の環境ガード 403 を維持）。
-# 有効化時は AUTH_AUDIENCE / AUTH_JWKS_URL（または AUTH_CERT_PEM）と
-# AUTH_ADMIN_EMAILS 等を設定する（詳細: docs/operations/auth-rbac.md）
-AUTH_ENABLED = "false"
-AUTH_AUDIENCE = ""
-AUTH_JWKS_URL = ""
+# アプリ内 RBAC（Issue #34・本番有効化済み v0.4.2）。
+# 値は Cloudflare Access アプリ「pwsm」から自動取得した公開情報（aud・JWKS URL・ポリシー管理者メール）。
+# 変更時は docs/operations/auth-rbac.md と整合させること
+AUTH_ENABLED = "true"
+AUTH_AUDIENCE = "03c85fb86ab820fff21918f63373867971b5adc8a3a838097f7858ca28ceb69c"
+AUTH_JWKS_URL = "https://pwsm.mirai-dx-platform.com/cdn-cgi/access/certs"
+AUTH_ADMIN_EMAILS = "kensan1969@gmail.com"
+AUTH_REVIEWER_EMAILS = ""
+AUTH_EDITOR_EMAILS = ""
 
 # preview 環境は明示的に分離した設定を使う（deploy:preview は --env preview で実行）
 # preview は workers.dev で配信を継続する（custom domain なし・fixture モード）
@@ -50,6 +53,7 @@ run_worker_first = ["/api/*"]
 
 [env.preview.vars]
 APP_ENV = "preview"
+# preview は認証検証用に同一設定を有効化（Access ポリシー対象外のため実質 401 のみ）
 AUTH_ENABLED = "false"
 AUTH_AUDIENCE = ""
 AUTH_JWKS_URL = ""
