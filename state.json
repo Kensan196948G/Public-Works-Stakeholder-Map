@@ -40,14 +40,14 @@
     "checklist": "docs/operations/release-checklist.md",
     "note": "本番デプロイ・Secrets 登録・Neon main seed 適用は、リリース PR に明記しマージ判定 Y の承認範囲でのみ実行する",
     "released": {
-      "version": "v0.4.1",
+      "version": "v0.4.2",
       "date": "2026-08-05",
       "production_url": "https://pwsm.mirai-dx-platform.com",
-      "worker_version_id": "4f5a9b26-6aa6-4569-9000-22fb771f55d3",
-      "merge_commit": "3b60d0b",
-      "pr": [38, 40, 42, 43, 44, 45],
-      "tag": "v0.4.1",
-      "release_url": "https://github.com/Kensan196948G/Public-Works-Stakeholder-Map/releases/tag/v0.4.1",
+      "worker_version_id": "（v0.4.2 デプロイ後に更新）",
+      "merge_commit": "（記録PRマージ後）",
+      "pr": [38, 40, 42, 43, 44, 45, 47, 48],
+      "tag": "v0.4.2",
+      "release_url": "https://github.com/Kensan196948G/Public-Works-Stakeholder-Map/releases/tag/v0.4.2",
       "merge_commit": "bd1090d",
       "pr": [38, 40],
       "tag": "v0.4.0",
@@ -58,7 +58,7 @@
       "access": "Cloudflare Access self_hosted (mirai-const.co.jp + 管理者メール, 24h)",
       "workers_dev": "無効化 (v0.1.1)",
       "observability": "有効化 (Issue #23)",
-      "note_v0.4.0": "検索UX・協働機能パック（絞り込み/印刷/フィードバック/URL共有/地図ハイライト/チェックリストJSON/Origin検査・キャッシュ）。本番スモークで検出した /map/jurisdictions 非UUID 500 は PR #40 で修正・再デプロイ済み"
+      "note_v0.4.2": "認証・RBAC 本番有効化（Access aud/JWKS 自動取得・admin=kensan1969）＋ #32 第二・三段（組織 staging 16件 pending・N03 取込ツール）"
     }
   },
   "infra": {
