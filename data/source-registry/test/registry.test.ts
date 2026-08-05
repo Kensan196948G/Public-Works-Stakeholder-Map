@@ -21,7 +21,7 @@ const licenseSchema = z.object({
 const registryEntrySchema = z.strictObject({
   id: z.string().regex(/^[a-z0-9][a-z0-9-]{2,63}$/),
   dbId: z.uuid().optional(),
-  region: z.enum(['tokyo', 'yokohama', 'osaka']),
+  region: z.enum(['tokyo', 'yokohama', 'osaka', 'national']),
   organizationType: z.enum([
     'issuer',
     'road_admin',
@@ -36,7 +36,7 @@ const registryEntrySchema = z.strictObject({
   baseUrl: z.string().startsWith('https://'),
   allowedHost: z.string().regex(/^[a-z0-9.-]+$/),
   authority: z.enum(['primary_official', 'official_catalog', 'secondary_open']),
-  format: z.enum(['HTML', 'PDF', 'CSV', 'JSON', 'XLSX', 'API']),
+  format: z.enum(['HTML', 'PDF', 'CSV', 'JSON', 'XLSX', 'API', 'GML']),
   fetchMode: z.enum(['manual', 'scheduled', 'api']),
   ttlDays: z.number().int().min(1).max(730),
   license: licenseSchema.optional(),

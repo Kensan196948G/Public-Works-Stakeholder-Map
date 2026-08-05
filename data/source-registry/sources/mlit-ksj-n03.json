@@ -1,0 +1,22 @@
+{
+  "id": "mlit-ksj-n03",
+  "region": "national",
+  "organizationType": "prefecture",
+  "name": "国土数値情報 行政区域データ（N03）",
+  "publisher": "国土交通省 国土数値情報ダウンロードサービス",
+  "baseUrl": "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N03-v3_0.html",
+  "allowedHost": "nlftp.mlit.go.jp",
+  "authority": "primary_official",
+  "format": "GML",
+  "fetchMode": "manual",
+  "ttlDays": 365,
+  "license": {
+    "url": "https://www.mlit.go.jp/kokudosiseki/copyright.html",
+    "summary": "政府標準利用規約（第2.0版）準拠。出典記載（国土数値情報（行政区域データ））を条件に複製・公衆送信・翻案等を自由に利用可（商用可）。",
+    "reuse": "standard_terms",
+    "confirmedAt": "2026-08-05",
+    "confirmedBy": "kensan1969（Issue #32・PR レビューで確定）"
+  },
+  "active": true,
+  "notes": "全国の行政区域ポリゴン（約500m精度・作成年に注意）。N03-20240101 等の版を取得し、CRS を EPSG:4326 へ変換してからステージング取込する。"
+}

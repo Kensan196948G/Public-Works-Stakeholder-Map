@@ -41,12 +41,49 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/registry/0001_source_registr
 - 決定的 UUID（`uuidFor("registry:<slug>")`）で同一台帳から何度でも再適用可能（`ON CONFLICT DO UPDATE`）
 - `license.summary` / `license.url` は `license_text` / `license_url` へ格納し、
   「利用条件未記録」の品質監視（SCR-08）と連動する
-- **適用済み（2026-08-05）**: Neon dev ブランチ + main（15 機関・全件 license 付き）
+- **適用済み（2026-08-05）**: Neon dev ブランチ + main（16 ソース = 代表 3 地域 15 + N03 1・全件 license 付き）
 - テスト: `data/source-registry/test/seed.test.ts`（台帳 ↔ seed の対応・冪等性を CI で検証）
 
-> 残作業: `core.organizations` / `offices` / `contact_points` / `jurisdictions` の
-> 実データ整備（N03 ポリゴン・公式ページの窓口情報の収集・正規化・二者レビュー）は
-> 次フェーズ（Issue #32 後半）として、本台帳を起点に 1 地域ずつ進めます。
+### 1.6 🧱 組織のステージング取込（Issue #32 第二段・2026-08-05）
+
+台帳から、レビュー待ちの組織レコード（`staging.import_records`・`entity_kind=organization`）を生成します。
+
+```bash
+node scripts/generate-entity-imports.mjs            # → db/seeds/registry/0002_staging_org_imports.sql
+node scripts/generate-entity-imports.mjs --stdout   # 内容確認
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/registry/0002_staging_org_imports.sql
+```
+
+- 生成物は必ず `pending`（無レビュー公開禁止・§6.2）
+- `raw_payload` に canonicalName / officialUrl / organizationType / sourceSlug を含み、
+  SCR-07 のレビュー画面で確認できる
+- **適用済み（2026-08-05）**: Neon dev + main（16 件 pending・台帳 16 ソース登録済み）
+- テスト: `data/source-registry/test/entity-seed.test.ts`
+
+### 1.7 🗺️ N03 行政区域の取込（Issue #32 第三段・ツール実装済み）
+
+国土数値情報 行政区域（N03）を GeoJSON（EPSG:4326）へ変換後、管轄区域のステージング取込を生成します。
+
+```bash
+# 1) 国土数値情報ダウンロードサービスから N03 を取得（.gml/.shp・利用条件: 政府標準利用規約2.0）
+# 2) ogr2ogr 等で EPSG:4326 の GeoJSON へ変換
+ogr2ogr -f GeoJSON -t_srs EPSG:4326 n03-tokyo.geojson N03-20240101_13.shp
+
+# 3) ステージング取込 SQL を生成（--stdout で確認）
+node scripts/n03-geojson-to-imports.mjs --input n03-tokyo.geojson --pref-code 13 --stdout
+
+# 4) ファイル出力して適用（dev で検証 → main）
+node scripts/n03-geojson-to-imports.mjs --input n03-tokyo.geojson --pref-code 13 --output db/seeds/registry/0003_n03_jurisdiction_imports.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/registry/0003_n03_jurisdiction_imports.sql
+```
+
+- 生成物は `pending` + `quality_flags: ["geometry_pending_review"]`（境界の正確性はレビューで確認）
+- 情報源は台帳の `mlit-ksj-n03`（`region: national`・利用条件確定済み）を参照
+- 都道府県コード・市区町村フィルタ、Polygon/MultiPolygon → WKT 変換、座標範囲検証に対応
+- テスト: `data/source-registry/test/n03-import.test.ts`
+
+> 残作業: N03 実データの取得・変換・レビュー、公式ページからの窓口（office / contact_point）
+> 情報の収集・正規化、承認後の `core.*` 反映とデータ版切替を、1 地域ずつ進めます。
 
 ## 2. 🗃️ 台帳への記録項目（`provenance.data_sources`）
 

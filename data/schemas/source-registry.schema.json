@@ -33,7 +33,7 @@
     "region": {
       "type": "string",
       "description": "代表地域スラッグ",
-      "enum": ["tokyo", "yokohama", "osaka"]
+      "enum": ["tokyo", "yokohama", "osaka", "national"]
     },
     "organizationType": {
       "type": "string",
@@ -65,7 +65,7 @@
       "description": "DB enum provenance.source_authority と一致",
       "enum": ["primary_official", "official_catalog", "secondary_open"]
     },
-    "format": { "type": "string", "enum": ["HTML", "PDF", "CSV", "JSON", "XLSX", "API"] },
+    "format": { "type": "string", "enum": ["HTML", "PDF", "CSV", "JSON", "XLSX", "API", "GML"] },
     "fetchMode": {
       "type": "string",
       "description": "DB enum provenance.fetch_mode と一致。Phase 2 は manual のみ",
