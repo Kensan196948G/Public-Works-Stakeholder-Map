@@ -4,7 +4,7 @@
 |---|---|
 | 🎯 目的 | 実在の公式情報源を台帳化し、取込 → レビュー → 公開の品質ゲートを運用する |
 | 👥 対象読者 | データ編集者・レビュアー・管理者 |
-| 📅 最終更新日 | 2026-07-24 |
+| 📅 最終更新日 | 2026-08-05 |
 
 > ⚠️ 現在の公開データはすべて**架空デモ**です。実データの公開は、本手順による台帳確定・
 > 利用条件確認・二者レビューの通過後に、データ版の切替として実施します。
@@ -21,6 +21,32 @@
 4. SCR-06 から手動取込（ステージング `pending`）
 5. SCR-07 でレビュー（二者レビュー原則: 取込者 ≠ 承認者）
 6. 承認済みレコードをデータ版切替として公開反映（マージ判定 `Y` の範囲で実施）
+
+## 1.5 🔁 台帳の Neon 登録（自動生成 seed・2026-08-05 実装）
+
+台帳 JSON（`data/source-registry/sources/*.json`）から、`provenance.data_sources` 用の
+冪等 seed SQL を自動生成します。
+
+```bash
+# 生成（出力: db/seeds/registry/0001_source_registry.sql）
+node scripts/generate-source-registry-seed.mjs
+
+# 標準出力で内容確認
+node scripts/generate-source-registry-seed.mjs --stdout
+
+# 適用（dev で検証後に main へ）
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/registry/0001_source_registry.sql
+```
+
+- 決定的 UUID（`uuidFor("registry:<slug>")`）で同一台帳から何度でも再適用可能（`ON CONFLICT DO UPDATE`）
+- `license.summary` / `license.url` は `license_text` / `license_url` へ格納し、
+  「利用条件未記録」の品質監視（SCR-08）と連動する
+- **適用済み（2026-08-05）**: Neon dev ブランチ + main（15 機関・全件 license 付き）
+- テスト: `data/source-registry/test/seed.test.ts`（台帳 ↔ seed の対応・冪等性を CI で検証）
+
+> 残作業: `core.organizations` / `offices` / `contact_points` / `jurisdictions` の
+> 実データ整備（N03 ポリゴン・公式ページの窓口情報の収集・正規化・二者レビュー）は
+> 次フェーズ（Issue #32 後半）として、本台帳を起点に 1 地域ずつ進めます。
 
 ## 2. 🗃️ 台帳への記録項目（`provenance.data_sources`）
 
