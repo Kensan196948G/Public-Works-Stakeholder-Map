@@ -24,7 +24,13 @@ export default tseslint.config(
     // Node で実行するスクリプト（seed 生成等）
     files: ['scripts/**/*.mjs'],
     languageOptions: {
-      globals: { console: 'readonly', process: 'readonly', URL: 'readonly' },
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        URL: 'readonly',
+        fetch: 'readonly',
+        AbortSignal: 'readonly',
+      },
     },
   },
   {
