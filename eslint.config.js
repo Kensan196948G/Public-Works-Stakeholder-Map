@@ -21,8 +21,8 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    // Node で実行するスクリプト（seed 生成等）
-    files: ['scripts/**/*.mjs'],
+    // Node で実行するスクリプト（seed 生成・CI 検証等）
+    files: ['scripts/**/*.mjs', '.github/scripts/**/*.mjs'],
     languageOptions: {
       globals: {
         console: 'readonly',
