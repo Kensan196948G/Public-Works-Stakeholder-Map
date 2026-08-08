@@ -7,11 +7,13 @@ import {
   PRECISION_LABELS,
   VERIFICATION_STATE_LABELS,
 } from './labels.js';
+import { toIndexText } from './licensing.js';
 
 /**
  * 候補一覧の CSV 生成（要件 FR-010 / §11.1）。
  * 出典・取得日時・免責・データ版・出力日時を必ず含める。
  * セルの無害化（数式注入対策）とエスケープは @pwsm/domain の buildCsv が行う。
+ * 出典タイトルは情報源由来のため索引長へ丸める（§9.3・画面/印刷と同一ポリシー）。
  */
 export function buildCandidatesCsv(
   response: SearchResponse,
@@ -59,7 +61,7 @@ export function buildCandidatesCsv(
             : '';
         })(),
         index === 0 ? (decisions[candidate.organizationId]?.note ?? '') : '',
-        evidence.title,
+        toIndexText(evidence.title),
         evidence.url,
         candidate.sourceCheckedAt ?? '不明',
         candidate.freshnessDueAt ?? '不明',

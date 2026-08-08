@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import type { AdminSourcesResponse, ImportEntityKind } from '@pwsm/contracts';
 import { importEntityKindSchema } from '@pwsm/contracts';
 import { ApiError, createAdminImport, fetchAdminSources } from '../api.js';
+import { INDEX_ONLY_NOTICE, toIndexText } from '../licensing.js';
 
 const AUTHORITY_LABELS: Record<string, string> = {
   primary_official: '公式一次',
@@ -31,6 +32,7 @@ const FETCH_MODE_LABELS: Record<string, string> = {
 /**
  * SCR-06 データソース管理。台帳（取得方式・利用条件・最終取得・エラー）と手動取込の登録。
  * 利用条件が未記録のソースはデータ本体を複製せずリンク+索引に限定する（要件 §9.3）。
+ * 利用条件欄には規約原文を転記せず、台帳に記録した要約のみを索引長で表示する。
  */
 export function SourcesPage() {
   const [data, setData] = useState<AdminSourcesResponse | null>(null);
@@ -100,10 +102,7 @@ export function SourcesPage() {
         </button>
       </div>
 
-      <p className="settings-note">
-        公式情報源の台帳です。利用条件が未記録のソースは、データ本体を複製せず公式ページへの
-        リンクと最小限の索引情報に限定します（要件 §9.3）。
-      </p>
+      <p className="settings-note">公式情報源の台帳です。{INDEX_ONLY_NOTICE}</p>
 
       {error !== null && (
         <p className="error" role="alert">
@@ -139,7 +138,13 @@ export function SourcesPage() {
                   <td>{FETCH_MODE_LABELS[source.fetchMode] ?? source.fetchMode}</td>
                   <td>{source.ttlDays}日</td>
                   <td>
-                    {source.licenseText ?? source.licenseUrl ?? (
+                    {source.licenseText !== null ? (
+                      toIndexText(source.licenseText)
+                    ) : source.licenseUrl !== null ? (
+                      <a href={source.licenseUrl} target="_blank" rel="noreferrer noopener">
+                        利用規約を確認
+                      </a>
+                    ) : (
                       <span className="quality-warn">⚠️ 未記録（リンク+索引限定）</span>
                     )}
                   </td>

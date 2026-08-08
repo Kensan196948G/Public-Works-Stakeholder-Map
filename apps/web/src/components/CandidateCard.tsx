@@ -10,19 +10,24 @@ import {
   PRECISION_LABELS,
   VERIFICATION_STATE_LABELS,
 } from '../labels.js';
+import { toIndexText } from '../licensing.js';
 
 function formatDate(iso: string | null): string {
   if (iso === null) return '不明';
   return new Date(iso).toLocaleDateString('ja-JP', { timeZone: 'Asia/Tokyo' });
 }
 
-/** 外部リンクはホスト名を明示し noopener noreferrer を付与する（§12.1） */
+/**
+ * 外部リンクはホスト名を明示し noopener noreferrer を付与する（§12.1）。
+ * 出典タイトルは情報源由来のテキストのため索引長へ丸める。本文相当の長文が
+ * 混入しても複製にならず、内容はリンク先の原典で確認させる（§9.3）。
+ */
 function EvidenceLink({ title, url }: { title: string; url: string }) {
   const host = new URL(url).hostname;
   return (
     <li>
       <a href={url} target="_blank" rel="noopener noreferrer">
-        {title}
+        {toIndexText(title)}
       </a>{' '}
       <span className="evidence-host">（{host}）</span>
     </li>

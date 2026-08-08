@@ -709,6 +709,11 @@ dd {
   max-height: 16rem;
 }
 
+/* 取込ペイロードは既定で要約表示。全文表示は明示操作に限る（§9.3） */
+.payload-view > button {
+  margin-top: 0.3rem;
+}
+
 .quality-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));

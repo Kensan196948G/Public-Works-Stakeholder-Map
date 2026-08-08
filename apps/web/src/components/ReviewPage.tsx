@@ -3,6 +3,7 @@ import type { AdminImportsResponse, ImportRecord, ReviewAction, ReviewState } fr
 import { reviewStateSchema } from '@pwsm/contracts';
 import { availableReviewActions } from '@pwsm/domain';
 import { ApiError, fetchAdminImports, reviewAdminImport } from '../api.js';
+import { INDEX_ONLY_NOTICE, previewPayloadJson } from '../licensing.js';
 
 const STATE_LABELS: Record<ReviewState, string> = {
   pending: '⏳ 未着手',
@@ -21,9 +22,34 @@ const ACTION_LABELS: Record<ReviewAction, string> = {
 };
 
 /**
+ * 取込ペイロードの表示。既定は要約（先頭のみ）で、全文はレビュー担当の明示操作で表示する。
+ * 本文複製が禁止されたソース由来の内容が既定で画面へ展開されるのを避けるための制限側の既定値（§9.3）。
+ */
+function PayloadView({ label, payload }: { label: string; payload: unknown }) {
+  const [showFull, setShowFull] = useState(false);
+  const preview = previewPayloadJson(payload);
+  const full = JSON.stringify(payload, null, 2) ?? '';
+  return (
+    <div className="payload-view">
+      <p>{label}:</p>
+      <pre className="payload">{showFull ? full : preview.text}</pre>
+      {preview.truncated && (
+        <button type="button" onClick={() => setShowFull((prev) => !prev)}>
+          {showFull ? '要約表示に戻す' : '⚠️ 全文を表示（複製・転載しないこと）'}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/**
  * SCR-07 データ編集・レビュー。取込ステージングの確認・承認・差戻し・隔離。
  * 遷移可否は domain の状態機械（availableReviewActions）で判定し、
  * 「スクレイピング結果を無レビューで公開しない」原則（要件 §6.2）を UI からも守る。
+ *
+ * 取込ペイロードは情報源由来の非構造データであり、本文の複製が禁止されたソース
+ * （reference_only）由来の内容を含み得る。台帳の利用条件が UI へ届いていない現状では
+ * 制限側を既定とし、既定表示は要約に留めてレビュー担当の明示操作でのみ全文を表示する（§9.3）。
  */
 export function ReviewPage() {
   const [data, setData] = useState<AdminImportsResponse | null>(null);
@@ -98,6 +124,10 @@ export function ReviewPage() {
         取込データはレビューを通過（承認）するまで公開されません。承認済みレコードの公開反映は
         データ版の切替として別途実施します。
       </p>
+      <p className="settings-note">
+        ⚠️ {INDEX_ONLY_NOTICE}
+        取込データに本文相当の記述が含まれる場合、そのまま公開データへ転記しないでください。
+      </p>
 
       {error !== null && (
         <p className="error" role="alert">
@@ -133,12 +163,9 @@ export function ReviewPage() {
 
           <details>
             <summary>取込データを表示</summary>
-            <pre className="payload">{JSON.stringify(record.rawPayload, null, 2)}</pre>
+            <PayloadView label="取込データ" payload={record.rawPayload} />
             {record.normalizedPayload !== null && (
-              <>
-                <p>正規化後:</p>
-                <pre className="payload">{JSON.stringify(record.normalizedPayload, null, 2)}</pre>
-              </>
+              <PayloadView label="正規化後" payload={record.normalizedPayload} />
             )}
           </details>
 
