@@ -55,10 +55,10 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U postgres -d pwsm"
+          --health-cmd "pg_isready -U postgres -d pwsm -h 127.0.0.1"
           --health-interval 5s
           --health-timeout 5s
-          --health-retries 10
+          --health-retries 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -66,14 +66,14 @@ jobs:
 
       - name: マイグレーション適用（0001 / 0002）
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pwsm?sslmode=disable
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/pwsm?sslmode=disable
         run: |
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/0001_initial_schema.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/0002_feedback.sql
 
       - name: seed 適用（デモ + 情報源台帳 + ステージング取込）
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pwsm?sslmode=disable
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/pwsm?sslmode=disable
         run: |
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/demo/0001_demo_dataset.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/registry/0001_source_registry.sql
@@ -81,7 +81,7 @@ jobs:
 
       - name: 整合性検証（件数・CHECK 制約・空間検索）
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pwsm?sslmode=disable
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/pwsm?sslmode=disable
         run: |
           set -e
           [ "$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM provenance.data_sources")" = "24" ]
