@@ -22,6 +22,8 @@
     "load:test": "node scripts/load-test.mjs",
     "backup:export": "bash scripts/backup-export.sh",
     "review:sheet": "node scripts/export-staging-review-sheet.mjs",
+    "review:verify": "node scripts/verify-staging-review.mjs",
+    "promote:core": "node scripts/promote-staging-to-core.mjs",
     "webui": "npm run build && node apps/api/dist/dev/node-server.js"
   },
   "engines": {

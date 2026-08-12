@@ -108,6 +108,28 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/registry/0003_n03_jurisdicti
 - レビュー: 原典の再確認・個人情報なし確認・二者レビュー後に `core.*` へ反映
 - 検証: `data/source-registry/test/entity-office.test.ts`（スキーマ・台帳一致・電話形式・SQL 不変条件）
 
+### 1.10 ✅ 機械レビューと core 反映パイプライン（2026-08-13・dev 適用済み）
+
+```bash
+# 1) 機械レビュー（全レコードの妥当性検証 → docs/review/YYYY-MM-DD-staging-review.md）
+DATABASE_URL="<Neon dev接続文字列>" npm run review:verify
+
+# 2) レビュー承認（SCR-07）後、core 昇格 SQL を生成
+DATABASE_URL="<Neon dev接続文字列>" npm run promote:core
+# → reports/0006_core_real_data.sql（巨大 WKT のため Git 管理外・再生成可能）
+
+# 3) 適用（dev で検証 → main はデータ版切替 PR の範囲で）
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f reports/0006_core_real_data.sql
+```
+
+- 機械レビュー（2026-08-13）: **258 件 PASS**（ST_IsValid・重複・電話桁数・個人情報なし・緊急番号なし）
+- dev の core 反映結果: organizations 27（デモ 8 + 実 16 + 行政区域 3）・offices 24・contacts 33・
+  jurisdictions 207（デモ 14 + 実 193）
+- 行政区域（N03）は「<都道府県>（行政区域）」を **municipality（自治体窓口）** として紐付け、
+  基本ルール（R-BASE-ISSUER）で候補になる
+- 道路・河川・港湾・警察の個別管轄ポリゴンと市区町村単位の窓口機関は**次フェーズ**（要データ整備）
+- 検証: 丸の内（139.767125, 35.681236）の検索で「東京都（行政区域）」が信頼度 A・N03 根拠付きで返る
+
 ### 1.8 🔗 情報源リンクの生存確認（2026-08-12・FR-015 第一歩）
 
 ```bash
