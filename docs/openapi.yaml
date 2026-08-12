@@ -313,6 +313,76 @@ paths:
                 $ref: "#/components/schemas/AdminFeedbackResponse"
         "403":
           $ref: "#/components/responses/Problem"
+  /api/v1/admin/feedback/{id}:
+    patch:
+      tags: [admin]
+      summary: フィードバック対応状態の更新（admin のみ）
+      security:
+        - accessJwt: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [new, reviewed, resolved]
+      responses:
+        "200":
+          description: 更新後のフィードバック項目
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminFeedbackItem"
+        "400":
+          $ref: "#/components/responses/Problem"
+        "404":
+          $ref: "#/components/responses/Problem"
+        "403":
+          $ref: "#/components/responses/Problem"
+  /api/v1/admin/audit-events/verify:
+    get:
+      tags: [admin]
+      summary: 監査チェーン（SHA-256 連結）の改ざん検証（admin のみ）
+      security:
+        - accessJwt: []
+      responses:
+        "200":
+          description: 検証結果
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditChainVerification"
+        "403":
+          $ref: "#/components/responses/Problem"
+  /api/v1/organizations/{id}:
+    get:
+      tags: [public]
+      summary: 機関詳細（FR-005）— 窓口・連絡先・管轄区域（published のみ）
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 機関詳細
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganizationDetail"
+        "404":
+          $ref: "#/components/responses/Problem"
 components:
   securitySchemes:
     accessJwt:
@@ -395,6 +465,121 @@ components:
         store:
           type: string
           enum: [db, memory]
+    AuditChainVerification:
+      type: object
+      required: [store, checked, valid, brokenAtEventId, reason]
+      properties:
+        store:
+          type: string
+          enum: [db, memory]
+        checked:
+          type: integer
+          minimum: 0
+        valid:
+          type: boolean
+        brokenAtEventId:
+          type: string
+          nullable: true
+        reason:
+          type: string
+          nullable: true
+    OrganizationDetail:
+      type: object
+      required:
+        [organizationId, name, type, officialUrl, status, sourceCheckedAt, freshnessDueAt, offices, contactPoints, jurisdictions]
+      properties:
+        organizationId:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        officialUrl:
+          type: string
+          format: uri
+          nullable: true
+        status:
+          type: string
+        sourceCheckedAt:
+          type: string
+          format: date-time
+          nullable: true
+        freshnessDueAt:
+          type: string
+          format: date-time
+          nullable: true
+        offices:
+          type: array
+          items:
+            type: object
+            required: [id, name, roleSummary, addressRaw, receptionNote]
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              roleSummary:
+                type: string
+                nullable: true
+              addressRaw:
+                type: string
+                nullable: true
+              receptionNote:
+                type: string
+                nullable: true
+        contactPoints:
+          type: array
+          items:
+            type: object
+            required: [id, contactType, label, displayValue, extension, sourceCheckedAt]
+            properties:
+              id:
+                type: string
+              contactType:
+                type: string
+                enum: [phone, web, email, counter]
+              label:
+                type: string
+              displayValue:
+                type: string
+              extension:
+                type: string
+                nullable: true
+              sourceCheckedAt:
+                type: string
+                format: date-time
+                nullable: true
+        jurisdictions:
+          type: array
+          items:
+            type: object
+            required:
+              [id, assetType, assetName, precision, estimated, scaleNote, validFrom, validTo, evidence]
+            properties:
+              id:
+                type: string
+              assetType:
+                type: string
+              assetName:
+                type: string
+                nullable: true
+              precision:
+                type: string
+              estimated:
+                type: boolean
+              scaleNote:
+                type: string
+                nullable: true
+              validFrom:
+                type: string
+                nullable: true
+              validTo:
+                type: string
+                nullable: true
+              evidence:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Evidence"
     SearchRequest:
       type: object
       required: [location]

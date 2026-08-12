@@ -64,12 +64,13 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: マイグレーション適用（0001 / 0002）
+      - name: マイグレーション適用（0001 / 0002 / 0003）
         env:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/pwsm?sslmode=disable
         run: |
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/0001_initial_schema.sql
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/0002_feedback.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/0003_audit_hash_chain.sql
 
       - name: seed 適用（デモ + 情報源台帳 + ステージング取込）
         env:
@@ -90,7 +91,16 @@ jobs:
           [ "$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM core.jurisdictions WHERE status='published'")" = "14" ]
           # PostGIS 空間検索の疎通確認（デモ中央地区の点で候補が返る）
           [ "$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM core.jurisdictions j JOIN core.organizations o ON o.id=j.organization_id WHERE j.status='published' AND o.status='published' AND ST_Covers(j.geometry, ST_SetSRID(ST_MakePoint(139.05, 35.05), 4326))")" -ge 1 ]
+          # 監査チェーン列の存在確認（0003）
+          [ "$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_schema='audit' AND table_name='audit_events' AND column_name='event_hash'")" = "1" ]
           echo "DB migration / seed validation: PASS"
+
+      - name: DB 統合テスト（PostGIS 上で実行・通常は環境変数ゲートでスキップ）
+        env:
+          TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/pwsm?sslmode=disable
+        run: |
+          npm ci --no-audit --no-fund
+          npx vitest run apps/api/test/db-repository.integration.test.ts
 
   security:
     name: dependency audit

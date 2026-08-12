@@ -1,7 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import type { AdminFeedbackItem, FeedbackCategory } from '@pwsm/contracts';
 import { feedbackCategorySchema } from '@pwsm/contracts';
-import { ApiError, fetchAdminFeedback, submitFeedback } from '../api.js';
+import {
+  ApiError,
+  fetchAdminFeedback,
+  submitFeedback,
+  updateAdminFeedbackStatus,
+} from '../api.js';
 
 const CATEGORY_LABELS: Record<FeedbackCategory, string> = {
   incorrect_info: '情報の誤り',
@@ -41,6 +46,24 @@ export function FeedbackPage() {
         e instanceof ApiError
           ? `${e.message}（管理者のみ閲覧できます）`
           : 'フィードバック一覧の取得に失敗しました（管理者のみ閲覧できます）',
+      );
+    } finally {
+      setAdminLoading(false);
+    }
+  }
+
+  async function handleStatusChange(
+    item: AdminFeedbackItem,
+    status: AdminFeedbackItem['status'],
+  ) {
+    setAdminLoading(true);
+    setAdminError(null);
+    try {
+      await updateAdminFeedbackStatus(item.id, status);
+      await loadAdminList();
+    } catch (e) {
+      setAdminError(
+        e instanceof ApiError ? e.message : 'フィードバック状態の更新に失敗しました。',
       );
     } finally {
       setAdminLoading(false);
@@ -160,7 +183,26 @@ export function FeedbackPage() {
                   <tr key={item.id}>
                     <td>{new Date(item.createdAt).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}</td>
                     <td>{CATEGORY_LABELS[item.category] ?? item.category}</td>
-                    <td>{STATUS_LABELS[item.status] ?? item.status}</td>
+                    <td>
+                      <span className={`state-badge state-fb-${item.status}`}>
+                        {STATUS_LABELS[item.status] ?? item.status}
+                      </span>
+                      <div className="review-actions">
+                        {(Object.keys(STATUS_LABELS) as AdminFeedbackItem['status'][]).map(
+                          (status) => (
+                            <button
+                              key={status}
+                              type="button"
+                              className={item.status === status ? 'decision-active' : ''}
+                              disabled={adminLoading || item.status === status}
+                              onClick={() => void handleStatusChange(item, status)}
+                            >
+                              {STATUS_LABELS[status]}
+                            </button>
+                          ),
+                        )}
+                      </div>
+                    </td>
                     <td>{item.message}</td>
                     <td>
                       {item.sourceUrl === null ? '—' : (

@@ -43,6 +43,19 @@ describe('管理系 API の保護（§9.2）', () => {
     );
     expect(res.status).toBe(403);
   });
+
+  it('production ではフィードバック状態更新も 403', async () => {
+    const res = await app.request(
+      '/api/v1/admin/feedback/imp-demo-0001',
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{"status":"reviewed"}',
+      },
+      { APP_ENV: 'production' },
+    );
+    expect(res.status).toBe(403);
+  });
 });
 
 describe('FR-017 管理者向けフィードバック一覧', () => {
@@ -82,6 +95,53 @@ describe('FR-017 管理者向けフィードバック一覧', () => {
     const body = (await audit.json()) as { events: Array<{ metadata: Record<string, unknown> }> };
     const serialized = JSON.stringify(body.events);
     expect(serialized).not.toContain('監査ログ非混入確認用');
+  });
+
+  it('対応状態を更新でき、一覧へ反映される（fixture モード）', async () => {
+    clearMemoryFeedback();
+    const app = buildApp({ now: () => FIXED_NOW });
+    const submit = await app.request(
+      jsonRequest('/feedback', {
+        category: 'ui_issue',
+        message: '状態更新テスト用の UI 改善報告です。',
+      }),
+    );
+    const submitted = (await submit.json()) as { id: string };
+
+    const patched = await app.request(
+      `/api/v1/admin/feedback/${submitted.id}`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{"status":"resolved"}',
+      },
+    );
+    expect(patched.status).toBe(200);
+    expect(((await patched.json()) as { status: string }).status).toBe('resolved');
+
+    const list = await app.request('/api/v1/admin/feedback');
+    const body = adminFeedbackResponseSchema.parse(await list.json());
+    expect(body.items.find((i) => i.id === submitted.id)?.status).toBe('resolved');
+
+    const missing = await app.request(
+      '/api/v1/admin/feedback/00000000-0000-0000-0000-000000000000',
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{"status":"new"}',
+      },
+    );
+    expect(missing.status).toBe(404);
+
+    const invalid = await app.request(
+      `/api/v1/admin/feedback/${submitted.id}`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{"status":"bogus"}',
+      },
+    );
+    expect(invalid.status).toBe(400);
   });
 });
 

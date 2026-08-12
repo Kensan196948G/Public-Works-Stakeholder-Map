@@ -3,6 +3,8 @@ import { secureHeaders } from 'hono/secure-headers';
 import {
   adminImportsResponseSchema,
   adminFeedbackResponseSchema,
+  adminFeedbackItemSchema,
+  auditChainVerificationSchema,
   adminSourcesResponseSchema,
   auditEventsResponseSchema,
   createImportRequestSchema,
@@ -15,9 +17,11 @@ import {
   geocodeResponseSchema,
   feedbackResponseSchema,
   feedbackRequestSchema,
+  feedbackStatusUpdateRequestSchema,
   importRecordSchema,
   jurisdictionMapResponseSchema,
   metadataResponseSchema,
+  organizationDetailSchema,
   qualityReportSchema,
   REQUIRED_DISCLAIMER,
   reviewRequestSchema,
@@ -38,21 +42,25 @@ import {
 import {
   listAuditEvents,
   recordAuditEvent,
+  verifyAuditChain,
   type AuditRecordInput,
 } from './repositories/audit-repository.js';
 import {
   checkDatabaseReady,
+  fetchOrganizationDetailDb,
   fetchJurisdictionMapDb,
   fetchRuleVersion,
   searchCandidatesDb,
 } from './repositories/db-repository.js';
 import {
   buildFixtureJurisdictionMap,
+  fetchOrganizationDetailFixture,
   searchCandidates,
 } from './repositories/fixture-repository.js';
 import {
   listFeedbackMessages,
   recordFeedback,
+  updateFeedbackStatus,
 } from './repositories/feedback-repository.js';
 import {
   GEOCODER_ATTRIBUTION,
@@ -428,6 +436,31 @@ export function buildApp(options: AppOptions = {}) {
     });
     return c.json(body);
   });
+
+  // FR-005 候補詳細: 機関・窓口・連絡先・管轄区域を公開データから返す（published のみ）
+  app.get(
+    '/organizations/:id',
+    rateLimit('organization-detail', { limit: 60, windowMs: 60_000 }),
+    async (c) => {
+      const requestId = c.get('requestId');
+      const id = c.req.param('id') ?? '';
+      const detail =
+        c.env?.DATABASE_URL === undefined
+          ? fetchOrganizationDetailFixture(demoDataset, id)
+          : await fetchOrganizationDetailDb(c.env.DATABASE_URL, id);
+      if (detail === null) {
+        return problemResponse(
+          requestId,
+          404,
+          ERROR_CODES.NOT_FOUND,
+          '機関が見つかりません',
+          '指定された機関は存在しないか、公開されていません',
+        );
+      }
+      cachePublic(c, 300);
+      return c.json(organizationDetailSchema.parse(detail));
+    },
+  );
 
   // FR-017: フィードバック受付（公開 API・本番でも利用可）
   app.post('/feedback', rateLimit('feedback', { limit: 20, windowMs: 60_000 }), async (c) => {
@@ -824,6 +857,82 @@ export function buildApp(options: AppOptions = {}) {
         metadata: { itemCount: items.length },
       });
       return c.json(adminFeedbackResponseSchema.parse({ items, store }));
+    },
+  );
+
+  // FR-017 対応クローズ: フィードバックの対応状態を更新（admin のみ）
+  app.patch(
+    '/admin/feedback/:id',
+    rateLimit('admin', { limit: 60, windowMs: 60_000 }),
+    requireRole('admin'),
+    async (c) => {
+      const requestId = c.get('requestId');
+      const id = c.req.param('id') ?? '';
+      const bodyResult = await readJsonWithLimit(c, requestId);
+      if (bodyResult !== null && typeof bodyResult === 'object' && '__tooLarge' in bodyResult) {
+        return (bodyResult as { __tooLarge: Response }).__tooLarge;
+      }
+      if (
+        bodyResult === null ||
+        bodyResult === undefined ||
+        (typeof bodyResult === 'object' && '__invalid' in bodyResult)
+      ) {
+        return problemResponse(
+          requestId,
+          400,
+          ERROR_CODES.INVALID_BODY,
+          '入力内容を確認してください',
+          'リクエストボディが JSON として解釈できません',
+        );
+      }
+      const parsed = feedbackStatusUpdateRequestSchema.safeParse(bodyResult);
+      if (!parsed.success) {
+        return problemResponse(
+          requestId,
+          400,
+          ERROR_CODES.INVALID_BODY,
+          '入力内容を確認してください',
+          'status は new / reviewed / resolved のいずれかを指定してください',
+        );
+      }
+      const updated = await updateFeedbackStatus(c.env?.DATABASE_URL, id, parsed.data.status);
+      if (updated === null) {
+        return problemResponse(
+          requestId,
+          404,
+          ERROR_CODES.NOT_FOUND,
+          'フィードバックが見つかりません',
+          '指定された ID のフィードバックは存在しません',
+        );
+      }
+      recordAudit(c, {
+        actor: 'admin',
+        action: 'admin.feedback.update_status',
+        targetKind: 'feedback',
+        result: 'success',
+        correlationId: requestId,
+        metadata: { feedbackId: id, status: parsed.data.status },
+      });
+      return c.json(adminFeedbackItemSchema.parse(updated));
+    },
+  );
+
+  // 監査チェーンの改ざん検証（migration 0003・admin のみ）
+  app.get(
+    '/admin/audit-events/verify',
+    rateLimit('admin', { limit: 10, windowMs: 60_000 }),
+    requireRole('admin'),
+    async (c) => {
+      const result = await verifyAuditChain(c.env?.DATABASE_URL);
+      recordAudit(c, {
+        actor: 'admin',
+        action: 'admin.audit.verify',
+        targetKind: 'audit',
+        result: result.valid ? 'success' : 'failure',
+        correlationId: c.get('requestId'),
+        metadata: { checked: result.checked },
+      });
+      return c.json(auditChainVerificationSchema.parse(result));
     },
   );
 

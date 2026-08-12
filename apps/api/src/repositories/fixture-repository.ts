@@ -4,6 +4,7 @@ import type {
   JurisdictionMapResponse,
   Location,
   OrganizationType,
+  OrganizationDetail,
   SearchRequest,
 } from '@pwsm/contracts';
 import { calculateConfidence, calculateFreshnessDue, evaluateRules } from '@pwsm/domain';
@@ -169,4 +170,62 @@ export function buildFixtureJurisdictionMap(
     }
   }
   return { type: 'FeatureCollection', datasetVersion, features };
+}
+
+const ASSET_TYPE_BY_ORG_TYPE: Record<OrganizationType, string> = {
+  issuer: 'administrative',
+  road_admin: 'road',
+  river_admin: 'river',
+  port_admin: 'port',
+  police: 'police',
+  prefecture: 'administrative',
+  municipality: 'administrative',
+  other: 'administrative',
+};
+
+/** 機関詳細（FR-005・fixture モード）。公開済みのみ返す。 */
+export function fetchOrganizationDetailFixture(
+  dataset: DemoDataset,
+  organizationId: string,
+): OrganizationDetail | null {
+  const org = dataset.organizations.find(
+    (o) => o.id === organizationId && o.reviewStatus === 'published',
+  );
+  if (org === undefined) return null;
+  const sourceCheckedAt = new Date(org.sourceCheckedAt);
+  const freshnessDueAt = calculateFreshnessDue(sourceCheckedAt, org.ttlDays);
+
+  return {
+    organizationId: org.id,
+    name: org.name,
+    type: org.type,
+    officialUrl: org.officialUrl,
+    status: org.reviewStatus,
+    sourceCheckedAt: sourceCheckedAt.toISOString(),
+    freshnessDueAt: freshnessDueAt === null ? null : freshnessDueAt.toISOString(),
+    offices: [
+      {
+        id: `${org.id}-office-1`,
+        name: org.officeName,
+        roleSummary: null,
+        addressRaw: null,
+        receptionNote: null,
+      },
+    ],
+    contactPoints: [],
+    jurisdictions: org.regionCodes.map((regionCode, index) => {
+      const region = dataset.regions.find((r) => r.code === regionCode);
+      return {
+        id: `${org.id}-jur-${index + 1}`,
+        assetType: ASSET_TYPE_BY_ORG_TYPE[org.type],
+        assetName: region?.name ?? regionCode,
+        precision: org.precision,
+        estimated: org.estimated,
+        scaleNote: null,
+        validFrom: null,
+        validTo: null,
+        evidence: [...org.evidence],
+      };
+    }),
+  };
 }

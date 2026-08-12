@@ -61,3 +61,9 @@ export const adminFeedbackResponseSchema = z.object({
   store: z.enum(['db', 'memory']),
 });
 export type AdminFeedbackResponse = z.infer<typeof adminFeedbackResponseSchema>;
+
+/** フィードバック対応状態の更新（FR-017 対応クローズ・admin のみ） */
+export const feedbackStatusUpdateRequestSchema = z.object({
+  status: z.enum(['new', 'reviewed', 'resolved']),
+});
+export type FeedbackStatusUpdateRequest = z.infer<typeof feedbackStatusUpdateRequestSchema>;

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   feedbackResponseSchema,
   jurisdictionMapResponseSchema,
+  organizationDetailSchema,
   searchResponseSchema,
   REQUIRED_DISCLAIMER,
 } from '@pwsm/contracts';
@@ -311,6 +312,38 @@ describe('GET /map/jurisdictions（FR-003 拡張）', () => {
       `/api/v1/map/jurisdictions?organizationIds=${Array.from({ length: 51 }, (_, i) => `org-${i}`).join(',')}`,
     );
     expect(tooMany.status).toBe(400);
+  });
+});
+
+describe('GET /organizations/:id（FR-005 候補詳細）', () => {
+  it('公開済み機関の詳細（窓口・管轄・根拠）を返す', async () => {
+    const res = await app.request('/api/v1/organizations/org-demo-0001');
+    expect(res.status).toBe(200);
+    const body = organizationDetailSchema.parse(await res.json());
+    expect(body.organizationId).toBe('org-demo-0001');
+    expect(body.name).toBe('みらい市 契約検査課（デモ）');
+    expect(body.offices.length).toBeGreaterThan(0);
+    expect(body.offices[0]?.name).toBe('契約検査課');
+    expect(body.jurisdictions.length).toBe(2);
+    for (const jurisdiction of body.jurisdictions) {
+      expect(jurisdiction.evidence.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('存在しない・非公開の機関は 404', async () => {
+    const missing = await app.request('/api/v1/organizations/org-demo-9999');
+    expect(missing.status).toBe(404);
+    const body = (await missing.json()) as { code: string };
+    expect(body.code).toBe('NOT_FOUND');
+  });
+
+  it('本番（production）でも公開エンドポイントとして利用できる', async () => {
+    const res = await app.request(
+      '/api/v1/organizations/org-demo-0001',
+      {},
+      { APP_ENV: 'production' },
+    );
+    expect(res.status).toBe(200);
   });
 });
 

@@ -96,6 +96,7 @@ flowchart TD
 - 住所・緯度経度・地図クリックによる地点指定
 - 工事対象、作業内容、周辺影響による条件検索
 - 機関種別、地域、信頼度、鮮度での絞り込み
+- 候補の詳細（窓口・連絡先・管轄区域・根拠）を展開表示（FR-005）
 
 ### 🗺️ 見る
 
@@ -230,6 +231,7 @@ stateDiagram-v2
 - 取得先ホストの許可リストと応答サイズ・時間制限
 - 秘密情報はCloudflare Secretで管理
 - データ変更、承認、設定、出力の監査ログ
+- 監査ログの SHA-256 連結チェーン（改ざん検知・migration 0003・検証 API）
 - 定期バックアップと四半期ごとの復元試験
 
 ```mermaid
@@ -278,6 +280,7 @@ npm test
 | `npm run dev -w @pwsm/api` | API 開発起動（wrangler dev）※ | ✅ 稼働 |
 | `npm run test:e2e` | ブラウザ E2E テスト（Playwright・CI で実行） | ✅ CI 稼働（ローカルは要 Chromium・仮想メモリ制限環境では起動不可） |
 | `npm run link:check` | 情報源台帳の公式 URL リンク生存確認（FR-015 第一歩・`reports/` に JSON 出力） | ✅ 稼働 |
+| `npm run load:test` | 検索 API の簡易負荷テスト（p95 2 秒目標・`BASE_URL` / `CONCURRENCY` / `REQUESTS` で調整） | ✅ 稼働 |
 
 > ※ 仮想メモリ制限のある環境では workerd が起動できない場合があります（ADR-0001 追記参照）。
 > その場合は `npm run webui`（Node サーバー）を使用してください。
@@ -473,7 +476,7 @@ Issueには次の情報を含めてください。
 | 🖥️ フロントエンド | ✅ 検索・地図・候補一覧・チェックリスト・CSV・免責 |
 | ⚙️ バックエンド API | ✅ health / metadata / 検索（fixture ⇔ Neon 切替） |
 | 🐘 データベース | ✅ スキーマ + 架空 seed 適用済み（Neon dev/main） |
-| 🧪 テスト | ✅ 209 件（v0.5.0 時点・Neon 統合 6 件は環境変数ゲート） |
+| 🧪 テスト | ✅ 221 件（v0.5.0 時点・Neon 統合 9 件は CI の PostGIS で実実行） |
 | 🔐 セキュリティ | ✅ CSV 注入対策・URL 検証・CSP・レート制限・ボディ上限・依存監査 0 件 |
 | 📚 運用文書 | ✅ チェックリスト / デプロイ / ロールバック / 障害対応 |
 | 🚀 本番デプロイ | ✅ **v0.1.1 公開済み**（2026-07-24・https://pwsm.mirai-dx-platform.com ・Cloudflare Access 保護・デモデータ。運用は `docs/operations/` 参照） |

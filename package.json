@@ -19,6 +19,7 @@
     "seed:generate": "npm run build && node scripts/generate-demo-seed.mjs",
     "test:e2e": "playwright test",
     "link:check": "node scripts/check-source-links.mjs",
+    "load:test": "node scripts/load-test.mjs",
     "webui": "npm run build && node apps/api/dist/dev/node-server.js"
   },
   "engines": {

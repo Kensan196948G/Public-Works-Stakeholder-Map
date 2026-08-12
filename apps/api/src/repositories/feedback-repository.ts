@@ -23,6 +23,7 @@ const MEMORY_CAP = 100;
 interface MemoryFeedbackRecord extends FeedbackRecordInput {
   id: string;
   createdAt: string;
+  status: AdminFeedbackItem['status'];
 }
 const memoryFeedback: MemoryFeedbackRecord[] = [];
 
@@ -48,7 +49,7 @@ export async function recordFeedback(
 ): Promise<FeedbackResponse> {
   const id = crypto.randomUUID();
   if (databaseUrl === undefined) {
-    memoryFeedback.unshift({ ...input, id, createdAt: now.toISOString() });
+    memoryFeedback.unshift({ ...input, id, createdAt: now.toISOString(), status: 'new' });
     if (memoryFeedback.length > MEMORY_CAP) memoryFeedback.length = MEMORY_CAP;
     return toResponse(id, now);
   }
@@ -71,7 +72,7 @@ export async function listFeedbackMessages(
       items: memoryFeedback.slice(0, limit).map((record) => ({
         id: record.id,
         category: record.category,
-        status: 'new',
+        status: record.status,
         message: record.message,
         sourceUrl: record.sourceUrl,
         datasetVersion: record.datasetVersion,
@@ -106,6 +107,54 @@ export async function listFeedbackMessages(
       createdAt: new Date(row.created_at).toISOString(),
     })),
     store: 'db',
+  };
+}
+
+/** フィードバック対応状態を更新する。対象なしは null。 */
+export async function updateFeedbackStatus(
+  databaseUrl: string | undefined,
+  id: string,
+  status: AdminFeedbackItem['status'],
+): Promise<AdminFeedbackItem | null> {
+  if (databaseUrl === undefined) {
+    const record = memoryFeedback.find((r) => r.id === id);
+    if (record === undefined) return null;
+    record.status = status;
+    return {
+      id: record.id,
+      category: record.category,
+      status: record.status,
+      message: record.message,
+      sourceUrl: record.sourceUrl,
+      datasetVersion: record.datasetVersion,
+      createdAt: record.createdAt,
+    };
+  }
+  const sql = neon(databaseUrl);
+  const updated = (await sql`
+    UPDATE workflow.feedback_messages
+    SET status = ${status}
+    WHERE id = ${id}
+    RETURNING id, category, status, message, source_url, dataset_version, created_at
+  `) as {
+    id: string;
+    category: AdminFeedbackItem['category'];
+    status: AdminFeedbackItem['status'];
+    message: string;
+    source_url: string | null;
+    dataset_version: string;
+    created_at: string;
+  }[];
+  const row = updated[0];
+  if (row === undefined) return null;
+  return {
+    id: row.id,
+    category: row.category,
+    status: row.status,
+    message: row.message,
+    sourceUrl: row.source_url,
+    datasetVersion: row.dataset_version,
+    createdAt: new Date(row.created_at).toISOString(),
   };
 }
 
