@@ -21,7 +21,7 @@
     "last_session": {
       "date": "2026-08-12",
       "started_at": "21:00",
-      "summary": "v0.5.0 総合評価・改善: CSP・レート制限・ボディ上限・フィードバック管理・ハートビート監視・CI DB検証・a11y・AI活用設計＋機関詳細API・フィードバック状態更新・監査チェーン(0003)・負荷テスト。221 tests PASS。次: 実データ投入（Issue #32）"
+      "summary": "v0.5.0 リリース完了: PR #58 マージ（32055f6）・migration 0003 を dev/main へ適用・本番デプロイ（version 686797b6）・tag/Release v0.5.0。次: 実データ投入（Issue #32）"
     },
     "v0.4.1_note": "Issue #32 第一段（台帳登録 seed・dev/main 適用）・#34 認証/RBAC コード実装（既定無効）・#36 MITライセンスを完了。残: 実データの組織/管轄整備・E2E(#35)・OpenAPI(#37)",
     "repair_count": 0,
@@ -40,6 +40,18 @@
     "checklist": "docs/operations/release-checklist.md",
     "note": "本番デプロイ・Secrets 登録・Neon main seed 適用は、リリース PR に明記しマージ判定 Y の承認範囲でのみ実行する",
     "released": {
+      "version": "v0.5.0",
+      "date": "2026-08-12",
+      "production_url": "https://pwsm.mirai-dx-platform.com",
+      "worker_version_id": "686797b6-0bf7-4a61-833a-269e478546d9",
+      "merge_commit": "32055f6",
+      "pr": [58],
+      "tag": "v0.5.0",
+      "release_url": "https://github.com/Kensan196948G/Public-Works-Stakeholder-Map/releases/tag/v0.5.0",
+      "neon_migrations_main": ["0001_initial_schema.sql", "0002_feedback.sql", "0003_audit_hash_chain.sql"],
+      "note_v0.5.0": "総合評価（63.9→70.0・代替率56.7%）に基づく改善を本番反映。CSP/レート制限/ボディ上限/監査チェーン/機関詳細API/フィードバック管理/ハートビート/CI DB検証。監査31行を0003でバックフィル済み"
+    },
+    "released_v0_4_2": {
       "version": "v0.4.2",
       "date": "2026-08-05",
       "production_url": "https://pwsm.mirai-dx-platform.com",
@@ -59,7 +71,7 @@
       "workers_dev": "無効化 (v0.1.1)",
       "observability": "有効化 (Issue #23)",
     "note_v0.4.2": "認証・RBAC 本番有効化（Access aud/JWKS 自動取得・admin=kensan1969・本番JWT検証成功）＋ #32 第二・三段（組織 staging 16件 pending・N03 取込ツール）。wrangler deploy で AUTH vars 同期（versions upload では vars が未反映だったため）",
-    "note_v0.5.0": "総合評価（条件付き利用可・63.9→70.0・代替率56.7%）・セキュリティ/監視/管理/UX 改善＋組織詳細・監査チェーン・リンク点検・バックアップ・UAT計画を実装。migration 0003 本番適用・実データ投入・通知基盤・UAT 実施が残課題。PR #58 マージ判定待ち"
+    "note_v0.5.0": "本番反映済み（2026-08-12）。残課題: 実データ投入（Issue #32）・通知基盤・UAT 実施・GitHub Projects 更新（project scope なし）・ops-maintenance 構造修復（PR #56）"
   }
   },
   "infra": {
