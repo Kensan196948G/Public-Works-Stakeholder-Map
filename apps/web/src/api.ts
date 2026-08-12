@@ -1,5 +1,6 @@
 import {
   adminImportsResponseSchema,
+  adminFeedbackResponseSchema,
   adminSourcesResponseSchema,
   auditEventsResponseSchema,
   feedbackRequestSchema,
@@ -12,6 +13,7 @@ import {
   qualityReportSchema,
   searchResponseSchema,
   type AdminImportsResponse,
+  type AdminFeedbackResponse,
   type AdminSourcesResponse,
   type AuditEventsResponse,
   type CreateImportRequest,
@@ -171,4 +173,13 @@ export async function fetchQualityReport(): Promise<QualityReport> {
     await throwProblem(res, '品質レポートの取得に失敗しました。');
   }
   return qualityReportSchema.parse(await res.json());
+}
+
+/** 管理者向け: フィードバック受付一覧（FR-017 対応用。admin のみ） */
+export async function fetchAdminFeedback(limit = 50): Promise<AdminFeedbackResponse> {
+  const res = await fetch(`/api/v1/admin/feedback?limit=${limit}`);
+  if (!res.ok) {
+    await throwProblem(res, 'フィードバック一覧の取得に失敗しました。');
+  }
+  return adminFeedbackResponseSchema.parse(await res.json());
 }

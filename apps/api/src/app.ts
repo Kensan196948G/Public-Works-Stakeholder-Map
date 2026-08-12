@@ -2,6 +2,7 @@ import { Hono, type Context } from 'hono';
 import { secureHeaders } from 'hono/secure-headers';
 import {
   adminImportsResponseSchema,
+  adminFeedbackResponseSchema,
   adminSourcesResponseSchema,
   auditEventsResponseSchema,
   createImportRequestSchema,
@@ -9,6 +10,7 @@ import {
   FEEDBACK_MESSAGE_MAX_LENGTH,
   FEEDBACK_MESSAGE_MIN_LENGTH,
   GEOCODE_QUERY_MAX_LENGTH,
+  MAX_REQUEST_BODY_BYTES,
   MAX_MAP_ORGANIZATION_IDS,
   geocodeResponseSchema,
   feedbackResponseSchema,
@@ -48,7 +50,10 @@ import {
   buildFixtureJurisdictionMap,
   searchCandidates,
 } from './repositories/fixture-repository.js';
-import { recordFeedback } from './repositories/feedback-repository.js';
+import {
+  listFeedbackMessages,
+  recordFeedback,
+} from './repositories/feedback-repository.js';
 import {
   GEOCODER_ATTRIBUTION,
   GeocodeUpstreamError,
@@ -62,6 +67,7 @@ import {
   type AccessClaims,
   type AdminRole,
 } from './services/access-auth.js';
+import { rateLimit } from './services/rate-limit.js';
 
 /**
  * Workers API 本体（詳細設計仕様書 §6）。
@@ -104,7 +110,7 @@ export interface ApiContext {
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 const PROBLEM_TYPE_BASE = 'https://public-works-map.example/errors';
 
-type ProblemStatus = 400 | 401 | 403 | 404 | 409 | 500 | 502;
+type ProblemStatus = 400 | 401 | 403 | 404 | 409 | 413 | 429 | 500 | 502;
 
 function problemResponse(
   requestId: string,
@@ -152,6 +158,66 @@ function classifyValidationError(path: readonly PropertyKey[]): {
     code: ERROR_CODES.INVALID_BODY,
     detail: '入力内容の形式が正しくありません',
   };
+}
+
+/**
+ * ボディをサイズ上限付きで JSON として読み込む（§12.2: body 64KB 上限）。
+ * Content-Length が上限超過の場合は即 413。チャンク転送にも対応する。
+ */
+async function readJsonWithLimit(
+  c: { req: { raw: Request } },
+  requestId: string,
+): Promise<unknown> {
+  const contentLength = Number(c.req.raw.headers.get('content-length'));
+  if (Number.isFinite(contentLength) && contentLength > MAX_REQUEST_BODY_BYTES) {
+    return {
+      __tooLarge: problemResponse(
+        requestId,
+        413,
+        ERROR_CODES.PAYLOAD_TOO_LARGE,
+        'リクエストが大きすぎます',
+        `リクエストボディは${Math.floor(MAX_REQUEST_BODY_BYTES / 1024)}KB以内にしてください`,
+      ),
+    };
+  }
+  const body = c.req.raw.body;
+  if (body === null) return null;
+  const reader = body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > MAX_REQUEST_BODY_BYTES) {
+        return {
+          __tooLarge: problemResponse(
+            requestId,
+            413,
+            ERROR_CODES.PAYLOAD_TOO_LARGE,
+            'リクエストが大きすぎます',
+            `リクエストボディは${Math.floor(MAX_REQUEST_BODY_BYTES / 1024)}KB以内にしてください`,
+          ),
+        };
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+  if (total === 0) return null;
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  try {
+    return JSON.parse(new TextDecoder().decode(bytes)) as unknown;
+  } catch {
+    return { __invalid: true };
+  }
 }
 
 export function buildApp(options: AppOptions = {}) {
@@ -234,7 +300,25 @@ export function buildApp(options: AppOptions = {}) {
     return verifyAccessJwt(token, config, now(), geocodeFetch);
   }
 
-  app.use(secureHeaders());
+  // CSP（詳細設計仕様書 §12.1）: 地図タイル（地理院）と印刷用インラインスタイルのみ許可。
+  // frame-ancestors 'none'・object-src 'none'・base-uri 'self' を強制する
+  app.use(
+    secureHeaders({
+      contentSecurityPolicy: {
+        defaultSrc: ["'self'"],
+        baseUri: ["'self'"],
+        connectSrc: ["'self'", 'https://cyberjapandata.gsi.go.jp'],
+        imgSrc: ["'self'", 'data:', 'https://cyberjapandata.gsi.go.jp'],
+        fontSrc: ["'self'", 'data:'],
+        formAction: ["'self'"],
+        frameAncestors: ["'none'"],
+        objectSrc: ["'none'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        upgradeInsecureRequests: [],
+      },
+    }),
+  );
 
   // 相関 ID ミドルウェア（§6.1: 受信値は形式検査し、不正なら再発行）
   app.use(async (c, next) => {
@@ -249,7 +333,9 @@ export function buildApp(options: AppOptions = {}) {
   });
 
   // CSRF 対策（§12.1 / §11 認証設計）: 状態変更 API へのクロスオリジン POST を拒否する。
-  // Origin ヘッダーが無い curl 等の API クライアントは許可する（ブラウザは通常付与する）。
+  // - Origin ヘッダーがあれば同一ホストのみ許可
+  // - Sec-Fetch-Site: cross-site を明示するブラウザリクエストは拒否
+  // - Origin が無い curl 等の API クライアントは許可する（ブラウザは通常付与する）
   app.use(async (c, next) => {
     const origin = c.req.header('origin');
     if (origin !== undefined) {
@@ -274,6 +360,19 @@ export function buildApp(options: AppOptions = {}) {
           ERROR_CODES.FORBIDDEN,
           'リクエストが拒否されました',
           '異なるオリジンからの操作は許可されていません',
+        );
+      }
+    }
+    const method = c.req.method;
+    if (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE') {
+      const secFetchSite = c.req.header('sec-fetch-site');
+      if (secFetchSite === 'cross-site') {
+        return problemResponse(
+          c.get('requestId'),
+          403,
+          ERROR_CODES.FORBIDDEN,
+          'リクエストが拒否されました',
+          'クロスサイトからの状態変更リクエストは許可されていません',
         );
       }
     }
@@ -331,12 +430,13 @@ export function buildApp(options: AppOptions = {}) {
   });
 
   // FR-017: フィードバック受付（公開 API・本番でも利用可）
-  app.post('/feedback', async (c) => {
+  app.post('/feedback', rateLimit('feedback', { limit: 20, windowMs: 60_000 }), async (c) => {
     const requestId = c.get('requestId');
-    let rawBody: unknown;
-    try {
-      rawBody = await c.req.json();
-    } catch {
+    const bodyResult = await readJsonWithLimit(c, requestId);
+    if (bodyResult !== null && typeof bodyResult === 'object' && '__tooLarge' in bodyResult) {
+      return (bodyResult as { __tooLarge: Response }).__tooLarge;
+    }
+    if (bodyResult === null || bodyResult === undefined || (typeof bodyResult === 'object' && '__invalid' in bodyResult)) {
       return problemResponse(
         requestId,
         400,
@@ -345,6 +445,7 @@ export function buildApp(options: AppOptions = {}) {
         'リクエストボディが JSON として解釈できません',
       );
     }
+    const rawBody = bodyResult;
     const parsed = feedbackRequestSchema.safeParse(rawBody);
     if (!parsed.success) {
       return problemResponse(
@@ -378,7 +479,10 @@ export function buildApp(options: AppOptions = {}) {
   });
 
   // FR-003 拡張: 検索結果の候補機関が持つ公開管轄区域（地図ハイライト用 GeoJSON）
-  app.get('/map/jurisdictions', async (c) => {
+  app.get(
+    '/map/jurisdictions',
+    rateLimit('map-jurisdictions', { limit: 60, windowMs: 60_000 }),
+    async (c) => {
     const requestId = c.get('requestId');
     const rawIds = (c.req.query('organizationIds') ?? '').split(',').map((s) => s.trim());
     const ids = rawIds.filter((s) => s !== '');
@@ -397,10 +501,11 @@ export function buildApp(options: AppOptions = {}) {
         : await fetchJurisdictionMapDb(c.env.DATABASE_URL, ids, datasetVersion(c.env));
     cachePublic(c, 300);
     return c.json(jurisdictionMapResponseSchema.parse(body));
-  });
+    },
+  );
 
   // 住所検索（FR-001）。クエリは監査・ログへ記録しない（プライバシー最小化）
-  app.get('/geocode', async (c) => {
+  app.get('/geocode', rateLimit('geocode', { limit: 30, windowMs: 60_000 }), async (c) => {
     const requestId = c.get('requestId');
     const query = (c.req.query('q') ?? '').trim();
     if (query.length === 0 || query.length > GEOCODE_QUERY_MAX_LENGTH) {
@@ -448,7 +553,10 @@ export function buildApp(options: AppOptions = {}) {
   });
 
   // 監査ログ閲覧（SCR-09 先行）。認証・RBAC 導入までは production で無効化する
-  app.get('/audit-events', async (c) => {
+  app.get(
+    '/audit-events',
+    rateLimit('audit-events', { limit: 30, windowMs: 60_000 }),
+    async (c) => {
     const requestId = c.get('requestId');
     const config = authConfigFromEnv(c.env);
     const actor = await resolveActor(c);
@@ -483,7 +591,8 @@ export function buildApp(options: AppOptions = {}) {
     const limit = Number.isInteger(rawLimit) ? Math.min(Math.max(rawLimit, 1), 200) : 50;
     const { events, store } = await listAuditEvents(c.env?.DATABASE_URL, limit);
     return c.json(auditEventsResponseSchema.parse({ events, store }));
-  });
+    },
+  );
 
   /* ---------------- 管理系 API（SCR-06〜08、Phase 2） ---------------- */
   // 認証・RBAC 導入までは本番で無効化し、Cloudflare Access + この 403 の 2 層で保護する（§9.2）
@@ -495,13 +604,13 @@ export function buildApp(options: AppOptions = {}) {
   }
 
   // SCR-06: データソース台帳（取得方式・利用条件・最終取得・エラー）
-  app.get('/admin/sources', requireRole('editor'), async (c) => {
+  app.get('/admin/sources', rateLimit('admin', { limit: 60, windowMs: 60_000 }), requireRole('editor'), async (c) => {
     const sources = await adminRepository(c.env).listSources();
     return c.json(adminSourcesResponseSchema.parse({ sources }));
   });
 
   // SCR-07: 取込ステージング一覧（state フィルタ・新しい順）
-  app.get('/admin/imports', requireRole('reviewer'), async (c) => {
+  app.get('/admin/imports', rateLimit('admin', { limit: 60, windowMs: 60_000 }), requireRole('reviewer'), async (c) => {
     const requestId = c.get('requestId');
     const stateRaw = c.req.query('state');
     const stateParsed = stateRaw === undefined ? undefined : reviewStateSchema.safeParse(stateRaw);
@@ -521,12 +630,13 @@ export function buildApp(options: AppOptions = {}) {
   });
 
   // SCR-06: 手動取込の登録（ステージングへ pending で追加。無レビュー公開禁止の入口）
-  app.post('/admin/imports', requireRole('editor'), async (c) => {
+  app.post('/admin/imports', rateLimit('admin', { limit: 60, windowMs: 60_000 }), requireRole('editor'), async (c) => {
     const requestId = c.get('requestId');
-    let rawBody: unknown;
-    try {
-      rawBody = await c.req.json();
-    } catch {
+    const bodyResult = await readJsonWithLimit(c, requestId);
+    if (bodyResult !== null && typeof bodyResult === 'object' && '__tooLarge' in bodyResult) {
+      return (bodyResult as { __tooLarge: Response }).__tooLarge;
+    }
+    if (bodyResult === null || bodyResult === undefined || (typeof bodyResult === 'object' && '__invalid' in bodyResult)) {
       return problemResponse(
         requestId,
         400,
@@ -535,6 +645,7 @@ export function buildApp(options: AppOptions = {}) {
         'リクエストボディが JSON として解釈できません',
       );
     }
+    const rawBody = bodyResult;
     const parsed = createImportRequestSchema.safeParse(rawBody);
     if (!parsed.success) {
       return problemResponse(
@@ -575,13 +686,18 @@ export function buildApp(options: AppOptions = {}) {
   });
 
   // SCR-07: レビュー操作。状態機械（domain）で遷移を検証し、全操作を監査へ記録する
-  app.post('/admin/imports/:id/review', requireRole('reviewer'), async (c) => {
+  app.post(
+    '/admin/imports/:id/review',
+    rateLimit('admin', { limit: 60, windowMs: 60_000 }),
+    requireRole('reviewer'),
+    async (c) => {
     const requestId = c.get('requestId');
     const id = c.req.param('id') ?? '';
-    let rawBody: unknown;
-    try {
-      rawBody = await c.req.json();
-    } catch {
+    const bodyResult = await readJsonWithLimit(c, requestId);
+    if (bodyResult !== null && typeof bodyResult === 'object' && '__tooLarge' in bodyResult) {
+      return (bodyResult as { __tooLarge: Response }).__tooLarge;
+    }
+    if (bodyResult === null || bodyResult === undefined || (typeof bodyResult === 'object' && '__invalid' in bodyResult)) {
       return problemResponse(
         requestId,
         400,
@@ -590,6 +706,7 @@ export function buildApp(options: AppOptions = {}) {
         'リクエストボディが JSON として解釈できません',
       );
     }
+    const rawBody = bodyResult;
     const parsed = reviewRequestSchema.safeParse(rawBody);
     if (!parsed.success) {
       return problemResponse(
@@ -677,22 +794,50 @@ export function buildApp(options: AppOptions = {}) {
       },
     });
     return c.json(importRecordSchema.parse(updated));
-  });
+    },
+  );
 
   // SCR-08: 品質ダッシュボード（欠損・期限超過・出典保有・取込状態）
-  app.get('/admin/quality', requireRole('reviewer'), async (c) => {
+  app.get('/admin/quality', rateLimit('admin', { limit: 60, windowMs: 60_000 }), requireRole('reviewer'), async (c) => {
     const report = await adminRepository(c.env).qualityReport(datasetVersion(c.env));
     c.header('Cache-Control', 'no-store');
     return c.json(qualityReportSchema.parse(report));
   });
 
-  app.post('/stakeholders/search', async (c) => {
+  // FR-017 対応クローズ: 管理者向けフィードバック一覧（本文は admin のみ閲覧可。
+  // 監査ログへは本文・URL を記録しない方針を維持する）
+  app.get(
+    '/admin/feedback',
+    rateLimit('admin', { limit: 60, windowMs: 60_000 }),
+    requireRole('admin'),
+    async (c) => {
+      const requestId = c.get('requestId');
+      const rawLimit = Number(c.req.query('limit') ?? 50);
+      const limit = Number.isInteger(rawLimit) ? Math.min(Math.max(rawLimit, 1), 200) : 50;
+      const { items, store } = await listFeedbackMessages(c.env?.DATABASE_URL, limit);
+      recordAudit(c, {
+        actor: 'admin',
+        action: 'admin.feedback.list',
+        targetKind: 'feedback',
+        result: 'success',
+        correlationId: requestId,
+        metadata: { itemCount: items.length },
+      });
+      return c.json(adminFeedbackResponseSchema.parse({ items, store }));
+    },
+  );
+
+  app.post(
+    '/stakeholders/search',
+    rateLimit('search', { limit: 60, windowMs: 60_000 }),
+    async (c) => {
     const requestId = c.get('requestId');
 
-    let rawBody: unknown;
-    try {
-      rawBody = await c.req.json();
-    } catch {
+    const bodyResult = await readJsonWithLimit(c, requestId);
+    if (bodyResult !== null && typeof bodyResult === 'object' && '__tooLarge' in bodyResult) {
+      return (bodyResult as { __tooLarge: Response }).__tooLarge;
+    }
+    if (bodyResult === null || bodyResult === undefined || (typeof bodyResult === 'object' && '__invalid' in bodyResult)) {
       return problemResponse(
         requestId,
         400,
@@ -701,6 +846,7 @@ export function buildApp(options: AppOptions = {}) {
         'リクエストボディが JSON として解釈できません',
       );
     }
+    const rawBody = bodyResult;
 
     const parsed = searchRequestSchema.safeParse(rawBody);
     if (!parsed.success) {
@@ -740,7 +886,8 @@ export function buildApp(options: AppOptions = {}) {
       },
     });
     return c.json(body);
-  });
+    },
+  );
 
   app.notFound((c) =>
     problemResponse(

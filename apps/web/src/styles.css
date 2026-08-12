@@ -31,6 +31,28 @@ body {
   padding: 1rem;
 }
 
+/* スキップリンク（WCAG 2.4.1）: フォーカス時のみ表示 */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 1000;
+  background: #0369a1;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 0 0 6px 0;
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+/* フォーカス可視化（WCAG 2.4.7） */
+:focus-visible {
+  outline: 3px solid #0369a1;
+  outline-offset: 2px;
+}
+
 .app-header h1 {
   font-size: 1.4rem;
   margin-bottom: 0.25rem;
@@ -59,6 +81,17 @@ body {
 @media (max-width: 800px) {
   .layout {
     grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  .app-nav,
+  .pane-form,
+  .candidate-toolbar,
+  .decision,
+  .disclaimer,
+  .skip-link {
+    display: none !important;
   }
 }
 

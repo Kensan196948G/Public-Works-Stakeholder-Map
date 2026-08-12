@@ -3,7 +3,7 @@
 | 項目 | 内容 |
 |---|---|
 | 対象 | Public Works Stakeholder Map 本番（https://pwsm.mirai-dx-platform.com） |
-| 更新日 | 2026-08-05 |
+| 更新日 | 2026-08-12 |
 | 責任者 | 運用責任者（現状: kensan1969@gmail.com・一次対応者） |
 
 ## 1. SLI／SLO
@@ -29,6 +29,15 @@
 > ⚠️ 通知基盤（メール送信・監視 SaaS）は未導入のため、現状は **Workers Logs / Analytics の手動確認**と
 > 定期点検（operations-ledger.md）で代替する。閾値・通知先は導入時にこの表を設定に反映する。
 
+### 2.1 定期保守の無音停止検知（2026-08-12 実装・Issue #57）
+
+- `.github/workflows/ops-heartbeat.yml` が毎日 21:30 JST に、`ops-maintenance` の直近実行が
+  成功してから 8 日以内かを確認する
+- 実行なし・失敗続き・8 日超過の場合は、重複のないオープン Issue を自動起票する
+- 監視主体が GitHub Actions であるため、GitHub Actions 自体の全停止は検知できない
+  （多重化しない方針。運用台帳の月次点検で担保）
+- 誤検知時の調整: 閾値（8 日）と cron は本ファイルではなく workflow を編集し、PR レビューを経る
+
 ## 3. エスカレーション
 
 | レベル | 対応者 | 期限 |
@@ -47,3 +56,10 @@
 - 日次: `/health/ready`・監査ログ件数・staging 滞留（operations-ledger.md）
 - 週次: Workers Analytics のエラー率・レイテンシ・依存監査（自動 workflow 併用）
 - 月次: SLO 達成率の集計・期限超過・情報源取得状況
+
+## 6. アプリ層の防御（2026-08-12 実装）
+
+- 公開 API レート制限: search 60 回/分・geocode 30 回/分・feedback 20 回/分（isolate 内固定ウィンドウ。
+  多 isolate 展開時は Cloudflare WAF / Rate Limiting を正とする）
+- リクエストボディ上限: 64KB（413 PAYLOAD_TOO_LARGE）
+- CSP: `default-src 'self'`・`frame-ancestors 'none'`・地理院タイルのみ許可

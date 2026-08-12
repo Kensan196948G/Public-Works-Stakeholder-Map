@@ -41,6 +41,57 @@ jobs:
       - name: Build
         run: npm run build
 
+  db-validation:
+    name: db migration / seed validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: pwsm
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d pwsm"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: マイグレーション適用（0001 / 0002）
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pwsm?sslmode=disable
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/0001_initial_schema.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/0002_feedback.sql
+
+      - name: seed 適用（デモ + 情報源台帳 + ステージング取込）
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pwsm?sslmode=disable
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/demo/0001_demo_dataset.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/registry/0001_source_registry.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/registry/0002_staging_org_imports.sql
+
+      - name: 整合性検証（件数・CHECK 制約・空間検索）
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pwsm?sslmode=disable
+        run: |
+          set -e
+          [ "$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM provenance.data_sources")" = "24" ]
+          [ "$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM staging.import_records")" = "16" ]
+          [ "$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM core.organizations WHERE status='published'")" = "8" ]
+          [ "$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM core.jurisdictions WHERE status='published'")" = "14" ]
+          # PostGIS 空間検索の疎通確認（デモ中央地区の点で候補が返る）
+          [ "$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM core.jurisdictions j JOIN core.organizations o ON o.id=j.organization_id WHERE j.status='published' AND o.status='published' AND ST_Covers(j.geometry, ST_SetSRID(ST_MakePoint(139.05, 35.05), 4326))")" -ge 1 ]
+          echo "DB migration / seed validation: PASS"
+
   security:
     name: dependency audit
     runs-on: ubuntu-latest

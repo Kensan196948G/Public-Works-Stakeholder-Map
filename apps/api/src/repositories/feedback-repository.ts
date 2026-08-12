@@ -1,5 +1,9 @@
 import { neon } from '@neondatabase/serverless';
-import type { FeedbackCategory, FeedbackResponse } from '@pwsm/contracts';
+import type {
+  AdminFeedbackItem,
+  FeedbackCategory,
+  FeedbackResponse,
+} from '@pwsm/contracts';
 
 /**
  * フィードバック受付（FR-017）。
@@ -16,7 +20,11 @@ export interface FeedbackRecordInput {
 }
 
 const MEMORY_CAP = 100;
-const memoryFeedback: FeedbackRecordInput[] = [];
+interface MemoryFeedbackRecord extends FeedbackRecordInput {
+  id: string;
+  createdAt: string;
+}
+const memoryFeedback: MemoryFeedbackRecord[] = [];
 
 /** 受付番号。利用者への表示・問い合わせキーとして使う（ID 自体は内部 ID） */
 function makeReference(id: string): string {
@@ -40,7 +48,7 @@ export async function recordFeedback(
 ): Promise<FeedbackResponse> {
   const id = crypto.randomUUID();
   if (databaseUrl === undefined) {
-    memoryFeedback.unshift(input);
+    memoryFeedback.unshift({ ...input, id, createdAt: now.toISOString() });
     if (memoryFeedback.length > MEMORY_CAP) memoryFeedback.length = MEMORY_CAP;
     return toResponse(id, now);
   }
@@ -51,6 +59,54 @@ export async function recordFeedback(
     VALUES (${id}, ${input.category}, ${input.message}, ${input.sourceUrl}, ${input.datasetVersion})
   `;
   return toResponse(id, now);
+}
+
+/** フィードバック一覧（管理者向け）。新しい順。 */
+export async function listFeedbackMessages(
+  databaseUrl: string | undefined,
+  limit: number,
+): Promise<{ items: AdminFeedbackItem[]; store: 'db' | 'memory' }> {
+  if (databaseUrl === undefined) {
+    return {
+      items: memoryFeedback.slice(0, limit).map((record) => ({
+        id: record.id,
+        category: record.category,
+        status: 'new',
+        message: record.message,
+        sourceUrl: record.sourceUrl,
+        datasetVersion: record.datasetVersion,
+        createdAt: record.createdAt,
+      })),
+      store: 'memory',
+    };
+  }
+  const sql = neon(databaseUrl);
+  const rows = (await sql`
+    SELECT id, category, status, message, source_url, dataset_version, created_at
+    FROM workflow.feedback_messages
+    ORDER BY created_at DESC
+    LIMIT ${limit}
+  `) as {
+    id: string;
+    category: AdminFeedbackItem['category'];
+    status: AdminFeedbackItem['status'];
+    message: string;
+    source_url: string | null;
+    dataset_version: string;
+    created_at: string;
+  }[];
+  return {
+    items: rows.map((row) => ({
+      id: row.id,
+      category: row.category,
+      status: row.status,
+      message: row.message,
+      sourceUrl: row.source_url,
+      datasetVersion: row.dataset_version,
+      createdAt: new Date(row.created_at).toISOString(),
+    })),
+    store: 'db',
+  };
 }
 
 /** テスト用: メモリフィードバックストアを初期化する */

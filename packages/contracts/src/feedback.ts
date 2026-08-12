@@ -42,3 +42,22 @@ export const feedbackResponseSchema = z.object({
   reference: z.string(),
 });
 export type FeedbackResponse = z.infer<typeof feedbackResponseSchema>;
+
+/** 管理者向けのフィードバック一覧項目（FR-017 の対応クローズ）。admin のみ参照可 */
+export const adminFeedbackItemSchema = z.object({
+  id: z.string(),
+  category: feedbackCategorySchema,
+  /** 対応状況（workflow.feedback_messages.status と一致） */
+  status: z.enum(['new', 'reviewed', 'resolved']),
+  message: z.string(),
+  sourceUrl: z.string().nullable(),
+  datasetVersion: z.string(),
+  createdAt: z.iso.datetime({ offset: true }),
+});
+export type AdminFeedbackItem = z.infer<typeof adminFeedbackItemSchema>;
+
+export const adminFeedbackResponseSchema = z.object({
+  items: z.array(adminFeedbackItemSchema).max(200),
+  store: z.enum(['db', 'memory']),
+});
+export type AdminFeedbackResponse = z.infer<typeof adminFeedbackResponseSchema>;

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  adminFeedbackResponseSchema,
   adminImportsResponseSchema,
   adminSourcesResponseSchema,
   importRecordSchema,
@@ -7,6 +8,7 @@ import {
   type ImportRecord,
 } from '@pwsm/contracts';
 import { buildApp } from '../src/app.js';
+import { clearMemoryFeedback } from '../src/repositories/feedback-repository.js';
 
 /** 固定クロック（fixture の鮮度判定を決定的にする） */
 const FIXED_NOW = new Date('2026-07-24T00:00:00Z');
@@ -26,6 +28,7 @@ describe('管理系 API の保護（§9.2）', () => {
     ['/admin/sources'],
     ['/admin/imports'],
     ['/admin/quality'],
+    ['/admin/feedback'],
   ])('production では %s が 403（認証導入まで無効化）', async (path) => {
     const res = await app.request(`/api/v1${path}`, {}, { APP_ENV: 'production' });
     expect(res.status).toBe(403);
@@ -39,6 +42,46 @@ describe('管理系 API の保護（§9.2）', () => {
       { APP_ENV: 'production' },
     );
     expect(res.status).toBe(403);
+  });
+});
+
+describe('FR-017 管理者向けフィードバック一覧', () => {
+  it('送信したフィードバックが admin 一覧へ表示される（fixture モード）', async () => {
+    clearMemoryFeedback();
+    const app = buildApp({ now: () => FIXED_NOW });
+    const submit = await app.request(
+      jsonRequest('/feedback', {
+        category: 'broken_link',
+        message: '管理画面テスト用のリンク切れ報告です。',
+        sourceUrl: 'https://example.com/official',
+      }),
+    );
+    expect(submit.status).toBe(202);
+
+    const res = await app.request('/api/v1/admin/feedback');
+    expect(res.status).toBe(200);
+    const body = adminFeedbackResponseSchema.parse(await res.json());
+    expect(body.store).toBe('memory');
+    const item = body.items.find((i) => i.message.includes('管理画面テスト用'));
+    expect(item).toBeDefined();
+    expect(item?.category).toBe('broken_link');
+    expect(item?.sourceUrl).toBe('https://example.com/official');
+    expect(item?.status).toBe('new');
+  });
+
+  it('フィードバック本文は監査ログへ記録されない（§12.2）', async () => {
+    clearMemoryFeedback();
+    const app = buildApp({ now: () => FIXED_NOW });
+    await app.request(
+      jsonRequest('/feedback', {
+        category: 'other',
+        message: '監査ログ非混入確認用の報告本文です。',
+      }),
+    );
+    const audit = await app.request('/api/v1/audit-events');
+    const body = (await audit.json()) as { events: Array<{ metadata: Record<string, unknown> }> };
+    const serialized = JSON.stringify(body.events);
+    expect(serialized).not.toContain('監査ログ非混入確認用');
   });
 });
 

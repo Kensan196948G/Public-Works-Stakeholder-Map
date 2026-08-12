@@ -16,13 +16,24 @@ export default tseslint.config(
       '.design-sync/**',
       // ClaudeOS 運用ファイル（アプリコードではない）
       '.claude/**',
+      // チーム開発用の git worktree（リポジトリの複製）— 本体と二重に lint しない
+      '.worktrees/**',
+      // ローカル検証用の一時ファイル（gitignore 済み）
+      '.tmp/**',
     ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    // Node で実行するスクリプト（seed 生成等）
-    files: ['scripts/**/*.mjs'],
+    // worktree 等でリポジトリ複製が併存しても TSConfig の基準を一意に固定する。
+    // 未指定だと typescript-eslint が候補を決められず全ファイルが Parsing error になる。
+    languageOptions: {
+      parserOptions: { tsconfigRootDir: import.meta.dirname },
+    },
+  },
+  {
+    // Node で実行するスクリプト（seed 生成・CI 検証等）
+    files: ['scripts/**/*.mjs', '.github/scripts/**/*.mjs'],
     languageOptions: {
       globals: {
         console: 'readonly',
@@ -30,6 +41,9 @@ export default tseslint.config(
         URL: 'readonly',
         fetch: 'readonly',
         AbortSignal: 'readonly',
+        AbortController: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
       },
     },
   },

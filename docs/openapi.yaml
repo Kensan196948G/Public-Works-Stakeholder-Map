@@ -290,6 +290,29 @@ paths:
                 $ref: "#/components/schemas/QualityReport"
         "403":
           $ref: "#/components/responses/Problem"
+  /api/v1/admin/feedback:
+    get:
+      tags: [admin]
+      summary: フィードバック受付一覧（admin のみ・FR-017 対応）
+      security:
+        - accessJwt: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+      responses:
+        "200":
+          description: フィードバック一覧
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminFeedbackResponse"
+        "403":
+          $ref: "#/components/responses/Problem"
 components:
   securitySchemes:
     accessJwt:
@@ -319,7 +342,7 @@ components:
           maximum: 599
         code:
           type: string
-          enum: [INVALID_BODY, INVALID_COORDINATE, INVALID_RADIUS, INVALID_QUERY, UNAUTHORIZED, FORBIDDEN, NOT_FOUND, CONFLICT, UPSTREAM_ERROR, INTERNAL_ERROR]
+          enum: [INVALID_BODY, INVALID_COORDINATE, INVALID_RADIUS, INVALID_QUERY, PAYLOAD_TOO_LARGE, RATE_LIMITED, UNAUTHORIZED, FORBIDDEN, NOT_FOUND, CONFLICT, UPSTREAM_ERROR, INTERNAL_ERROR]
         detail:
           type: string
         requestId:
@@ -336,6 +359,42 @@ components:
           type: number
           minimum: -180
           maximum: 180
+    AdminFeedbackItem:
+      type: object
+      required: [id, category, status, message, sourceUrl, datasetVersion, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        category:
+          type: string
+          enum: [incorrect_info, broken_link, missing_org, ui_issue, other]
+        status:
+          type: string
+          enum: [new, reviewed, resolved]
+        message:
+          type: string
+        sourceUrl:
+          type: string
+          format: uri
+          nullable: true
+        datasetVersion:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    AdminFeedbackResponse:
+      type: object
+      required: [items, store]
+      properties:
+        items:
+          type: array
+          maxItems: 200
+          items:
+            $ref: "#/components/schemas/AdminFeedbackItem"
+        store:
+          type: string
+          enum: [db, memory]
     SearchRequest:
       type: object
       required: [location]
