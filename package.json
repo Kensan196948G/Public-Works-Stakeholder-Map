@@ -20,6 +20,7 @@
     "test:e2e": "playwright test",
     "link:check": "node scripts/check-source-links.mjs",
     "load:test": "node scripts/load-test.mjs",
+    "backup:export": "bash scripts/backup-export.sh",
     "webui": "npm run build && node apps/api/dist/dev/node-server.js"
   },
   "engines": {

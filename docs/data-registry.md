@@ -102,6 +102,8 @@ npm run link:check -- --fail-on-error
 - リダイレクト 3 回・タイムアウト 8 秒・HTTPS のみ・並列 4 で確認する
 - 失敗は即公開停止とせず、SCR-08 の「リンク異常」候補としてレビュー対象にする
 - 定期実行は Phase 1 で cron 化し、結果を品質ダッシュボードへ連携する
+- **週次自動点検（2026-08-12 実装）**: `.github/workflows/ops-link-check.yml` が毎週月曜 23:00 JST に
+  実行し、リンク切れ候補を Issue で通知する
 
 ## 2. 🗃️ 台帳への記録項目（`provenance.data_sources`）
 

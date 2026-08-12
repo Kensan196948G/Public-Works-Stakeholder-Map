@@ -59,7 +59,7 @@
       "workers_dev": "無効化 (v0.1.1)",
       "observability": "有効化 (Issue #23)",
     "note_v0.4.2": "認証・RBAC 本番有効化（Access aud/JWKS 自動取得・admin=kensan1969・本番JWT検証成功）＋ #32 第二・三段（組織 staging 16件 pending・N03 取込ツール）。wrangler deploy で AUTH vars 同期（versions upload では vars が未反映だったため）",
-    "note_v0.5.0": "総合評価（条件付き利用可・63.9→69.8・代替率56.6%）・セキュリティ/監視/管理/UX 改善＋組織詳細・監査チェーンを実装。migration 0003 本番適用・実データ投入・通知基盤・UAT が残課題。PR #58 マージ判定待ち"
+    "note_v0.5.0": "総合評価（条件付き利用可・63.9→70.0・代替率56.7%）・セキュリティ/監視/管理/UX 改善＋組織詳細・監査チェーン・リンク点検・バックアップ・UAT計画を実装。migration 0003 本番適用・実データ投入・通知基盤・UAT 実施が残課題。PR #58 マージ判定待ち"
   }
   },
   "infra": {
