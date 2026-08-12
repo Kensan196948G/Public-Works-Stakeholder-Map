@@ -476,7 +476,7 @@ Issueには次の情報を含めてください。
 | 🖥️ フロントエンド | ✅ 検索・地図・候補一覧・チェックリスト・CSV・免責 |
 | ⚙️ バックエンド API | ✅ health / metadata / 検索（fixture ⇔ Neon 切替） |
 | 🐘 データベース | ✅ スキーマ + 架空 seed 適用済み（Neon dev/main） |
-| 🧪 テスト | ✅ 221 件（v0.5.0 時点・Neon 統合 9 件は CI の PostGIS で実実行） |
+| 🧪 テスト | ✅ 221 件（v0.5.0 時点・Neon 統合 9 件は `TEST_DATABASE_URL` 設定時のみ実行） |
 | 🔐 セキュリティ | ✅ CSV 注入対策・URL 検証・CSP・レート制限・ボディ上限・依存監査 0 件 |
 | 📚 運用文書 | ✅ チェックリスト / デプロイ / ロールバック / 障害対応 |
 | 🚀 本番デプロイ | ✅ **v0.1.1 公開済み**（2026-07-24・https://pwsm.mirai-dx-platform.com ・Cloudflare Access 保護・デモデータ。運用は `docs/operations/` 参照） |

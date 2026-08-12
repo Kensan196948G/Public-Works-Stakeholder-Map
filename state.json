@@ -105,7 +105,9 @@
     "failure_patterns": [
       "vitest 4 / workerd はローカルの ulimit -v 20GB 環境で V8 仮想メモリ予約により起動不能 → vitest 3 固定・検証用 Node dev server (npm run webui) で代替 (ADR-0001)",
       "CodeRabbit CLI は organization spending cap で rate limit になる場合がある → GitHub 側チェック + 内部レビューエージェントで代替",
-      "neon serverless driver は enum 配列 (custom OID) を文字列で返す → ::text[] キャスト必須"
+      "neon serverless driver は enum 配列 (custom OID) を文字列で返す → ::text[] キャスト必須",
+      "@neondatabase/serverless は Neon プロキシ前提のためローカル Postgres（127.0.0.1）へ接続不可 → DB 統合テストは TEST_DATABASE_URL（Neon dev ブランチ）ゲートとし、CI は psql で migration/seed 検証（2026-08-12 実証）",
+      "JWT 改ざんテストで末尾 2 文字を変えても atob が下位ビットを無視し同一バイトになることがある → 中央文字の変更と base64url 形式検査で対応（2026-08-12 検出）"
     ],
     "success_patterns": [
       "クロック注入 (now: () => Date) で鮮度・期限超過テストを決定的に実行",
