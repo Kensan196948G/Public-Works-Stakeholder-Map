@@ -3,7 +3,7 @@
 > **公共工事ステークホルダー整理マップ**  
 > 工事場所と作業条件から、事前に確認したほうがよい関係機関を公開情報ベースで整理します。
 
-[![Status](https://img.shields.io/badge/status-v0.4.0_released_(demo)-22c55e)](#️-開発状況)
+[![Status](https://img.shields.io/badge/status-v0.5.1_real_data_(limited)-22c55e)](#️-開発状況)
 [![Data](https://img.shields.io/badge/data-public_only-0ea5e9)](#-データ方針)
 [![Decision](https://img.shields.io/badge/decision-support_not_determination-f59e0b)](#%EF%B8%8F-重要な注意)
 [![License](https://img.shields.io/badge/license-TBD-lightgrey)](#-ライセンス)
@@ -446,7 +446,7 @@ Issueには次の情報を含めてください。
 
 ## 🏷️ 開発状況
 
-**Status: Phase 0 — Foundation Scaffold 構築済み**
+**Status: Phase 2 前半完了 — 実データ版切替済み（代表3地域・関係者限定）**
 
 | 日付 | 内容 |
 |---|---|
@@ -469,8 +469,9 @@ Issueには次の情報を含めてください。
 | 2026-08-05 | ✅ **v0.4.2 リリース**: 認証・RBAC本番有効化（Access設定自動取得）・組織ステージング16件・N03取込ツール |
 | 2026-08-12 | 🚀 **v0.5.0（本番運用評価）**: CSP・レート制限・ボディ上限・フィードバック管理・ハートビート監視・CI DB検証・a11y 改善・AI活用設計 |
 | 2026-08-12 | 🎉 **v0.5.0 本番リリース**: PR #58 マージ・migration 0003 適用（監査チェーン）・Worker 686797b6 デプロイ・tag/Release 作成 |
+| 2026-08-13 | 🎉 **v0.5.1 実データ版切替（Issue #32）**: 代表3地域の実データ（org 19・office 16・contact 33・jurisdiction 193）を core へ反映・デモデータ suspended・DATASET_VERSION 切替 |
 
-### 🚦 リリース状況（v0.1.0 公開済み・デモデータ）
+### 🚦 リリース状況（v0.5.1 実データ版切替済み・関係者限定）
 
 | 領域 | 状態 |
 |---|---|
@@ -480,7 +481,7 @@ Issueには次の情報を含めてください。
 | 🧪 テスト | ✅ 221 件（v0.5.0 時点・Neon 統合 9 件は `TEST_DATABASE_URL` 設定時のみ実行） |
 | 🔐 セキュリティ | ✅ CSV 注入対策・URL 検証・CSP・レート制限・ボディ上限・依存監査 0 件 |
 | 📚 運用文書 | ✅ チェックリスト / デプロイ / ロールバック / 障害対応 |
-| 🚀 本番デプロイ | ✅ **v0.1.1 公開済み**（2026-07-24・https://pwsm.mirai-dx-platform.com ・Cloudflare Access 保護・デモデータ。運用は `docs/operations/` 参照） |
+| 🚀 本番デプロイ | ✅ **v0.5.1 公開済み**（2026-08-13・https://pwsm.mirai-dx-platform.com ・Cloudflare Access 保護・実データ（代表3地域）＋デモは suspended。運用は `docs/operations/` 参照） |
 
 ### ✅ 実装済み（Phase 0 + Phase 1）
 
@@ -494,4 +495,5 @@ Issueには次の情報を含めてください。
 
 ### 🚧 次のゲート（Phase 2 後半）
 
-**実データの投入**: SCR-06〜09 の仕組みは実装済みです。残るは人間決裁の 2 点 — 代表 3 地域の選定と各公式情報源の利用条件確定（Issue #28・`docs/data-registry.md`）。決裁後、台帳登録 → 手動取込 → 二者レビュー → データ版切替で実データ公開へ進みます。現時点の候補データは全て架空デモです。認証・アプリ内 RBAC は実データ公開の規模に応じて導入します。
+**実データの投入**: 代表3地域（東京・横浜・大阪）の実データを core へ反映し、データ版切替を実施しました（v0.5.1・2026-08-13）。
+現状の候補は**行政区域（N03-20260101）に基づく自治体窓口（都道府県代表）**のみです。次フェーズは道路・河川・港湾・警察の個別管轄ポリゴンと市区町村単位の窓口整備、および人間による二者レビュー・UAT です。

@@ -71,7 +71,8 @@
       "workers_dev": "無効化 (v0.1.1)",
       "observability": "有効化 (Issue #23)",
     "note_v0.4.2": "認証・RBAC 本番有効化（Access aud/JWKS 自動取得・admin=kensan1969・本番JWT検証成功）＋ #32 第二・三段（組織 staging 16件 pending・N03 取込ツール）。wrangler deploy で AUTH vars 同期（versions upload では vars が未反映だったため）",
-    "note_v0.5.0": "本番反映済み（2026-08-12）。残課題: 実データ投入（Issue #32）・通知基盤・UAT 実施・GitHub Projects 更新（project scope なし）・ops-maintenance 構造修復（PR #56）"
+    "note_v0.5.0": "本番反映済み（2026-08-12）。残課題: 実データ投入（Issue #32）・通知基盤・UAT 実施・GitHub Projects 更新（project scope なし）・ops-maintenance 構造修復（PR #56）",
+    "note_v0.5.1": "実データ版切替（2026-08-13・Issue #32）: 代表3地域の実データを core へ反映・デモ suspended・DATASET_VERSION=2026-08-13.real.1。残: 個別管轄ポリゴン・市区町村窓口・人間レビュー・UAT"
   }
   },
   "infra": {
