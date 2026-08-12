@@ -1,0 +1,21 @@
+{
+  "sourceSlug": "osaka-keiyaku-nyusatsu",
+  "region": "osaka",
+  "offices": [
+    {
+      "name": "契約管財局（入札契約情報）",
+      "roleSummary": "大阪市の工事請負入札等・契約情報の掲載主体。入札手続きの詳細は東京都電子調達と同様に案内ページを参照",
+      "postalCode": "530-8201",
+      "addressRaw": "大阪市北区中之島1丁目3番20号（大阪市役所）",
+      "receptionNote": "開庁時間 平日9:00〜17:30（土日祝・年末年始を除く）。",
+      "contacts": [
+        { "contactType": "phone", "label": "大阪市役所代表", "displayValue": "06-6208-8181" },
+        { "contactType": "phone", "label": "大阪市総合コールセンター（8:00〜21:00）", "displayValue": "06-4301-7285" },
+        { "contactType": "web", "label": "大阪市契約管財局 入札契約情報（原典）", "displayValue": "https://www.city.osaka.lg.jp/keiyakukanzai/category/3047-0-0-0-0-0-0-0-0-0.html" }
+      ],
+      "sourceUrl": "https://www.city.osaka.lg.jp/keiyakukanzai/category/3047-0-0-0-0-0-0-0-0-0.html",
+      "confirmedAt": "2026-08-13",
+      "notes": "契約担当部署の直通番号は原典に記載なし（要照会）。"
+    }
+  ]
+}

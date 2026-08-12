@@ -1,0 +1,18 @@
+{
+  "sourceSlug": "yokohama-kowan",
+  "region": "yokohama",
+  "offices": [
+    {
+      "name": "港湾局（組織案内）",
+      "roleSummary": "横浜港の港湾管理・事業に関する問い合わせ（組織案内ページ参照）",
+      "receptionNote": "事業別の所管部署・窓口は組織案内を確認すること。",
+      "contacts": [
+        { "contactType": "phone", "label": "横浜市コールセンター", "displayValue": "045-664-2525" },
+        { "contactType": "web", "label": "港湾局 組織案内（原典）", "displayValue": "https://www.city.yokohama.lg.jp/city-info/yokohamashi/org/kowan/" }
+      ],
+      "sourceUrl": "https://www.city.yokohama.lg.jp/city-info/yokohamashi/org/kowan/",
+      "confirmedAt": "2026-08-13",
+      "notes": "担当部署の直通番号は原典に記載なし（要照会）。"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "sourceSlug": "osaka-police-shinsei",
+  "region": "osaka",
+  "offices": [
+    {
+      "name": "大阪府警察本部（交通規制課・交通総務課）",
+      "roleSummary": "道路使用許可等の申請・届出の様式掲載主体。通行可標章は交通規制課、特定自動運行等は交通総務課へ問い合わせ",
+      "postalCode": "540-8540",
+      "addressRaw": "大阪市中央区大手前三丁目1番11号（大阪府警察本部）",
+      "receptionNote": "申請は使用場所を管轄する警察署へ（警察署一覧は原典参照）。e-Gov電子申請にも対応。",
+      "contacts": [
+        { "contactType": "phone", "label": "大阪府警察本部代表", "displayValue": "06-6943-1234" },
+        { "contactType": "web", "label": "道路交通法等に基づく各種申請及び届出様式（原典）", "displayValue": "https://www.police.pref.osaka.lg.jp/tetsuduki/dorokotsu/4971.html" }
+      ],
+      "sourceUrl": "https://www.police.pref.osaka.lg.jp/tetsuduki/dorokotsu/4971.html",
+      "confirmedAt": "2026-08-13",
+      "notes": "代表番号は問い合わせ先であり、担当係へ直通するとは限らない。"
+    }
+  ]
+}

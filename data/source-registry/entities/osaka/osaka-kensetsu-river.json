@@ -1,0 +1,20 @@
+{
+  "sourceSlug": "osaka-kensetsu-river",
+  "region": "osaka",
+  "offices": [
+    {
+      "name": "建設局 道路河川部 河川課",
+      "roleSummary": "大阪市管理河川の占用許可・利用手続きの窓口（河川等占用許可申請）",
+      "postalCode": "559-0034",
+      "addressRaw": "大阪市住之江区南港北2丁目1番10号 ATCビルITM棟6階",
+      "receptionNote": "申請書類は送付または持参（持参は平日9:00〜12:15・13:00〜17:30）。",
+      "contacts": [
+        { "contactType": "phone", "label": "河川課", "displayValue": "06-6615-6833" },
+        { "contactType": "web", "label": "河川等の利用（占用）の許可（原典）", "displayValue": "https://www.city.osaka.lg.jp/kensetsu/page/0000002580.html" }
+      ],
+      "sourceUrl": "https://www.city.osaka.lg.jp/kensetsu/page/0000002580.html",
+      "confirmedAt": "2026-08-13",
+      "notes": "一級河川・府管理河川等は大阪府等の所管となるため、対象により管理者が分岐する（原典注記）。"
+    }
+  ]
+}
