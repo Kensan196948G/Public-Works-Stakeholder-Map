@@ -89,6 +89,24 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/registry/0003_n03_jurisdicti
 > 残作業: N03 実データの取得・変換・レビュー、公式ページからの窓口（office / contact_point）
 > 情報の収集・正規化、承認後の `core.*` 反映とデータ版切替を、1 地域ずつ進めます。
 
+#### 1.7.1 代表 3 地域を N03-20260101 へ更新（2026-08-13・dev 適用済み）
+
+- 取得: `N03-20260101_13/14/27_GML.zip`（URL は `data/source-registry/imports/n03-20260101-manifest.json` 参照）
+- 変換: ogr2ogr で EPSG:4326 の GeoJSON 化 → `scripts/n03-geojson-to-imports.mjs` で
+  市町村単位（政令市は行政区単位）に集約し、ステージング取込 SQL を生成
+- 適用: **Neon dev ブランチ**へ 193 件（東京 63・神奈川 58・大阪 72）を pending 適用（冪等）
+- 品質フラグ: `geometry_pending_review`（境界はレビューで確認）
+- ツール改善: N03-2026 の `N03_005`（行政区名）対応・`13000` 等の全ゼロ市区町村コードを
+  `unknown` へ正規化（所属未定地の重複を防止）・配布ページ未掲載の最新版を HEAD プローブで検出
+
+### 1.9 🏢 窓口・連絡先エンティティの収集（2026-08-13・東京 6 窓口 / 12 連絡先）
+
+- 収集元: `data/source-registry/entities/tokyo/*.json`（公式ページから抽出した下書き）
+- 生成: `scripts/generate-office-contact-imports.mjs` → `db/seeds/registry/0005_staging_tokyo_office_contacts.sql`
+- 適用: Neon dev ブランチへ pending + `contact_pending_review` で適用済み
+- レビュー: 原典の再確認・個人情報なし確認・二者レビュー後に `core.*` へ反映
+- 検証: `data/source-registry/test/entity-office.test.ts`（スキーマ・台帳一致・電話形式・SQL 不変条件）
+
 ### 1.8 🔗 情報源リンクの生存確認（2026-08-12・FR-015 第一歩）
 
 ```bash

@@ -57,10 +57,35 @@ for (const pref of prefs) {
     a.yyyymmdd < b.yyyymmdd ? -1 : 1,
   );
   const latest = versions[versions.length - 1] ?? null;
+  // 配布ページに未掲載でも従来 URL パターンで取得可能な最近版を確認する
+  // （2026-08-13: ページは N03-20210101 までしか表示しないが N03-20250101 は取得可能だった）
+  const probed = [];
+  const currentYear = new Date().getUTCFullYear();
+  for (let y = currentYear + 1; y >= currentYear - 3; y -= 1) {
+    const url = `https://nlftp.mlit.go.jp/ksj/gml/data/N03/N03-${y}/N03-${y}0101_${pref}_GML.zip`;
+    try {
+      const res = await fetch(url, {
+        method: 'HEAD',
+        redirect: 'follow',
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (res.ok) {
+        probed.push({ version: `${y}0101`, url });
+      }
+    } catch {
+      // 存在しない版は無視
+    }
+  }
+  probed.sort((a, b) => (a.version < b.version ? -1 : 1));
+  const probedLatest = probed[probed.length - 1] ?? null;
+  const useProbed =
+    probedLatest !== null && (latest === null || probedLatest.version > latest.yyyymmdd);
   result.push({
     pref,
-    latestVersion: latest?.yyyymmdd ?? null,
-    latestUrl: latest === null ? null : (urlByKey.get(`${latest.raw}_${pref}`) ?? null),
+    latestVersion: useProbed ? probedLatest?.version ?? null : (latest?.yyyymmdd ?? null),
+    latestUrl: useProbed ? (probedLatest?.url ?? null) : (latest === null ? null : (urlByKey.get(`${latest.raw}_${pref}`) ?? null)),
+    pageVersion: latest?.yyyymmdd ?? null,
+    probedVersion: probedLatest?.version ?? null,
     availableCount: rawVersions.length,
   });
 }

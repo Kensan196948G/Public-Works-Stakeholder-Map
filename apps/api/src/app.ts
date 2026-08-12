@@ -233,21 +233,27 @@ export function buildApp(options: AppOptions = {}) {
   const geocodeFetch = options.geocodeFetch ?? fetch;
   const app = new Hono<ApiContext>().basePath('/api/v1');
 
-  /** 監査記録。失敗しても本処理を止めない（Workers では waitUntil で非同期化） */
-  function recordAudit(
+  /**
+   * 監査記録。Workers では waitUntil で非同期化し、本処理を止めない。
+   * Node（検証サーバー・テスト）では記録完了を待つ（次のリクエストから監査が見えることを保証）。
+   */
+  async function recordAudit(
     c: { env?: ApiContext['Bindings']; executionCtx?: { waitUntil?: (p: Promise<unknown>) => void } },
     input: AuditRecordInput,
-  ): void {
+  ): Promise<void> {
     const promise = recordAuditEvent(c.env?.DATABASE_URL, input, now()).catch((err: unknown) => {
       console.error('audit record failed', {
         message: err instanceof Error ? err.message : String(err),
       });
     });
     try {
+      // Workers: 応答をブロックせず記録を継続。Node では executionCtx アクセス自体が例外になる
       c.executionCtx?.waitUntil?.(promise);
+      return;
     } catch {
-      // Workers 以外（Node/テスト）では executionCtx が無い — promise は投げっぱなしで良い
+      // Workers 以外（Node/テスト）: 記録完了を待ってから次処理へ進む
     }
+    await promise;
   }
 
   /** 認証ガード（Issue #34・設計 §11）。無効時は従来の環境ガードにフォールバックする */
@@ -279,7 +285,7 @@ export function buildApp(options: AppOptions = {}) {
       }
       c.set('actor', claims);
       if (!hasRole(claims, minimum)) {
-        recordAudit(c, {
+        await recordAudit(c, {
           actor: claims.email ?? claims.sub,
           action: 'admin.access_denied',
           targetKind: 'admin',
@@ -500,7 +506,7 @@ export function buildApp(options: AppOptions = {}) {
       now(),
     );
     // 監査ログへは本文・URL を記録しない（§12.2 プライバシー最小化）
-    recordAudit(c, {
+    await recordAudit(c, {
       actor: 'anonymous',
       action: 'feedback.submit',
       targetKind: 'feedback',
@@ -552,7 +558,7 @@ export function buildApp(options: AppOptions = {}) {
     }
     try {
       const results = await geocodeAddress(query, geocodeFetch);
-      recordAudit(c, {
+      await recordAudit(c, {
         actor: 'anonymous',
         action: 'geocode.search',
         targetKind: 'geocode',
@@ -565,7 +571,7 @@ export function buildApp(options: AppOptions = {}) {
       );
     } catch (err) {
       if (err instanceof GeocodeUpstreamError) {
-        recordAudit(c, {
+        await recordAudit(c, {
           actor: 'anonymous',
           action: 'geocode.search',
           targetKind: 'geocode',
@@ -691,7 +697,7 @@ export function buildApp(options: AppOptions = {}) {
     }
     const result = await adminRepository(c.env).createImport(parsed.data);
     if (result === 'source_not_found') {
-      recordAudit(c, {
+      await recordAudit(c, {
         actor: 'operator',
         action: 'admin.import.create',
         targetKind: 'import',
@@ -707,7 +713,7 @@ export function buildApp(options: AppOptions = {}) {
         '指定された sourceId は台帳に登録されていません',
       );
     }
-    recordAudit(c, {
+    await recordAudit(c, {
       actor: 'operator',
       action: 'admin.import.create',
       targetKind: 'import',
@@ -758,7 +764,7 @@ export function buildApp(options: AppOptions = {}) {
       config.enabled &&
       !hasRole(actor ?? null, 'admin')
     ) {
-      recordAudit(c, {
+      await recordAudit(c, {
         actor: actor?.email ?? 'unknown',
         action: 'admin.import.review',
         targetKind: 'import',
@@ -787,7 +793,7 @@ export function buildApp(options: AppOptions = {}) {
     }
     const nextState = applyReviewAction(record.reviewState, parsed.data.action);
     if (nextState === null) {
-      recordAudit(c, {
+      await recordAudit(c, {
         actor: 'operator',
         action: 'admin.import.review',
         targetKind: 'import',
@@ -813,7 +819,7 @@ export function buildApp(options: AppOptions = {}) {
         'レビュー確定前にレコードが削除された可能性があります',
       );
     }
-    recordAudit(c, {
+    await recordAudit(c, {
       actor: 'operator',
       action: 'admin.import.review',
       targetKind: 'import',
@@ -848,7 +854,7 @@ export function buildApp(options: AppOptions = {}) {
       const rawLimit = Number(c.req.query('limit') ?? 50);
       const limit = Number.isInteger(rawLimit) ? Math.min(Math.max(rawLimit, 1), 200) : 50;
       const { items, store } = await listFeedbackMessages(c.env?.DATABASE_URL, limit);
-      recordAudit(c, {
+      await recordAudit(c, {
         actor: 'admin',
         action: 'admin.feedback.list',
         targetKind: 'feedback',
@@ -905,7 +911,7 @@ export function buildApp(options: AppOptions = {}) {
           '指定された ID のフィードバックは存在しません',
         );
       }
-      recordAudit(c, {
+      await recordAudit(c, {
         actor: 'admin',
         action: 'admin.feedback.update_status',
         targetKind: 'feedback',
@@ -924,7 +930,7 @@ export function buildApp(options: AppOptions = {}) {
     requireRole('admin'),
     async (c) => {
       const result = await verifyAuditChain(c.env?.DATABASE_URL);
-      recordAudit(c, {
+      await recordAudit(c, {
         actor: 'admin',
         action: 'admin.audit.verify',
         targetKind: 'audit',
@@ -982,7 +988,7 @@ export function buildApp(options: AppOptions = {}) {
       candidates: result.candidates,
     };
     // 検索実行を監査へ記録（座標・条件詳細は記録しない: プライバシー最小化）
-    recordAudit(c, {
+    await recordAudit(c, {
       actor: 'anonymous',
       action: 'stakeholder.search',
       targetKind: 'search',

@@ -1,0 +1,20 @@
+{
+  "sourceSlug": "tokyo-kensetsu-road",
+  "region": "tokyo",
+  "offices": [
+    {
+      "name": "道路管理部 管理課",
+      "roleSummary": "都道の占用許可・特殊車両通行許可等に関する問い合わせ窓口（原典「問い合わせ先：管理課」）",
+      "postalCode": "163-8001",
+      "addressRaw": "東京都新宿区西新宿2-8-1（東京都庁）",
+      "receptionNote": "原典ページに受付時間の記載なし（要照会）",
+      "contacts": [
+        { "contactType": "phone", "label": "問い合わせ（管理課）", "displayValue": "03-5320-5273" },
+        { "contactType": "web", "label": "道路の管理（原典）", "displayValue": "https://www.kensetsu.metro.tokyo.lg.jp/road/kanri" }
+      ],
+      "sourceUrl": "https://www.kensetsu.metro.tokyo.lg.jp/road/kanri",
+      "confirmedAt": "2026-08-13",
+      "notes": "2026-08-13 に公式ページを取得して抽出。道路管理部の組織概要・パンフレット問い合わせ先として管理課 03-5320-5273 を確認。"
+    }
+  ]
+}

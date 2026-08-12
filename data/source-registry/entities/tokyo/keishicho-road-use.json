@@ -1,0 +1,20 @@
+{
+  "sourceSlug": "keishicho-road-use",
+  "region": "tokyo",
+  "offices": [
+    {
+      "name": "交通規制課 道路第一係・道路第二係",
+      "roleSummary": "道路使用許可の概要、工事・作業（道路第一係）および工事・作業以外（道路第二係）に関する問い合わせ",
+      "postalCode": "100-8929",
+      "addressRaw": "東京都千代田区霞が関2丁目1番1号（警視庁）",
+      "receptionNote": "申請窓口は使用場所を管轄する警察署の交通規制係（受付 平日8:30〜16:30）。高速道路上は高速道路交通警察隊へ申請。",
+      "contacts": [
+        { "contactType": "phone", "label": "警視庁代表（交通規制課）", "displayValue": "03-3581-4321" },
+        { "contactType": "web", "label": "道路使用許可申請手続き（原典）", "displayValue": "https://www.keishicho.metro.tokyo.lg.jp/tetsuzuki/kotsu/road_permission.html" }
+      ],
+      "sourceUrl": "https://www.keishicho.metro.tokyo.lg.jp/tetsuzuki/kotsu/road_permission.html",
+      "confirmedAt": "2026-08-13",
+      "notes": "申請書類・様式の詳細は原典を確認。代表番号は問い合わせ先として記載されており、直接の担当係へつながるとは限らない。"
+    }
+  ]
+}

@@ -128,12 +128,17 @@ for (const feature of featureCollection.features) {
   const props = feature.properties ?? {};
   const prefCode = resolvePrefCode(props);
   const rawCityCode = String(props.N03_007 ?? props.N03_CITY ?? props.N03_NAME ?? '');
-  // 所属未定地（N03_007 なし）は都道府県単位の「未割当」として扱う
-  const cityCode = rawCityCode === '' && prefCode !== '' ? `${prefCode}-unknown` : rawCityCode;
+  // 所属未定地（N03_007 なし、または「13000」等の全ゼロ市区町村コード）は
+  // 都道府県単位の「未割当」として扱う（2026-08-13: N03-2025 で 13000 表記を確認）
+  const isUnassigned = rawCityCode === '' || /^\d{2}000$/.test(rawCityCode);
+  const cityCode = isUnassigned && prefCode !== '' ? `${prefCode}-unknown` : rawCityCode;
   // 表示名: 「横浜市鶴見区」のように上位（N03_003）と下位（N03_004）を連結する
   const cityName = String(
     props.N03_CITY ??
-      [props.N03_003, props.N03_004].filter((v) => typeof v === 'string' && v !== '').join('') ??
+      // N03-2026 以降は政令指定都市の行政区名が N03_005 に格納される（例: 大阪市/N03_004 + 北区/N03_005）
+      [props.N03_003, props.N03_004, props.N03_005]
+        .filter((v) => typeof v === 'string' && v !== '')
+        .join('') ??
       props.N03_NAME ??
       '',
   );
@@ -144,7 +149,7 @@ for (const feature of featureCollection.features) {
   collectPolygons(feature.geometry, rings);
   assertLatLon(rings);
   const key = `${prefCode}:${cityCode}`;
-  const unassigned = rawCityCode === '';
+  const unassigned = isUnassigned;
   const group = groups.get(key) ?? {
     prefCode,
     cityCode,

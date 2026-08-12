@@ -93,6 +93,25 @@ describe('N03 GeoJSON → 管轄ステージング取込（Issue #32 第三段�
     expect(sql).toContain('"cityCode":"27103"');
   });
 
+  it('N03-2026 の行政区表記（N03_005）を表示名へ連結する（大阪市北区）', () => {
+    const feature = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          properties: { N03_001: '大阪府', N03_004: '大阪市', N03_005: '北区', N03_007: '27103' },
+          geometry: {
+            type: 'Polygon',
+            coordinates: [[[135.4, 34.6], [135.5, 34.6], [135.5, 34.7], [135.4, 34.7], [135.4, 34.6]]],
+          },
+        },
+      ],
+    };
+    const sql = run(['--input', '-', '--stdout'], JSON.stringify(feature));
+    expect(sql).toContain('"assetName":"大阪市北区"');
+    expect(sql).toContain('"cityCode":"27103"');
+  });
+
   it('同じ市区町村コードのフィーチャーは 1 行に集約される', () => {
     const duplicated = {
       type: 'FeatureCollection',
@@ -142,6 +161,29 @@ describe('N03 GeoJSON → 管轄ステージング取込（Issue #32 第三段�
     expect(sql).toContain('"prefCode":"13"');
     expect(sql).toContain('city_unassigned');
     expect(sql).toContain('所属未定地');
+  });
+
+  it('所属未定地（N03_007=13000 形式）は cityCode を unknown へ正規化する（N03-2025）', () => {
+    const unassigned = {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          properties: { N03_001: '東京都', N03_007: '13000', N03_004: '所属未定地' },
+          geometry: {
+            type: 'Polygon',
+            coordinates: [[[139.6, 35.5], [139.7, 35.5], [139.7, 35.6], [139.6, 35.6], [139.6, 35.5]]],
+          },
+        },
+      ],
+    };
+    const sql = run(
+      ['--input', '-', '--pref-code', '13', '--stdout'],
+      JSON.stringify(unassigned),
+    );
+    expect(sql).toContain('"cityCode":"13-unknown"');
+    expect(sql).toContain('city_unassigned');
+    expect(sql).not.toContain('"cityCode":"13000"');
   });
 
   it('不正な座標範囲はエラーになる', () => {
