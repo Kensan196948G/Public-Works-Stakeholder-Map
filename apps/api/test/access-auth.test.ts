@@ -94,9 +94,10 @@ describe('verifyAccessJwt（Cloudflare Access JWT 検証・Issue #34）', () => 
       iat: NOW,
     });
     // 末尾 2 文字の変更は atob が下位ビットを無視し、デコード結果が同一になる場合がある
-    // （2026-08-12 CI でフレーク検出）。中央の文字を変更して確実に署名バイトを変える。
+    // （2026-08-12 CI でフレーク検出）。中央（index 20）の文字を変更して確実に署名バイトを変える。
     const sigPart = valid.slice(valid.lastIndexOf('.') + 1);
-    const flipped = (sigPart[20] === 'A' ? 'B' : 'A') + sigPart.slice(1);
+    const flipped =
+      sigPart.slice(0, 20) + (sigPart[20] === 'A' ? 'B' : 'A') + sigPart.slice(21);
     const tampered = `${valid.slice(0, valid.lastIndexOf('.') + 1)}${flipped}`;
     expect(await verifyAccessJwt(tampered, config, new Date(NOW * 1000))).toBeNull();
   });

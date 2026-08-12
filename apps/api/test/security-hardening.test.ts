@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.js';
+import { clearRateLimitBuckets } from '../src/services/rate-limit.js';
 
 /**
  * セキュリティ強化（2026-08-12）のテスト:
@@ -13,6 +14,11 @@ const app = buildApp({
   // ジオコーダーは外部呼出しない（レート制限の検証に集中する）
   geocodeFetch: async () =>
     new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+});
+
+beforeEach(() => {
+  // レート制限バケットはモジュール共有のため、テストファイル間・テスト間で分離する
+  clearRateLimitBuckets();
 });
 
 describe('レート制限（§12.2）', () => {

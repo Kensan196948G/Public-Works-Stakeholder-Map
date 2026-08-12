@@ -8,6 +8,11 @@ import {
 } from '@pwsm/contracts';
 import { buildApp } from '../src/app.js';
 import { clearMemoryFeedback } from '../src/repositories/feedback-repository.js';
+import { clearRateLimitBuckets } from '../src/services/rate-limit.js';
+
+beforeEach(() => {
+  clearRateLimitBuckets();
+});
 
 /** 固定クロック: 2026-07-18。fixture の鮮度・期限判定を決定的にする */
 const FIXED_NOW = new Date('2026-07-18T00:00:00Z');

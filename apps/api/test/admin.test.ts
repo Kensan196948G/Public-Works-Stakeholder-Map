@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { beforeEach } from 'vitest';
 import {
   adminFeedbackResponseSchema,
   adminImportsResponseSchema,
@@ -9,6 +10,11 @@ import {
 } from '@pwsm/contracts';
 import { buildApp } from '../src/app.js';
 import { clearMemoryFeedback } from '../src/repositories/feedback-repository.js';
+import { clearRateLimitBuckets } from '../src/services/rate-limit.js';
+
+beforeEach(() => {
+  clearRateLimitBuckets();
+});
 
 /** 固定クロック（fixture の鮮度判定を決定的にする） */
 const FIXED_NOW = new Date('2026-07-24T00:00:00Z');
