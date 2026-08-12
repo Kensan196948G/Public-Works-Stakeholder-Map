@@ -23,6 +23,11 @@ interface RateLimitOptions {
 }
 
 const buckets = new Map<string, RateLimitEntry>();
+
+/** テスト専用: 全バケットをクリアする（テストファイル間の分離用） */
+export function clearRateLimitBuckets(): void {
+  buckets.clear();
+}
 /** 古いエントリの掃除間隔（ウィンドウの 2 倍） */
 function sweep(nowMs: number, windowMs: number): void {
   const cutoff = nowMs - windowMs * 2;

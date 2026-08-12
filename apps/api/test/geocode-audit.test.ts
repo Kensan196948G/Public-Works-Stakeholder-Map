@@ -1,8 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { buildApp } from '../src/app.js';
 import { clearMemoryAuditEvents } from '../src/repositories/audit-repository.js';
+import { clearRateLimitBuckets } from '../src/services/rate-limit.js';
 
 const FIXED_NOW = new Date('2026-07-18T00:00:00Z');
+
+beforeEach(() => {
+  clearRateLimitBuckets();
+});
 
 /** 地理院 住所検索 API の応答形（モック） */
 const gsiPayload = [
