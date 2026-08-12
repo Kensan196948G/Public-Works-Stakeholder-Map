@@ -50,5 +50,5 @@ jobs:
           gh issue create \
             --title "[自動] 定期保守チェック失敗（依存監査または秘密スキャン）" \
             --body "GitHub Actions の ops-maintenance が失敗しました。
-詳細: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-対応: ログを確認し、脆弱性更新または秘密情報の除去・ローテーションを実施してください。"
+          詳細: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          対応: ログを確認し、脆弱性更新または秘密情報の除去・ローテーションを実施してください。"

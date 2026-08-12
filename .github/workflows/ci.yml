@@ -26,6 +26,9 @@ jobs:
       - name: Install dependencies (lockfile 固定)
         run: npm ci
 
+      - name: Workflow YAML validation
+        run: node .github/scripts/validate-workflows.mjs
+
       - name: Lint
         run: npm run lint
 
