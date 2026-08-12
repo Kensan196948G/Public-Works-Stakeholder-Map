@@ -4,6 +4,7 @@ import type {
   Candidate,
   ConfidenceGrade,
   JurisdictionMapResponse,
+  OrganizationDetail,
   OrganizationType,
   RecordStatus,
   SearchRequest,
@@ -362,4 +363,131 @@ export async function fetchJurisdictionMapDb(
     .slice(0, 500);
 
   return { type: 'FeatureCollection', datasetVersion, features };
+}
+
+/** 機関詳細（FR-005・DB モード）。公開済み機関のみ・連絡先は緊急用を除外する。 */
+export async function fetchOrganizationDetailDb(
+  databaseUrl: string,
+  organizationId: string,
+): Promise<OrganizationDetail | null> {
+  const sql = neon(databaseUrl);
+  const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!UUID_PATTERN.test(organizationId)) return null;
+
+  const orgRows = (await sql`
+    SELECT id, canonical_name, organization_type, official_url, status,
+           source_checked_at, freshness_due_at
+    FROM core.organizations
+    WHERE id = ${organizationId} AND status = 'published'
+  `) as {
+    id: string;
+    canonical_name: string;
+    organization_type: OrganizationDetail['type'];
+    official_url: string | null;
+    status: OrganizationDetail['status'];
+    source_checked_at: string | null;
+    freshness_due_at: string | null;
+  }[];
+  const org = orgRows[0];
+  if (org === undefined) return null;
+
+  const [officeRows, contactRows, jurisdictionRows] = await Promise.all([
+    sql`
+      SELECT id, name, role_summary, address_raw, reception_note
+      FROM core.offices
+      WHERE organization_id = ${organizationId} AND status = 'published'
+      ORDER BY name
+    `,
+    sql`
+      SELECT c.id, c.contact_type::text AS contact_type, c.label,
+             c.display_value, c.extension, c.source_checked_at
+      FROM core.contact_points c
+      JOIN core.offices f ON f.id = c.office_id
+      WHERE f.organization_id = ${organizationId}
+        AND f.status = 'published'
+        AND c.is_emergency = false
+      ORDER BY f.name, c.label
+    `,
+    sql`
+      SELECT j.id, j.asset_type::text AS asset_type, j.asset_name,
+             j.precision::text AS precision, j.estimated, j.scale_note,
+             j.valid_from::text AS valid_from, j.valid_to::text AS valid_to,
+             e.title AS evidence_title, e.url AS evidence_url,
+             e.source_published_at, ds.authority::text AS authority
+      FROM core.jurisdictions j
+      JOIN provenance.source_evidence e ON e.id = j.evidence_id
+      LEFT JOIN provenance.data_sources ds ON ds.id = e.source_id
+      WHERE j.organization_id = ${organizationId} AND j.status = 'published'
+      ORDER BY j.asset_name
+    `,
+  ]);
+
+  return {
+    organizationId: org.id,
+    name: org.canonical_name,
+    type: org.organization_type,
+    officialUrl: org.official_url,
+    status: org.status,
+    sourceCheckedAt: org.source_checked_at === null ? null : new Date(org.source_checked_at).toISOString(),
+    freshnessDueAt: org.freshness_due_at === null ? null : new Date(org.freshness_due_at).toISOString(),
+    offices: (officeRows as {
+      id: string;
+      name: string;
+      role_summary: string | null;
+      address_raw: string | null;
+      reception_note: string | null;
+    }[]).map((row) => ({
+      id: row.id,
+      name: row.name,
+      roleSummary: row.role_summary,
+      addressRaw: row.address_raw,
+      receptionNote: row.reception_note,
+    })),
+    contactPoints: (contactRows as {
+      id: string;
+      contact_type: string;
+      label: string;
+      display_value: string;
+      extension: string | null;
+      source_checked_at: string | null;
+    }[]).map((row) => ({
+      id: row.id,
+      contactType: row.contact_type as OrganizationDetail['contactPoints'][number]['contactType'],
+      label: row.label,
+      displayValue: row.display_value,
+      extension: row.extension,
+      sourceCheckedAt: row.source_checked_at === null ? null : new Date(row.source_checked_at).toISOString(),
+    })),
+    jurisdictions: (jurisdictionRows as {
+      id: string;
+      asset_type: string;
+      asset_name: string | null;
+      precision: string;
+      estimated: boolean;
+      scale_note: string | null;
+      valid_from: string | null;
+      valid_to: string | null;
+      evidence_title: string;
+      evidence_url: string;
+      source_published_at: string | null;
+      authority: string | null;
+    }[]).map((row) => ({
+      id: row.id,
+      assetType: row.asset_type,
+      assetName: row.asset_name,
+      precision: row.precision as OrganizationDetail['jurisdictions'][number]['precision'],
+      estimated: row.estimated,
+      scaleNote: row.scale_note,
+      validFrom: row.valid_from,
+      validTo: row.valid_to,
+      evidence: [
+        {
+          title: row.evidence_title,
+          url: row.evidence_url,
+          ...(row.authority === null ? {} : { authority: row.authority as 'primary_official' | 'official_catalog' | 'secondary_open' }),
+          sourceCheckedAt: row.source_published_at === null ? null : new Date(row.source_published_at).toISOString(),
+        },
+      ],
+    })),
+  };
 }

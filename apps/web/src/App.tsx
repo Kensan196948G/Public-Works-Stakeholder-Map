@@ -180,6 +180,9 @@ export function App() {
 
   return (
     <div className="app">
+      <a className="skip-link" href="#main-content">
+        本文へ移動
+      </a>
       <header className="app-header">
         <h1>🗺️ 公共工事ステークホルダー整理マップ</h1>
         <p>指定地点と工事条件から、事前協議の確認候補となる関係機関を整理します。</p>
@@ -242,7 +245,7 @@ export function App() {
         </section>
       )}
 
-      <main className={`layout${page === 'search' ? '' : ' hidden'}`}>
+      <main id="main-content" className={`layout${page === 'search' ? '' : ' hidden'}`}>
         <section className="pane pane-form" aria-label="検索条件">
           <SearchForm
             onSearch={handleSearch}

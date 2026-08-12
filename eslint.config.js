@@ -18,6 +18,8 @@ export default tseslint.config(
       '.claude/**',
       // チーム開発用の git worktree（リポジトリの複製）— 本体と二重に lint しない
       '.worktrees/**',
+      // ローカル検証用の一時ファイル（gitignore 済み）
+      '.tmp/**',
     ],
   },
   js.configs.recommended,
@@ -39,6 +41,10 @@ export default tseslint.config(
         URL: 'readonly',
         fetch: 'readonly',
         AbortSignal: 'readonly',
+        AbortController: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        performance: 'readonly',
       },
     },
   },

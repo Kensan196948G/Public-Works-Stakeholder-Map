@@ -31,6 +31,28 @@ body {
   padding: 1rem;
 }
 
+/* スキップリンク（WCAG 2.4.1）: フォーカス時のみ表示 */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 1000;
+  background: #0369a1;
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 0 0 6px 0;
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+/* フォーカス可視化（WCAG 2.4.7） */
+:focus-visible {
+  outline: 3px solid #0369a1;
+  outline-offset: 2px;
+}
+
 .app-header h1 {
   font-size: 1.4rem;
   margin-bottom: 0.25rem;
@@ -59,6 +81,17 @@ body {
 @media (max-width: 800px) {
   .layout {
     grid-template-columns: 1fr;
+  }
+}
+
+@media print {
+  .app-nav,
+  .pane-form,
+  .candidate-toolbar,
+  .decision,
+  .disclaimer,
+  .skip-link {
+    display: none !important;
   }
 }
 
@@ -238,6 +271,37 @@ dd {
 .evidence h4 {
   margin: 0.5rem 0 0.25rem;
   font-size: 0.9rem;
+}
+
+.candidate-detail {
+  margin-top: 0.5rem;
+  border-top: 1px dashed var(--color-border);
+  padding-top: 0.4rem;
+}
+
+.candidate-detail summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.candidate-detail-body .detail-section {
+  margin-top: 0.4rem;
+}
+
+.candidate-detail-body .detail-section h4 {
+  margin: 0.4rem 0 0.2rem;
+  font-size: 0.85rem;
+}
+
+.candidate-detail-body ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  font-size: 0.85rem;
+}
+
+.candidate-detail-body .evidence-host {
+  margin-left: 0.3rem;
 }
 
 .evidence-host {
@@ -518,6 +582,9 @@ dd {
 .state-badge.state-rejected { background: #fee2e2; }
 .state-badge.state-quarantined { background: #fef3c7; }
 .state-badge.state-in_review { background: #dbeafe; }
+.state-badge.state-fb-new { background: #fee2e2; }
+.state-badge.state-fb-reviewed { background: #dbeafe; }
+.state-badge.state-fb-resolved { background: #dcfce7; }
 
 /* --- 候補一覧の絞り込み（FR-008） --- */
 .candidate-toolbar {

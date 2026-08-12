@@ -4,7 +4,7 @@
 |---|---|
 | DB | Neon PostgreSQL（プロジェクト `tiny-river-77604173`・main ブランチ） |
 | 方式 | Neon のブランチング + Point-in-Time Restore（PITR） |
-| 更新日 | 2026-08-05 |
+| 更新日 | 2026-08-12 |
 
 ## 1. バックアップ方針
 
@@ -50,3 +50,20 @@ neonctl branches delete --project-id tiny-river-77604173 --branch restore-YYYYMM
 
 - Worker: `wrangler versions deploy <旧version-id>` で即時切替（`rollback.md` 参照）
 - DB: 復元ブランチへ接続切替。破壊的 migration は expand-and-contract で回避
+
+## 6. 論理エクスポートの自動化（2026-08-12）
+
+四半期の復元試験に先立ち、任意時点の論理バックアップを取得できます。
+
+```bash
+# 接続文字列はコマンド履歴へ残さない（set -a && source .env.local 等で環境変数として渡す）
+DATABASE_URL="<Neon接続文字列>" npm run backup:export
+# → reports/backups/pwsm-YYYYMMDD-HHMMSS.sql.gz（custom format・gzip）
+
+# 検証
+gzip -t reports/backups/pwsm-*.sql.gz
+gzip -dc reports/backups/pwsm-*.sql.gz | pg_restore --list | head
+```
+
+- 出力先 `reports/` は gitignore 済み（正本は外部保管先へコピーする）
+- 機密性が高い場合は出力後に暗号化し、アプリ DB と異なる保管先・保持ポリシーで管理する

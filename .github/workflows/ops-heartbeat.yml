@@ -1,0 +1,70 @@
+name: ops-heartbeat
+
+on:
+  schedule:
+    # 毎日 21:30 JST（12:30 UTC）— ops-maintenance（月曜 10:00 JST）とは独立時刻
+    - cron: "30 12 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-maintenance:
+    name: 定期保守の無音停止を検知
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: 直近の ops-maintenance 実行を確認
+        id: maintenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          RUNS_JSON="$(gh api "repos/${{ github.repository }}/actions/workflows/ops-maintenance.yml/runs" \
+            --jq '.workflow_runs[0] // empty' 2>/dev/null || true)"
+          if [ -z "$RUNS_JSON" ]; then
+            echo "found=no" >> "$GITHUB_OUTPUT"
+            echo "conclusion=missing" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CONCLUSION="$(printf '%s' "$RUNS_JSON" | jq -r '.conclusion // "missing"')"
+          CREATED_AT="$(printf '%s' "$RUNS_JSON" | jq -r '.created_at // ""')"
+          echo "found=yes" >> "$GITHUB_OUTPUT"
+          echo "conclusion=$CONCLUSION" >> "$GITHUB_OUTPUT"
+          echo "created_at=$CREATED_AT" >> "$GITHUB_OUTPUT"
+
+      - name: 閾値超過なら Issue を起票（既存オープン Issue があれば作成しない）
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MAINT_FOUND: ${{ steps.maintenance.outputs.found }}
+          MAINT_CONCLUSION: ${{ steps.maintenance.outputs.conclusion }}
+          MAINT_CREATED_AT: ${{ steps.maintenance.outputs.created_at }}
+        run: |
+          ISSUE_TITLE="ハートビート監視: 定期保守（ops-maintenance）が実行されていません"
+          EXISTING="$(gh issue list --state open --search "$ISSUE_TITLE" --json number --jq 'length' || echo 0)"
+          STALE=0
+          if [ "$MAINT_FOUND" != "yes" ] || [ "$MAINT_CONCLUSION" != "success" ]; then
+            STALE=1
+            REASON="直近の ops-maintenance 実行がない、または成功していません（conclusion: ${MAINT_CONCLUSION:-missing}）"
+          else
+            NOW_EPOCH="$(date +%s)"
+            CREATED_EPOCH="$(date -u -d "$MAINT_CREATED_AT" +%s 2>/dev/null || echo 0)"
+            AGE_DAYS=$(( (NOW_EPOCH - CREATED_EPOCH) / 86400 ))
+            echo "age_days=$AGE_DAYS"
+            if [ "$AGE_DAYS" -gt 8 ]; then
+              STALE=1
+              REASON="直近の ops-maintenance 成功から ${AGE_DAYS} 日経過（閾値: 8 日）"
+            fi
+          fi
+          echo "stale=$STALE"
+          if [ "$STALE" = "1" ] && [ "$EXISTING" = "0" ]; then
+            BODY="定期保守（依存監査・秘密スキャン）が想定間隔で実行されていない可能性があります。 理由: ${REASON} 実行: https://github.com/${{ github.repository }}/actions/workflows/ops-maintenance.yml 対応: ワークフローのスケジュール・手動 disable・60日無活動による停止を確認し、復旧してください。 誤検知の場合は閾値・スケジュールを docs/operations/slo-alerts.md の手順に従い調整してください。 解決後は本 Issue をクローズします。"
+            gh issue create --title "$ISSUE_TITLE" --body "$BODY"
+          elif [ "$STALE" = "0" ]; then
+            echo "定期保守は正常に実行されています"
+          fi

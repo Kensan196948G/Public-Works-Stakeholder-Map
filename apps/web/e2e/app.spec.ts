@@ -61,3 +61,28 @@ test('URL の検索条件から検索を再現できる（設計 §10）', async
   // 検索後に URL へ条件が反映される
   await expect(page).toHaveURL(/work=excavation/);
 });
+
+test('アクセシビリティ: スキップリンクが Tab フォーカスで表示される（WCAG 2.4.1）', async ({
+  page,
+}) => {
+  await page.goto('/');
+  const skip = page.getByRole('link', { name: '本文へ移動' });
+  // 初期状態では画面外（left: -9999px）
+  await expect(skip).not.toBeInViewport();
+  await page.keyboard.press('Tab');
+  await expect(skip).toBeFocused();
+  await expect(skip).toBeInViewport();
+});
+
+test('候補詳細（FR-005）: 機関詳細を開くと窓口・管轄区域が表示される', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: '候補を検索' }).click();
+  await expect(page.locator('.candidate-card').first()).toBeVisible();
+  await page
+    .locator('.candidate-card')
+    .first()
+    .locator('summary', { hasText: '機関詳細' })
+    .click();
+  await expect(page.getByText('窓口・部署')).toBeVisible();
+  await expect(page.getByText('管轄区域（視覚補助・正式境界ではない）')).toBeVisible();
+});
