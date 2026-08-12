@@ -1,0 +1,19 @@
+{
+  "sourceSlug": "tokyo-zaimu-keiyaku",
+  "region": "tokyo",
+  "offices": [
+    {
+      "name": "経理部総務課 契約調整担当",
+      "roleSummary": "契約情報・入札契約に関する問い合わせ",
+      "postalCode": "163-8001",
+      "addressRaw": "東京都新宿区西新宿2-8-1（東京都庁）",
+      "contacts": [
+        { "contactType": "phone", "label": "問い合わせ（契約調整担当）", "displayValue": "03-5388-2607" },
+        { "contactType": "web", "label": "契約情報（原典）", "displayValue": "https://www.zaimu.metro.tokyo.lg.jp/keiyaku" }
+      ],
+      "sourceUrl": "https://www.zaimu.metro.tokyo.lg.jp/keiyaku",
+      "confirmedAt": "2026-08-13",
+      "notes": "入札手続きの操作等は東京都電子調達システムの案内を確認すること。"
+    }
+  ]
+}

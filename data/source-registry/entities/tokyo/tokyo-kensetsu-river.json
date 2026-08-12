@@ -1,0 +1,19 @@
+{
+  "sourceSlug": "tokyo-kensetsu-river",
+  "region": "tokyo",
+  "offices": [
+    {
+      "name": "河川部 指導調整課 占用担当",
+      "roleSummary": "河川占用等に関する問い合わせ（原典「指導調整課占用担当」）",
+      "postalCode": "163-8001",
+      "addressRaw": "東京都新宿区西新宿2-8-1（東京都庁）",
+      "contacts": [
+        { "contactType": "phone", "label": "問い合わせ（占用担当）", "displayValue": "03-5320-5409" },
+        { "contactType": "web", "label": "河川の管理と活用（原典）", "displayValue": "https://www.kensetsu.metro.tokyo.lg.jp/river/kanri" }
+      ],
+      "sourceUrl": "https://www.kensetsu.metro.tokyo.lg.jp/river/kanri",
+      "confirmedAt": "2026-08-13",
+      "notes": "河川利用全般の問い合わせは所管の建設事務所管理課または特別区へ（原典に記載・所管区域は別ページ参照）。"
+    }
+  ]
+}

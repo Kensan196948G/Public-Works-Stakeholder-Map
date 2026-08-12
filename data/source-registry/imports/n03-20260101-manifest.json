@@ -1,0 +1,24 @@
+{
+  "n03Version": "20260101",
+  "retrievedAt": "2026-08-13",
+  "source": {
+    "slug": "mlit-ksj-n03",
+    "datalistUrl": "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N03-v3_0.html",
+    "downloadBaseUrl": "https://nlftp.mlit.go.jp/ksj/gml/data/N03/N03-2026/N03-20260101_<pref>_GML.zip",
+    "license": "政府標準利用規約（第2.0版）準拠。出典記載（国土数値情報（行政区域データ））を条件に複製・公衆送信・翻案等を自由に利用可"
+  },
+  "prefectures": [
+    { "prefCode": "13", "name": "東京都", "sourceFeatures": 6904, "stagingImports": 63 },
+    { "prefCode": "14", "name": "神奈川県", "sourceFeatures": 1247, "stagingImports": 58 },
+    { "prefCode": "27", "name": "大阪府", "sourceFeatures": 157, "stagingImports": 72 }
+  ],
+  "totalStagingImports": 193,
+  "transformation": {
+    "crs": "EPSG:4326",
+    "aggregation": "市区町村コード（N03_007）で MultiPolygon へ集約。政令指定都市は行政区（N03_005）を表示名へ連結",
+    "generator": "scripts/n03-geojson-to-imports.mjs（2026-08-13 版: N03_005 対応・13000 未割当正規化）"
+  },
+  "qualityFlags": ["geometry_pending_review"],
+  "reviewState": "pending",
+  "notes": "dev ブランチ staging.import_records へ適用済み（2026-08-13）。境界の正確性・所属未定地の扱いは SCR-07 の二者レビューで確認する。"
+}

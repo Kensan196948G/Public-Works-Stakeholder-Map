@@ -1,0 +1,30 @@
+{
+  "sourceSlug": "tokyo-kouwan-madoguchi",
+  "region": "tokyo",
+  "offices": [
+    {
+      "name": "総務部総務課 広報・国際担当（都民の声総合窓口）",
+      "roleSummary": "東京都港湾局の事業に関する総合的な問い合わせ窓口",
+      "postalCode": "163-8001",
+      "addressRaw": "東京都新宿区西新宿2-8-1（東京都庁）",
+      "contacts": [
+        { "contactType": "phone", "label": "港湾局都民の声総合窓口", "displayValue": "03-5320-5524" },
+        { "contactType": "web", "label": "窓口一覧（原典）", "displayValue": "https://www.kouwan.metro.tokyo.lg.jp/inquiry/madoguchi" }
+      ],
+      "sourceUrl": "https://www.kouwan.metro.tokyo.lg.jp/inquiry/madoguchi",
+      "confirmedAt": "2026-08-13",
+      "notes": "提言・要望等はメールでも受付（原典「提言・要望等」ページ参照）。"
+    },
+    {
+      "name": "東京港建設事務所 高潮対策センター 防災担当",
+      "roleSummary": "水門・陸こうの工事・定期運転についての問い合わせ",
+      "contacts": [
+        { "contactType": "phone", "label": "防災担当", "displayValue": "03-3521-3013" },
+        { "contactType": "web", "label": "窓口一覧（原典）", "displayValue": "https://www.kouwan.metro.tokyo.lg.jp/inquiry/madoguchi" }
+      ],
+      "sourceUrl": "https://www.kouwan.metro.tokyo.lg.jp/inquiry/madoguchi",
+      "confirmedAt": "2026-08-13",
+      "notes": "住所・受付時間は原典の東京港建設事務所ページを確認すること。"
+    }
+  ]
+}
