@@ -26,10 +26,14 @@ const REQUIRED_PATHS = [
   '/api/v1/map/jurisdictions',
   '/api/v1/feedback',
   '/api/v1/audit-events',
+  '/api/v1/organizations/{id}',
   '/api/v1/admin/sources',
   '/api/v1/admin/imports',
   '/api/v1/admin/imports/{id}/review',
   '/api/v1/admin/quality',
+  '/api/v1/admin/feedback',
+  '/api/v1/admin/feedback/{id}',
+  '/api/v1/admin/audit-events/verify',
 ];
 
 describe('OpenAPI 仕様（Issue #37）', () => {
@@ -54,6 +58,9 @@ describe('OpenAPI 仕様（Issue #37）', () => {
       'Metadata',
       'FeedbackRequest',
       'FeedbackResponse',
+      'AdminFeedbackItem',
+      'OrganizationDetail',
+      'AuditChainVerification',
       'Problem',
     ]) {
       expect(schemas, `missing schema: ${schema}`).toHaveProperty(schema);

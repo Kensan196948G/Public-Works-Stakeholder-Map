@@ -1,5 +1,8 @@
 import {
   adminImportsResponseSchema,
+  adminFeedbackResponseSchema,
+  adminFeedbackItemSchema,
+  feedbackStatusUpdateRequestSchema,
   adminSourcesResponseSchema,
   auditEventsResponseSchema,
   feedbackRequestSchema,
@@ -8,10 +11,13 @@ import {
   importRecordSchema,
   jurisdictionMapResponseSchema,
   metadataResponseSchema,
+  organizationDetailSchema,
   problemDetailsSchema,
   qualityReportSchema,
   searchResponseSchema,
   type AdminImportsResponse,
+  type AdminFeedbackResponse,
+  type AdminFeedbackItem,
   type AdminSourcesResponse,
   type AuditEventsResponse,
   type CreateImportRequest,
@@ -21,6 +27,7 @@ import {
   type ImportRecord,
   type JurisdictionMapResponse,
   type MetadataResponse,
+  type OrganizationDetail,
   type QualityReport,
   type ReviewRequest,
   type ReviewState,
@@ -90,6 +97,17 @@ export async function fetchJurisdictionMap(
     await throwProblem(res, '管轄区域の取得に失敗しました。');
   }
   return jurisdictionMapResponseSchema.parse(await res.json());
+}
+
+/** 候補詳細（FR-005）: 機関・窓口・連絡先・管轄区域 */
+export async function fetchOrganizationDetail(
+  organizationId: string,
+): Promise<OrganizationDetail> {
+  const res = await fetch(`/api/v1/organizations/${encodeURIComponent(organizationId)}`);
+  if (!res.ok) {
+    await throwProblem(res, '機関詳細の取得に失敗しました。');
+  }
+  return organizationDetailSchema.parse(await res.json());
 }
 
 /** フィードバック送信（FR-017） */
@@ -171,4 +189,29 @@ export async function fetchQualityReport(): Promise<QualityReport> {
     await throwProblem(res, '品質レポートの取得に失敗しました。');
   }
   return qualityReportSchema.parse(await res.json());
+}
+
+/** 管理者向け: フィードバック受付一覧（FR-017 対応用。admin のみ） */
+export async function fetchAdminFeedback(limit = 50): Promise<AdminFeedbackResponse> {
+  const res = await fetch(`/api/v1/admin/feedback?limit=${limit}`);
+  if (!res.ok) {
+    await throwProblem(res, 'フィードバック一覧の取得に失敗しました。');
+  }
+  return adminFeedbackResponseSchema.parse(await res.json());
+}
+
+/** 管理者向け: フィードバックの対応状態を更新 */
+export async function updateAdminFeedbackStatus(
+  id: string,
+  status: AdminFeedbackItem['status'],
+): Promise<AdminFeedbackItem> {
+  const res = await fetch(`/api/v1/admin/feedback/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(feedbackStatusUpdateRequestSchema.parse({ status })),
+  });
+  if (!res.ok) {
+    await throwProblem(res, 'フィードバック状態の更新に失敗しました。');
+  }
+  return adminFeedbackItemSchema.parse(await res.json());
 }

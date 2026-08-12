@@ -96,6 +96,7 @@ flowchart TD
 - 住所・緯度経度・地図クリックによる地点指定
 - 工事対象、作業内容、周辺影響による条件検索
 - 機関種別、地域、信頼度、鮮度での絞り込み
+- 候補の詳細（窓口・連絡先・管轄区域・根拠）を展開表示（FR-005）
 
 ### 🗺️ 見る
 
@@ -226,9 +227,11 @@ stateDiagram-v2
 - 管理画面はCloudflare Access等で保護
 - ロール別認可とサーバ側の権限検査
 - SQL Injection、XSS、CSRF、SSRF、CSV Injection対策
+- CSP（`default-src 'self'`・frame-ancestors 'none'）・レート制限・ボディ上限 64KB
 - 取得先ホストの許可リストと応答サイズ・時間制限
 - 秘密情報はCloudflare Secretで管理
 - データ変更、承認、設定、出力の監査ログ
+- 監査ログの SHA-256 連結チェーン（改ざん検知・migration 0003・検証 API）
 - 定期バックアップと四半期ごとの復元試験
 
 ```mermaid
@@ -276,6 +279,8 @@ npm test
 | `npm run dev -w @pwsm/web` | Web UI 開発起動（vite、API へプロキシ） | ✅ 稼働 |
 | `npm run dev -w @pwsm/api` | API 開発起動（wrangler dev）※ | ✅ 稼働 |
 | `npm run test:e2e` | ブラウザ E2E テスト（Playwright・CI で実行） | ✅ CI 稼働（ローカルは要 Chromium・仮想メモリ制限環境では起動不可） |
+| `npm run link:check` | 情報源台帳の公式 URL リンク生存確認（FR-015 第一歩・`reports/` に JSON 出力） | ✅ 稼働 |
+| `npm run load:test` | 検索 API の簡易負荷テスト（p95 2 秒目標・`BASE_URL` / `CONCURRENCY` / `REQUESTS` で調整） | ✅ 稼働 |
 
 > ※ 仮想メモリ制限のある環境では workerd が起動できない場合があります（ADR-0001 追記参照）。
 > その場合は `npm run webui`（Node サーバー）を使用してください。
@@ -462,6 +467,7 @@ Issueには次の情報を含めてください。
 | 2026-08-05 | 🎉 **v0.4.0 本番リリース**: 検索UX・協働機能パックを本番デプロイ（migration 0002 適用済み・免責/プライバシー設計は維持） |
 | 2026-08-05 | 🔐 **v0.4.1 リリース**: 認証・RBAC基盤（既定無効）・情報源台帳15機関のNeon登録・MITライセンス整備 |
 | 2026-08-05 | ✅ **v0.4.2 リリース**: 認証・RBAC本番有効化（Access設定自動取得）・組織ステージング16件・N03取込ツール |
+| 2026-08-12 | 🚀 **v0.5.0（本番運用評価）**: CSP・レート制限・ボディ上限・フィードバック管理・ハートビート監視・CI DB検証・a11y 改善・AI活用設計 |
 
 ### 🚦 リリース状況（v0.1.0 公開済み・デモデータ）
 
@@ -470,8 +476,8 @@ Issueには次の情報を含めてください。
 | 🖥️ フロントエンド | ✅ 検索・地図・候補一覧・チェックリスト・CSV・免責 |
 | ⚙️ バックエンド API | ✅ health / metadata / 検索（fixture ⇔ Neon 切替） |
 | 🐘 データベース | ✅ スキーマ + 架空 seed 適用済み（Neon dev/main） |
-| 🧪 テスト | ✅ 172 件（v0.4.0 時点・Neon 統合 4 件は環境変数ゲート） |
-| 🔐 セキュリティ | ✅ CSV 注入対策・URL 検証・CSP 系ヘッダー・依存監査 0 件 |
+| 🧪 テスト | ✅ 221 件（v0.5.0 時点・Neon 統合 9 件は `TEST_DATABASE_URL` 設定時のみ実行） |
+| 🔐 セキュリティ | ✅ CSV 注入対策・URL 検証・CSP・レート制限・ボディ上限・依存監査 0 件 |
 | 📚 運用文書 | ✅ チェックリスト / デプロイ / ロールバック / 障害対応 |
 | 🚀 本番デプロイ | ✅ **v0.1.1 公開済み**（2026-07-24・https://pwsm.mirai-dx-platform.com ・Cloudflare Access 保護・デモデータ。運用は `docs/operations/` 参照） |
 

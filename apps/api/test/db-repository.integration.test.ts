@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
+  fetchOrganizationDetailDb,
   fetchJurisdictionMapDb,
   searchCandidatesDb,
 } from '../src/repositories/db-repository.js';
+import {
+  clearMemoryAuditEvents,
+  recordAuditEvent,
+  verifyAuditChain,
+} from '../src/repositories/audit-repository.js';
+import { neon } from '@neondatabase/serverless';
 
 /**
  * Neon/PostGIS 統合テスト（Issue #10）。
@@ -132,5 +139,76 @@ describe.skipIf(databaseUrl === undefined)('searchCandidatesDb（Neon dev ブラ
     );
     expect(map.type).toBe('FeatureCollection');
     expect(map.features).toEqual([]);
+  });
+});
+
+describe.skipIf(databaseUrl === undefined)('fetchOrganizationDetailDb（Neon dev ブランチ）', () => {
+  const url = databaseUrl as string;
+
+  it('公開済み機関の詳細を返す（デモ seed の固定 UUID）', async () => {
+    const detail = await fetchOrganizationDetailDb(
+      url,
+      '61b6c075-a069-4a55-81da-790f1d178aff',
+    );
+    expect(detail).not.toBeNull();
+    expect(detail?.name).toBe('みらい市 契約検査課（デモ）');
+    expect(detail?.offices.length).toBeGreaterThan(0);
+    expect(detail?.jurisdictions.length).toBeGreaterThan(0);
+    for (const jurisdiction of detail?.jurisdictions ?? []) {
+      expect(jurisdiction.evidence.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('存在しない・非公開の UUID は null を返す', async () => {
+    expect(
+      await fetchOrganizationDetailDb(url, '00000000-0000-0000-0000-000000000000'),
+    ).toBeNull();
+    expect(await fetchOrganizationDetailDb(url, 'not-a-uuid')).toBeNull();
+  });
+});
+
+describe.skipIf(databaseUrl === undefined)('監査チェーン（migration 0003・Neon dev ブランチ）', () => {
+  const url = databaseUrl as string;
+
+  it('記録したイベントのチェーンが検証に成功し、改ざんを検出する', async () => {
+    const sql = neon(url);
+    // 検証用イベントを 2 件記録（テスト専用プレフィックスのアクションで識別）
+    await recordAuditEvent(url, {
+      actor: 'integration-test',
+      action: 'admin.audit.integration_test',
+      targetKind: 'audit',
+      result: 'success',
+      correlationId: 'integration-chain-1',
+      metadata: { case: 'chain-valid' },
+    }, new Date('2026-08-12T00:00:00Z'));
+    await recordAuditEvent(url, {
+      actor: 'integration-test',
+      action: 'admin.audit.integration_test',
+      targetKind: 'audit',
+      result: 'success',
+      correlationId: 'integration-chain-2',
+      metadata: { case: 'chain-valid' },
+    }, new Date('2026-08-12T00:00:01Z'));
+
+    const valid = await verifyAuditChain(url);
+    expect(valid.valid).toBe(true);
+    expect(valid.checked).toBeGreaterThanOrEqual(2);
+
+    // 改ざん: 最新イベントの actor を SQL で書き換える
+    await sql`
+      UPDATE audit.audit_events
+      SET actor = 'tampered'
+      WHERE correlation_id = 'integration-chain-2'
+    `;
+    const invalid = await verifyAuditChain(url);
+    expect(invalid.valid).toBe(false);
+    expect(invalid.reason).toContain('不正');
+
+    // 後続テストへの影響を避けるため検証用イベントを削除
+    await sql`
+      DELETE FROM audit.audit_events
+      WHERE correlation_id IN ('integration-chain-1', 'integration-chain-2')
+    `;
+    clearMemoryAuditEvents();
   });
 });

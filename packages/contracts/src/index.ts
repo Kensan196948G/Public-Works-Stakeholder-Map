@@ -7,3 +7,4 @@ export * from './audit.js';
 export * from './admin.js';
 export * from './feedback.js';
 export * from './map.js';
+export * from './organization.js';

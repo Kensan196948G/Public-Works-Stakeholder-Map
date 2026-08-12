@@ -14,6 +14,9 @@ export const auditEventSchema = z.object({
   result: z.enum(['success', 'failure', 'denied']),
   correlationId: z.string(),
   metadata: z.record(z.string(), z.unknown()),
+  /** 改ざん検知用ハッシュ連結（migration 0003）。DB 移行前の行は null */
+  prevHash: z.string().nullable(),
+  eventHash: z.string().nullable(),
 });
 export type AuditEvent = z.infer<typeof auditEventSchema>;
 
@@ -23,3 +26,14 @@ export const auditEventsResponseSchema = z.object({
   store: z.enum(['db', 'memory']),
 });
 export type AuditEventsResponse = z.infer<typeof auditEventsResponseSchema>;
+
+/** 監査チェーン検証結果（管理者向け） */
+export const auditChainVerificationSchema = z.object({
+  store: z.enum(['db', 'memory']),
+  checked: z.number().int().nonnegative(),
+  valid: z.boolean(),
+  /** 不正を検出した最初のイベント ID（valid=false のとき） */
+  brokenAtEventId: z.string().nullable(),
+  reason: z.string().nullable(),
+});
+export type AuditChainVerification = z.infer<typeof auditChainVerificationSchema>;

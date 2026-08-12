@@ -1,0 +1,58 @@
+name: ops-link-check
+
+on:
+  schedule:
+    # 毎週月曜 23:00 JST（14:00 UTC）— ops-maintenance（月曜 10:00 JST）と分離
+    - cron: "0 14 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  link-check:
+    name: 情報源リンクの生存確認（FR-015）
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: リンク生存確認（レポート生成・失敗しても次ステップで判定）
+        run: |
+          npm run link:check || true
+          LINK_REPORT="$(ls -1 reports/link-check-*.json 2>/dev/null | tail -1)"
+          echo "link_report=$LINK_REPORT" >> "$GITHUB_ENV"
+
+      - name: リンク切れ候補があれば Issue を起票
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LINK_REPORT: ${{ env.link_report }}
+        run: |
+          if [ -z "$LINK_REPORT" ]; then
+            echo "レポートが生成されていません（スクリプト異常）"
+            exit 1
+          fi
+          FAILED="$(node -e "const r=require('./'+process.env.LINK_REPORT); process.stdout.write(String(r.failed))")"
+          echo "failed=$FAILED"
+          if [ "$FAILED" -gt 0 ]; then
+            TITLE="リンク点検: 公式情報源のリンク切れ候補が ${FAILED} 件"
+            EXISTING="$(gh issue list --state open --search "$TITLE" --json number --jq 'length' || echo 0)"
+            if [ "$EXISTING" = "0" ]; then
+              gh issue create --title "$TITLE" --body "公式情報源のリンク生存確認で ${FAILED} 件の失敗を検出しました。レポート: $LINK_REPORT 対応: 各ソースの baseUrl を確認し、更新または source-registry を修正してください。外部サイトの一時障害と判断した場合は次回の点検で自動解消を確認します。"
+            else
+              echo "既存のオープン Issue があるため作成しません"
+            fi
+          else
+            echo "リンク点検: 全件 OK"
+          fi

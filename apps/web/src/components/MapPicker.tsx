@@ -161,7 +161,16 @@ export function MapPicker({ location, onPick, highlightRegions }: MapPickerProps
 
   return (
     <div className="map-picker">
-      <div ref={containerRef} className="map-container" aria-label="地図（クリックで地点指定）" />
+      <div
+        ref={containerRef}
+        className="map-container"
+        role="img"
+        aria-label="地図（クリックで地点を指定）"
+        aria-describedby="map-fallback-note"
+      />
+      <p id="map-fallback-note" className="map-note">
+        地図が操作できない環境では、上の「住所で検索」または緯度・経度の直接入力で地点を指定できます。
+      </p>
       <p className="map-note">
         🗺️ 地図クリックで地点を設定できます。青の点線は検証用の架空デモ区域、オレンジは
         検索結果の管轄区域です。

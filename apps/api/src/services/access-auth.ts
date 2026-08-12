@@ -39,6 +39,9 @@ export interface AuthConfig {
 
 export const AUTH_HEADER = 'cf-access-jwt-assertion';
 
+/** JWT パーツ（base64url 非パディング）の厳格な形式。%4=1 は不正なエンコード */
+const JWT_PART_PATTERN = /^[A-Za-z0-9_-]+$/;
+
 const JWKS_CACHE_TTL_MS = 60 * 60 * 1000;
 const jwksCache = new Map<string, { keys: JwkWithKid[]; fetchedAt: number }>();
 
@@ -168,6 +171,18 @@ export async function verifyAccessJwt(
   if (parts.length !== 3) return null;
   const [headerPart, payloadPart, signaturePart] = parts;
   if (headerPart === undefined || payloadPart === undefined || signaturePart === undefined) {
+    return null;
+  }
+  // 形式不正（不正文字・長さ %4=1 の欠損パディング）は即時拒否する。
+  // 曖昧な atob のデコード挙動に依存しない（2026-08-12 防御強化）
+  if (
+    !JWT_PART_PATTERN.test(headerPart) ||
+    !JWT_PART_PATTERN.test(payloadPart) ||
+    !JWT_PART_PATTERN.test(signaturePart) ||
+    headerPart.length % 4 === 1 ||
+    payloadPart.length % 4 === 1 ||
+    signaturePart.length % 4 === 1
+  ) {
     return null;
   }
 
