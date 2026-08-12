@@ -1,0 +1,18 @@
+{
+  "sourceSlug": "yokohama-kasen-senyo",
+  "region": "yokohama",
+  "offices": [
+    {
+      "name": "下水道河川局 河川流域管理課（および各区土木事務所）",
+      "roleSummary": "横浜市管理河川・一般下水道（水路）の占用許可申請先（河川種別で分岐）",
+      "receptionNote": "申請前に各区土木事務所または河川流域管理課へ相談。受付時間は各窓口を確認。",
+      "contacts": [
+        { "contactType": "phone", "label": "横浜市コールセンター", "displayValue": "045-664-2525" },
+        { "contactType": "web", "label": "河川・一般下水道（水路）等の占用許可（原典）", "displayValue": "https://www.city.yokohama.lg.jp/kurashi/machizukuri-kankyo/kasen-gesuido/kasen/youchi/20200715131717128.html" }
+      ],
+      "sourceUrl": "https://www.city.yokohama.lg.jp/kurashi/machizukuri-kankyo/kasen-gesuido/kasen/youchi/20200715131717128.html",
+      "confirmedAt": "2026-08-13",
+      "notes": "権限委譲された一級河川は河川流域管理課、二級河川等は区土木事務所（原典の申請先一覧を参照）。国・県管理河川は各管理者へ。"
+    }
+  ]
+}

@@ -99,11 +99,12 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/registry/0003_n03_jurisdicti
 - ツール改善: N03-2026 の `N03_005`（行政区名）対応・`13000` 等の全ゼロ市区町村コードを
   `unknown` へ正規化（所属未定地の重複を防止）・配布ページ未掲載の最新版を HEAD プローブで検出
 
-### 1.9 🏢 窓口・連絡先エンティティの収集（2026-08-13・東京 6 窓口 / 12 連絡先）
+### 1.9 🏢 窓口・連絡先エンティティの収集（2026-08-13・代表3地域 16 窓口 / 33 連絡先）
 
-- 収集元: `data/source-registry/entities/tokyo/*.json`（公式ページから抽出した下書き）
-- 生成: `scripts/generate-office-contact-imports.mjs` → `db/seeds/registry/0005_staging_tokyo_office_contacts.sql`
-- 適用: Neon dev ブランチへ pending + `contact_pending_review` で適用済み
+- 収集元: `data/source-registry/entities/{tokyo,yokohama,osaka}/*.json`（公式ページから抽出した下書き。
+  東京 6 窓口/12 連絡先・横浜 4/8・大阪 6/13）
+- 生成: `scripts/generate-office-contact-imports.mjs` → `db/seeds/registry/0005_staging_office_contacts.sql`
+- 適用: Neon dev ブランチへ pending + `contact_pending_review` で適用済み（冪等）
 - レビュー: 原典の再確認・個人情報なし確認・二者レビュー後に `core.*` へ反映
 - 検証: `data/source-registry/test/entity-office.test.ts`（スキーマ・台帳一致・電話形式・SQL 不変条件）
 

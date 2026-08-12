@@ -1,6 +1,6 @@
 // 公式情報源から収集した窓口・連絡先エンティティ（data/source-registry/entities/**/*.json）から、
 // ステージング取込レコード（staging.import_records・entity_kind=office / contact_point）を生成する。
-// 実行: node scripts/generate-office-contact-imports.mjs            → db/seeds/registry/0005_staging_tokyo_office_contacts.sql
+// 実行: node scripts/generate-office-contact-imports.mjs            → db/seeds/registry/0005_staging_office_contacts.sql
 //        node scripts/generate-office-contact-imports.mjs --stdout  → 標準出力へ出力（テスト・確認用）
 //
 // 方針: 無レビュー公開禁止（§6.2）。生成物は必ず staging（pending）+ contact_pending_review で登録し、
@@ -11,7 +11,7 @@ import { join } from 'node:path';
 
 const REGISTRY_DIR = join(process.cwd(), 'data/source-registry/sources');
 const ENTITIES_ROOT = join(process.cwd(), 'data/source-registry/entities');
-const OUTPUT_PATH = join(process.cwd(), 'db/seeds/registry/0005_staging_tokyo_office_contacts.sql');
+const OUTPUT_PATH = join(process.cwd(), 'db/seeds/registry/0005_staging_office_contacts.sql');
 const toStdout = process.argv.includes('--stdout');
 
 function uuidFor(name) {
@@ -46,7 +46,7 @@ if (entities.length === 0) {
 
 const lines = [
   '-- ============================================================',
-  '-- 0005_staging_tokyo_office_contacts.sql — 窓口・連絡先のステージング取込（自動生成・手編集禁止）',
+  '-- 0005_staging_office_contacts.sql — 窓口・連絡先のステージング取込（自動生成・手編集禁止）',
   '-- 生成元: data/source-registry/entities/**/*.json',
   '-- 生成: scripts/generate-office-contact-imports.mjs',
   '-- 方針: 無レビュー公開禁止（§6.2）。pending + contact_pending_review で登録し、二者レビュー後に公開する',

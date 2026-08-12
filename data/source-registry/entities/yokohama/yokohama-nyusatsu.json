@@ -1,0 +1,18 @@
+{
+  "sourceSlug": "yokohama-nyusatsu",
+  "region": "yokohama",
+  "offices": [
+    {
+      "name": "横浜市（入札・契約情報）",
+      "roleSummary": "横浜市の入札・契約情報の掲載主体。手続きの詳細は案内ページを参照",
+      "receptionNote": "入札参加・電子入札等の問い合わせ先は案内ページを確認すること。",
+      "contacts": [
+        { "contactType": "phone", "label": "横浜市コールセンター", "displayValue": "045-664-2525" },
+        { "contactType": "web", "label": "入札・契約情報（原典）", "displayValue": "https://www.city.yokohama.lg.jp/business/nyusatsu/" }
+      ],
+      "sourceUrl": "https://www.city.yokohama.lg.jp/business/nyusatsu/",
+      "confirmedAt": "2026-08-13",
+      "notes": "担当部署の直通番号は原典に記載なし（要照会）。"
+    }
+  ]
+}

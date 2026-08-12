@@ -1,0 +1,20 @@
+{
+  "sourceSlug": "osaka-kensetsu-road",
+  "region": "osaka",
+  "offices": [
+    {
+      "name": "建設局 総務部 管理課",
+      "roleSummary": "大阪市管理道路（認定道路）の占用許可申請窓口",
+      "postalCode": "559-0034",
+      "addressRaw": "大阪市住之江区南港北2丁目1番10号 ATCビルITM棟6階",
+      "receptionNote": "申請窓口は管理課と各工営所にあり、占用物件の種類・設置場所によって異なる（原典参照）。",
+      "contacts": [
+        { "contactType": "phone", "label": "管理課", "displayValue": "06-6615-6678" },
+        { "contactType": "web", "label": "道路・橋梁の管理、道路占用許可申請（原典）", "displayValue": "https://www.city.osaka.lg.jp/kensetsu/page/0000370606.html" }
+      ],
+      "sourceUrl": "https://www.city.osaka.lg.jp/kensetsu/page/0000370606.html",
+      "confirmedAt": "2026-08-13",
+      "notes": "国道指定区間・高速自動車国道・府道等は各管理者（大阪国道事務所等）へ。境界付近は各工営所へ。"
+    }
+  ]
+}

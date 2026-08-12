@@ -91,7 +91,7 @@ describe('窓口・連絡先エンティティ（entities/**/*.json）', () => {
 
   it('生成 SQL は pending + contact_pending_review で、重複 ID がない', () => {
     const sql = readFileSync(
-      join(process.cwd(), 'db/seeds/registry/0005_staging_tokyo_office_contacts.sql'),
+      join(process.cwd(), 'db/seeds/registry/0005_staging_office_contacts.sql'),
       'utf8',
     );
     const inserts = (sql.match(/INSERT INTO staging\.import_records/g) ?? []).length;

@@ -1,0 +1,17 @@
+{
+  "sourceSlug": "kanagawa-police-road-use",
+  "region": "yokohama",
+  "offices": [
+    {
+      "name": "所轄警察署 道路使用窓口",
+      "roleSummary": "道路使用許可の申請・問い合わせ窓口（使用場所を管轄する警察署）",
+      "receptionNote": "申請書・添付書類を各2通作成し、所轄警察署の道路使用窓口へ提出。受付時間・一括申請可否は管轄警察署へ電話で確認。",
+      "contacts": [
+        { "contactType": "web", "label": "道路使用許可（原典）", "displayValue": "https://www.police.pref.kanagawa.jp/tetsuzuki/kotsukankei/mesf1016.html" }
+      ],
+      "sourceUrl": "https://www.police.pref.kanagawa.jp/tetsuzuki/kotsukankei/mesf1016.html",
+      "confirmedAt": "2026-08-13",
+      "notes": "警察署ごとの電話番号は原典に一覧がないため要照会。道路占用許可は各道路管理者の窓口へ。"
+    }
+  ]
+}

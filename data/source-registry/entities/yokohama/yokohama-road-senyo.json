@@ -1,0 +1,18 @@
+{
+  "sourceSlug": "yokohama-road-senyo",
+  "region": "yokohama",
+  "offices": [
+    {
+      "name": "横浜市（道路占用の手続き）",
+      "roleSummary": "横浜市管理道路の占用許可・手続きの案内主体。手続き詳細は案内ページを参照",
+      "receptionNote": "占用許可基準・手続き・占用料は案内ページを確認。申請窓口の詳細はページ内リンクを参照。",
+      "contacts": [
+        { "contactType": "phone", "label": "横浜市コールセンター", "displayValue": "045-664-2525" },
+        { "contactType": "web", "label": "道路の占用（原典）", "displayValue": "https://www.city.yokohama.lg.jp/kurashi/machizukuri-kankyo/doro/kanri_senyo/senyo/" }
+      ],
+      "sourceUrl": "https://www.city.yokohama.lg.jp/kurashi/machizukuri-kankyo/doro/kanri_senyo/senyo/",
+      "confirmedAt": "2026-08-13",
+      "notes": "担当部署の直通番号は原典に記載なし（要照会）。"
+    }
+  ]
+}

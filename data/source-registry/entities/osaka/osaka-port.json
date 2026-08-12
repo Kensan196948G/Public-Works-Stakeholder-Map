@@ -1,0 +1,21 @@
+{
+  "sourceSlug": "osaka-port",
+  "region": "osaka",
+  "offices": [
+    {
+      "name": "大阪港湾局（組織・問合せ一覧）",
+      "roleSummary": "大阪港と府営港湾8港の管理・事業に関する問い合わせ（組織・問合せ一覧ページを参照）",
+      "postalCode": "530-8201",
+      "addressRaw": "大阪市北区中之島1丁目3番20号（大阪市役所）",
+      "receptionNote": "開庁時間 平日9:00〜17:30。事業別の所管部署は組織・問合せ一覧で確認すること。",
+      "contacts": [
+        { "contactType": "phone", "label": "大阪市役所代表", "displayValue": "06-6208-8181" },
+        { "contactType": "phone", "label": "大阪市総合コールセンター（8:00〜21:00）", "displayValue": "06-4301-7285" },
+        { "contactType": "web", "label": "大阪港湾局（原典）", "displayValue": "https://www.city.osaka.lg.jp/port/" }
+      ],
+      "sourceUrl": "https://www.city.osaka.lg.jp/port/",
+      "confirmedAt": "2026-08-13",
+      "notes": "2020/10に大阪市港湾局と大阪府港湾局を統合。詳細な窓口は組織・問合せ一覧を参照（要照会）。"
+    }
+  ]
+}
