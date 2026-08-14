@@ -4,7 +4,7 @@
 |---|---|
 | 対象 | Public Works Stakeholder Map 本番 |
 | 運用責任者 | kensan1969@gmail.com |
-| 更新日 | 2026-08-12 |
+| 更新日 | 2026-08-15 |
 
 ## 1. 定期点検項目
 
@@ -33,5 +33,7 @@
 | 2026-08-12 | 追加実装: 機関詳細 API・フィードバック状態更新・監査チェーン（migration 0003）・負荷テスト | 実施（221 tests PASS・p95 87ms・CI 全 PASS） | CTO 代行 |
 | 2026-08-12 | 追加実装: リンク点検 workflow・論理バックアップ・UAT 計画書・バンドル分割 | 実施（YAML 検証・bash -n 合格） | CTO 代行 |
 | 2026-08-12 | v0.5.0 本番反映（PR #58 マージ・migration 0003 dev/main 適用・Worker 686797b6 デプロイ・tag/Release） | 実施（CI 全 PASS・監査 31 行バックフィル・DB クエリ確認） | CTO 代行 |
+| 2026-08-13 | v0.5.1 実データ版切替（Issue #32・org 19 / office 16 / contact 33 / jurisdiction 193・DATASET_VERSION 切替） | 実施（機械レビュー 258 件 PASS・PR #65 マージ） | CTO 代行 |
+| 2026-08-15 | MVP/Prototype 自律評価（実動作検証・文書整合・ハートビート誤検知修正） | 実施（227 tests / E2E 7件 / 負荷 p95 51ms 全 PASS・評価報告書 2026-08-15 参照） | CTO 代行 |
 
 > ⚠️ 未実施の項目を実施済みとして記録しない。実施した場合のみ追記する。
