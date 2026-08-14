@@ -6,22 +6,22 @@
     "release_deadline": "2027-01-18",
     "phase_mode": "development"
   },
-  "goal": "Issue #32 第一段完了: 情報源台帳 15 機関を Neon main 登録済み → 次: 組織/窓口/管轄ポリゴン整備・取込・二者レビュー・データ版切替",
-  "phase": "Monitor",
+  "goal": "MVP/Prototype評価完了: v0.5.1実データ版切替後も全機能実動作・検証PASS（227テスト/E2E 7件/負荷p95 51ms）。ハートビート誤検知(Issue #66)修正・E2Eポート衝突解決・文書整合を完了。残: 個別管轄ポリゴン/市区町村窓口/二者レビュー（バックログ）",
+  "phase": "Verify",
   "kpi": {
     "success_rate_target": 0.9,
     "ci_success_rate": 1.0,
     "test_pass_rate": 1.0,
-    "test_count": 221,
+    "test_count": 227,
     "security_critical": 0,
     "blocker_count": 0
   },
   "execution": {
     "max_duration_minutes": 300,
     "last_session": {
-      "date": "2026-08-12",
-      "started_at": "21:00",
-      "summary": "v0.5.0 リリース完了: PR #58 マージ（32055f6）・migration 0003 を dev/main へ適用・本番デプロイ（version 686797b6）・tag/Release v0.5.0。次: 実データ投入（Issue #32）"
+      "date": "2026-08-15",
+      "started_at": "08:30",
+      "summary": "MVP/Prototype自律評価: 実動作検証(WebUI全画面・主要API)、lint/typecheck/227テスト/build/E2E 7件/負荷/リンク全PASS。P1修正: ハートビート誤検知(pushイベント除外+自動クローズ)・E2Eポート衝突(E2E_PORT対応)。P2: README/data-registry/SLO文書整合。Issue #66クローズ。評価報告書 docs/evaluation/2026-08-15 作成"
     },
     "v0.4.1_note": "Issue #32 第一段（台帳登録 seed・dev/main 適用）・#34 認証/RBAC コード実装（既定無効）・#36 MITライセンスを完了。残: 実データの組織/管轄整備・E2E(#35)・OpenAPI(#37)",
     "repair_count": 0,
@@ -45,10 +45,16 @@
       "production_url": "https://pwsm.mirai-dx-platform.com",
       "worker_version_id": "686797b6-0bf7-4a61-833a-269e478546d9",
       "merge_commit": "32055f6",
-      "pr": [58],
+      "pr": [
+        58
+      ],
       "tag": "v0.5.0",
       "release_url": "https://github.com/Kensan196948G/Public-Works-Stakeholder-Map/releases/tag/v0.5.0",
-      "neon_migrations_main": ["0001_initial_schema.sql", "0002_feedback.sql", "0003_audit_hash_chain.sql"],
+      "neon_migrations_main": [
+        "0001_initial_schema.sql",
+        "0002_feedback.sql",
+        "0003_audit_hash_chain.sql"
+      ],
       "note_v0.5.0": "総合評価（63.9→70.0・代替率56.7%）に基づく改善を本番反映。CSP/レート制限/ボディ上限/監査チェーン/機関詳細API/フィードバック管理/ハートビート/CI DB検証。監査31行を0003でバックフィル済み"
     },
     "released_v0_4_2": {
@@ -56,24 +62,26 @@
       "date": "2026-08-05",
       "production_url": "https://pwsm.mirai-dx-platform.com",
       "worker_version_id": "13c4359a-96f0-4891-addb-6055bd34ab65",
-      "merge_commit": "0f8a0dd",
-      "pr": [38, 40, 42, 43, 44, 45, 47, 48],
-      "tag": "v0.4.2",
-      "release_url": "https://github.com/Kensan196948G/Public-Works-Stakeholder-Map/releases/tag/v0.4.2",
       "merge_commit": "bd1090d",
-      "pr": [38, 40],
+      "pr": [
+        38,
+        40
+      ],
       "tag": "v0.4.0",
       "release_url": "https://github.com/Kensan196948G/Public-Works-Stakeholder-Map/releases/tag/v0.4.0",
-      "neon_migrations_main": ["0001_initial_schema.sql", "0002_feedback.sql (2026-08-05)"],
+      "neon_migrations_main": [
+        "0001_initial_schema.sql",
+        "0002_feedback.sql (2026-08-05)"
+      ],
       "neon_seed_main": "0001_demo_dataset.sql 適用済み (2026-07-24)",
       "secrets": "DATABASE_URL 登録済み (値は非表示・パイプ登録)",
       "access": "Cloudflare Access self_hosted (mirai-const.co.jp + 管理者メール, 24h)",
       "workers_dev": "無効化 (v0.1.1)",
       "observability": "有効化 (Issue #23)",
-    "note_v0.4.2": "認証・RBAC 本番有効化（Access aud/JWKS 自動取得・admin=kensan1969・本番JWT検証成功）＋ #32 第二・三段（組織 staging 16件 pending・N03 取込ツール）。wrangler deploy で AUTH vars 同期（versions upload では vars が未反映だったため）",
-    "note_v0.5.0": "本番反映済み（2026-08-12）。残課題: 実データ投入（Issue #32）・通知基盤・UAT 実施・GitHub Projects 更新（project scope なし）・ops-maintenance 構造修復（PR #56）",
-    "note_v0.5.1": "実データ版切替（2026-08-13・Issue #32）: 代表3地域の実データを core へ反映・デモ suspended・DATASET_VERSION=2026-08-13.real.1。残: 個別管轄ポリゴン・市区町村窓口・人間レビュー・UAT"
-  }
+      "note_v0.4.2": "認証・RBAC 本番有効化（Access aud/JWKS 自動取得・admin=kensan1969・本番JWT検証成功）＋ #32 第二・三段（組織 staging 16件 pending・N03 取込ツール）。wrangler deploy で AUTH vars 同期（versions upload では vars が未反映だったため）",
+      "note_v0.5.0": "本番反映済み（2026-08-12）。残課題: 実データ投入（Issue #32）・通知基盤・UAT 実施・GitHub Projects 更新（project scope なし）・ops-maintenance 構造修復（PR #56）",
+      "note_v0.5.1": "実データ版切替（2026-08-13・Issue #32）: 代表3地域の実データを core へ反映・デモ suspended・DATASET_VERSION=2026-08-13.real.1。残: 個別管轄ポリゴン・市区町村窓口・人間レビュー・UAT"
+    }
   },
   "infra": {
     "github_repo": "Kensan196948G/Public-Works-Stakeholder-Map",
