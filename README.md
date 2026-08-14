@@ -6,7 +6,7 @@
 [![Status](https://img.shields.io/badge/status-v0.5.1_real_data_(limited)-22c55e)](#️-開発状況)
 [![Data](https://img.shields.io/badge/data-public_only-0ea5e9)](#-データ方針)
 [![Decision](https://img.shields.io/badge/decision-support_not_determination-f59e0b)](#%EF%B8%8F-重要な注意)
-[![License](https://img.shields.io/badge/license-TBD-lightgrey)](#-ライセンス)
+[![License](https://img.shields.io/badge/license-MIT-blue)](#-ライセンス)
 
 ---
 
@@ -278,7 +278,7 @@ npm test
 | `npm run seed:generate` | 架空デモデータの seed SQL 生成（fixture が単一の真実） | ✅ 稼働 |
 | `npm run dev -w @pwsm/web` | Web UI 開発起動（vite、API へプロキシ） | ✅ 稼働 |
 | `npm run dev -w @pwsm/api` | API 開発起動（wrangler dev）※ | ✅ 稼働 |
-| `npm run test:e2e` | ブラウザ E2E テスト（Playwright・CI で実行） | ✅ CI 稼働（ローカルは要 Chromium・仮想メモリ制限環境では起動不可） |
+| `npm run test:e2e` | ブラウザ E2E テスト（Playwright・CI で実行）。ローカルは `E2E_PORT=<空きポート>` を指定して実行（ポート8788が他プロセスで使用中のため） | ✅ 稼働（ローカルは Chromium 起動可能な環境で検証済み・7 シナリオ） |
 | `npm run link:check` | 情報源台帳の公式 URL リンク生存確認（FR-015 第一歩・`reports/` に JSON 出力） | ✅ 稼働 |
 | `npm run load:test` | 検索 API の簡易負荷テスト（p95 2 秒目標・`BASE_URL` / `CONCURRENCY` / `REQUESTS` で調整） | ✅ 稼働 |
 
