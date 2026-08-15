@@ -186,6 +186,17 @@ export function App() {
       <header className="app-header">
         <h1>🗺️ 公共工事ステークホルダー整理マップ</h1>
         <p>指定地点と工事条件から、事前協議の確認候補となる関係機関を整理します。</p>
+        <p className="related-link">
+          関連: 🗺️{' '}
+          <a
+            href="https://pimm.mirai-dx-platform.com"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            公開インフラ維持管理マップ（pimm）
+          </a>
+          — 工事対象インフラ（橋梁・道路・港湾・河川・公共施設）の所在地・属性を確認
+        </p>
       </header>
 
       <DisclaimerBanner />
