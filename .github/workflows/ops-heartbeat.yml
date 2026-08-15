@@ -59,6 +59,7 @@ jobs:
           echo "event=$EVENT" >> "$GITHUB_OUTPUT"
 
       - name: 閾値超過なら Issue を起票（既存オープン Issue があれば作成しない）
+        id: threshold
         env:
           GH_TOKEN: ${{ github.token }}
           MAINT_FOUND: ${{ steps.maintenance.outputs.found }}
@@ -85,9 +86,24 @@ jobs:
           if [ "$STALE" = "1" ] && [ "$EXISTING_NUM" = "0" ]; then
             BODY="定期保守（依存監査・秘密スキャン）が想定間隔で実行されていない可能性があります。 理由: ${REASON} 実行: https://github.com/${{ github.repository }}/actions/workflows/ops-maintenance.yml 対応: ワークフローのスケジュール・手動 disable・60日無活動による停止を確認し、復旧してください。 誤検知の場合は閾値・スケジュールを docs/operations/slo-alerts.md の手順に従い調整してください。 解決後は本 Issue をクローズします。"
             gh issue create --title "$ISSUE_TITLE" --body "$BODY"
+            echo "alert_fired=true" >> "$GITHUB_OUTPUT"
           elif [ "$STALE" = "0" ] && [ "$EXISTING_NUM" != "0" ]; then
             echo "定期保守は正常に実行されています。誤検知 Issue #${EXISTING_NUM} を自動クローズします"
             gh issue close "$EXISTING_NUM" --comment "ハートビート確認で定期保守（ops-maintenance）の正常実行を確認したため自動クローズします。"
           elif [ "$STALE" = "0" ]; then
             echo "定期保守は正常に実行されています"
           fi
+
+      - name: アラート通知（ALERT_WEBHOOK_URL 設定時のみ・通知基盤設計 §3）
+        if: steps.threshold.outputs.alert_fired == 'true'
+        env:
+          WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "ALERT_WEBHOOK_URL 未設定のため通知スキップ（Issue 起票のみ・通知基盤設計参照）"
+            exit 0
+          fi
+          curl -fsS -X POST "$WEBHOOK_URL" \
+            -H 'Content-Type: application/json' \
+            -d "{\"text\":\"⚠️ [pwsm] ハートビート監視: 定期保守（ops-maintenance）が実行されていません\\n${RUN_URL}\"}"
