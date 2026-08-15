@@ -396,15 +396,23 @@ flowchart TD
     B --> C["Public Works Stakeholder Map"]
     C --> D["Road Occupation Permit Navigator"]
     C --> E["Public Works Stakeholder Finder / Mobile"]
+    C <--> F["Public Infrastructure Maintenance Map（pimm）"]
+    F --> G["工事対象インフラの所在地・属性を確認"]
+    C --> H["事前協議候補の関係機関を整理"]
 ```
 
-| プロジェクト | 連携イメージ |
-|---|---|
-| Global Civil API Catalog | 公開API・データソース台帳 |
-| Civil Open Data Intelligence Platform | 共通データ取得、検索、来歴 |
-| Road Occupation Permit Navigator | 道路関連の確認事項・手続案内 |
-| Public Infrastructure Maintenance Map | インフラ管理主体への導線 |
-| Public Works Stakeholder Finder | 将来のiPhone/iPad向け閲覧アプリ候補 |
+| プロジェクト | URL | 連携イメージ |
+|---|---|---|
+| Global Civil API Catalog | — | 公開API・データソース台帳 |
+| Civil Open Data Intelligence Platform | — | 共通データ取得、検索、来歴 |
+| Road Occupation Permit Navigator | — | 道路関連の確認事項・手続案内 |
+| **Public Infrastructure Maintenance Map（pimm）** | https://pimm.mirai-dx-platform.com | **工事対象インフラ（橋梁・道路・港湾・河川・公共施設）の所在地・属性を確認する Web GIS。本システム（pwsm）は工事条件から事前協議候補の関係機関を整理する補完関係** |
+| Public Works Stakeholder Finder | — | 将来のiPhone/iPad向け閲覧アプリ候補 |
+
+> 🔗 **関連プロジェクトとの役割分担**
+> - **pimm（公開インフラ維持管理マップ）**: インフラ**資産**（もの）を探す — 橋梁・道路・港湾・河川・公共施設の所在地・属性・出典
+> - **pwsm（本システム）**: 工事の**関係機関**（組織）を整理する — 発注者・道路/河川/港湾管理者・警察・自治体窓口の候補
+> - どちらも `mirai-dx-platform.com` ドメイン配下で公開。pimm は一般公開、pwsm は本番を Cloudflare Access で関係者限定公開（MVP 検証はローカル/プレビューで実施）
 
 機能を重複実装せず、本プロジェクトは「地域・工事条件から関係機関候補を組み立てる」責務に集中します。
 
