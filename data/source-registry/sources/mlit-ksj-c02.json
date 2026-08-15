@@ -1,0 +1,22 @@
+{
+  "id": "mlit-ksj-c02",
+  "region": "national",
+  "organizationType": "port_admin",
+  "name": "国土数値情報 港湾データ（C02）",
+  "publisher": "国土交通省 国土数値情報ダウンロードサービス",
+  "baseUrl": "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-C02.html",
+  "allowedHost": "nlftp.mlit.go.jp",
+  "authority": "primary_official",
+  "format": "GML",
+  "fetchMode": "manual",
+  "ttlDays": 365,
+  "license": {
+    "url": "https://www.mlit.go.jp/kokudosiseki/copyright.html",
+    "summary": "国土数値情報 使用許諾条件（非商用）準拠。出典記載（国土数値情報（港湾データ））を条件に利用可。商用利用の場合は許諾条件の確認が必要。",
+    "reuse": "non_commercial",
+    "confirmedAt": "2026-08-15",
+    "confirmedBy": "CTO 代行（2026-08-15・港湾管轄ポリゴン整備）"
+  },
+  "active": true,
+  "notes": "全国の港湾データ（港湾区域境界は LineString のためポリゴン化処理が必要）。代表3地域の主要港湾（東京港・横浜港・大阪港）から着手する。CRS を EPSG:4326 へ変換してからステージング取込する。"
+}
