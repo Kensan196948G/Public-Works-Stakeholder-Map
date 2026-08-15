@@ -6,8 +6,8 @@
     "release_deadline": "2027-01-18",
     "phase_mode": "development"
   },
-  "goal": "バックログ対応完了（2026-08-15 第三弾）: 市区町村窓口の代表3地域（東京/横浜/大阪）整備（#75/#78/#79）・pimm相互リンクのWeb UI実装（#77）。残: 実データ投入（Neon接続時）・通知実配信・本番負荷試験・本格UAT（本番運用化の対象）・MVP用サブドメイン作成（Cloudflare承認待ち）",
-  "phase": "Review",
+  "goal": "MVP URL公開完了（2026-08-15）: https://pwsm-mvp.mirai-dx-platform.com を fixture モードで公開（PR #81・関係者レビュー用）。残: P1実データ投入（Neon接続時）・二者レビュー/UAT・本番負荷試験・通知実配信（本番運用化の対象）",
+  "phase": "ProductionOps",
   "kpi": {
     "success_rate_target": 0.9,
     "ci_success_rate": 1.0,
@@ -20,8 +20,8 @@
     "max_duration_minutes": 300,
     "last_session": {
       "date": "2026-08-15",
-      "started_at": "11:00",
-      "summary": "第三弾: PR #77(pimmリンクUI)/#78(横浜・神奈川区役所)/#79(大阪市役所)をマージ。市区町村窓口が代表3地域に拡充。233 tests / E2E 7 / p95 51.8ms 全PASS。MVP詳細定義・data-registry・review-workflow を最新化"
+      "started_at": "11:30",
+      "summary": "MVP URL作成: Cloudflare認証確立（CLOUDFLARE_API_TOKEN）・wrangler.tomlに[env.mvp]追加（PR #81）・Worker pwsm-mvp デプロイ・https://pwsm-mvp.mirai-dx-platform.com で全機能動作確認（検索4候補・pimmリンク・免責・CSV・コンソールエラー0）"
     },
     "v0.4.1_note": "Issue #32 第一段（台帳登録 seed・dev/main 適用）・#34 認証/RBAC コード実装（既定無効）・#36 MITライセンスを完了。残: 実データの組織/管轄整備・E2E(#35)・OpenAPI(#37)",
     "repair_count": 0,
@@ -81,6 +81,15 @@
       "note_v0.4.2": "認証・RBAC 本番有効化（Access aud/JWKS 自動取得・admin=kensan1969・本番JWT検証成功）＋ #32 第二・三段（組織 staging 16件 pending・N03 取込ツール）。wrangler deploy で AUTH vars 同期（versions upload では vars が未反映だったため）",
       "note_v0.5.0": "本番反映済み（2026-08-12）。残課題: 実データ投入（Issue #32）・通知基盤・UAT 実施・GitHub Projects 更新（project scope なし）・ops-maintenance 構造修復（PR #56）",
       "note_v0.5.1": "実データ版切替（2026-08-13・Issue #32）: 代表3地域の実データを core へ反映・デモ suspended・DATASET_VERSION=2026-08-13.real.1。残: 個別管轄ポリゴン・市区町村窓口・人間レビュー・UAT"
+    },
+    "mvp": {
+      "url": "https://pwsm-mvp.mirai-dx-platform.com",
+      "worker": "pwsm-mvp",
+      "version_id": "da2f96ea-ba3f-4deb-9fb2-b28cebd02623",
+      "date": "2026-08-15",
+      "mode": "fixture（架空データ）",
+      "auth": "無効（一般アクセス可・関係者レビュー用）",
+      "note": "本番（pwsm-api・実データ）とは完全分離。デプロイ: npm run deploy:mvp"
     }
   },
   "infra": {
