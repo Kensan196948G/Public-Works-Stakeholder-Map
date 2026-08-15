@@ -29,16 +29,29 @@ jobs:
           # 機能ブランチに残った過去定義のワークフローが push で failure になる
           # （ワークフローYAML構文エラー等）と、誤検知で Issue が起票されるため、
           # schedule / workflow_dispatch イベントの最新実行だけを確認する。
-          RUNS_JSON="$(gh api "repos/${{ github.repository }}/actions/workflows/ops-maintenance.yml/runs" \
-            --jq '[.workflow_runs[] | select(.event == "schedule" or .event == "workflow_dispatch")][0] // empty' 2>/dev/null || true)"
+          # API 取得とフィルタを分離し、取得失敗・フィルタ結果なしを確実に検出する。
+          # per_page=100 で直近 8 日間（閾値）の実行を漏れなく取得する。
+          RUNS_JSON="$(gh api "repos/${{ github.repository }}/actions/workflows/ops-maintenance.yml/runs?per_page=100" 2>&1 || true)"
           if [ -z "$RUNS_JSON" ]; then
             echo "found=no" >> "$GITHUB_OUTPUT"
             echo "conclusion=missing" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          CONCLUSION="$(printf '%s' "$RUNS_JSON" | jq -r '.conclusion // "missing"')"
-          CREATED_AT="$(printf '%s' "$RUNS_JSON" | jq -r '.created_at // ""')"
-          EVENT="$(printf '%s' "$RUNS_JSON" | jq -r '.event // ""')"
+          # API レスポンスが JSON でない（認証エラー等）場合も missing として扱う
+          if ! printf '%s' "$RUNS_JSON" | jq -e '.workflow_runs' >/dev/null 2>&1; then
+            echo "found=no" >> "$GITHUB_OUTPUT"
+            echo "conclusion=missing" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          SELECTED="$(printf '%s' "$RUNS_JSON" | jq -c '[.workflow_runs[] | select(.event == "schedule" or .event == "workflow_dispatch")][0] // empty' 2>/dev/null || true)"
+          if [ -z "$SELECTED" ]; then
+            echo "found=no" >> "$GITHUB_OUTPUT"
+            echo "conclusion=missing" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CONCLUSION="$(printf '%s' "$SELECTED" | jq -r '.conclusion // "missing"')"
+          CREATED_AT="$(printf '%s' "$SELECTED" | jq -r '.created_at // ""')"
+          EVENT="$(printf '%s' "$SELECTED" | jq -r '.event // ""')"
           echo "found=yes" >> "$GITHUB_OUTPUT"
           echo "conclusion=$CONCLUSION" >> "$GITHUB_OUTPUT"
           echo "created_at=$CREATED_AT" >> "$GITHUB_OUTPUT"
