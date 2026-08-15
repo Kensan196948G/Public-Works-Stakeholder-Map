@@ -4,9 +4,11 @@
 |---|---|
 | 対象 | staging.import_records（organization / jurisdiction / office / contact_point） |
 | 原則 | **取込者 ≠ 承認者**（無レビュー公開禁止・詳細設計仕様書 §8.5 G5） |
-| 最終更新日 | 2026-08-13 |
+| 最終更新日 | 2026-08-15 |
 
-## 1. レビュー対象（2026-08-13 時点・Neon dev ブランチ）
+## 1. レビュー対象（2026-08-15 更新）
+
+### 1.1 実データ（2026-08-13 適用・Neon dev）
 
 | entity_kind | 件数 | 品質フラグ |
 |---|---:|---|
@@ -14,6 +16,13 @@
 | jurisdiction | 193 | geometry_pending_review（うち city_unassigned 1） |
 | office | 16 | contact_pending_review |
 | contact_point | 33 | contact_pending_review |
+
+### 1.2 追加データ（2026-08-15・個別管轄ポリゴン・市区町村窓口）
+
+| 追加 | entity_kind | 内容 | レビュー手順 |
+|---|---|---|---|
+| 個別管轄ポリゴン（road/river/port/police） | jurisdiction | `scripts/jurisdiction-geojson-to-imports.mjs` で生成（§3.4 参照） | 原典（国土数値情報）との突合・geometry 検証 |
+| 市区町村窓口（千代田区 占用係） | office / contact_point | `entities/tokyo/chiyoda-road-senyo.json` | §3.3 と同じ（原典ページ再確認） |
 
 レビュー台帳 CSV の出力:
 
@@ -54,6 +63,15 @@ DATABASE_URL="<Neon dev 接続文字列>" node scripts/export-staging-review-she
 - [ ] 受付時間・申請窓口の分岐（警察署・工営所等）が receptionNote に記載されている
 - [ ] 個人名・個人メールアドレス・緊急連絡先を含まない
 - [ ] 電話番号が 10〜11 桁（正規化可能）・URL が HTTPS
+
+### 3.4 jurisdiction（個別管轄ポリゴン・road/river/port/police・2026-08-15 追加）
+
+- [ ] 原典（国土数値情報 N13/W05/C02/P18）と属性・範囲が一致する
+- [ ] `crs: EPSG:4326`・`precision` が official/interpreted の妥当な値である
+- [ ] 推定区域（estimated=true・警察署等）は「推定」表示を画面へ反映する方針が守られている
+- [ ] ST_IsValid が true・自己交差や縮退ポリゴンがない
+- [ ] サンプル点での ST_Covers により、期待する機関が候補になる（空間検索疎通）
+- [ ] 路線・河川名などの集約キーが原典と一致し、名称の重複・欠落がない
 
 ## 4. レビュー実施手順
 
