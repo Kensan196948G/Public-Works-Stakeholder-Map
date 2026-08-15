@@ -6,7 +6,7 @@
     "release_deadline": "2027-01-18",
     "phase_mode": "development"
   },
-  "goal": "バックログ対応第二弾完了（2026-08-15）: 個別管轄ポリゴンパイプライン（#74）・市区町村窓口代表例/通知基盤/UAT記録/PWA/MVP定義（#75）を main へマージ。pimm との相互リンク確立（#73）。残: 実データ投入（Neon接続時）・通知実配信・本番負荷試験・本格UAT（本番運用化の対象）",
+  "goal": "バックログ対応完了（2026-08-15 第三弾）: 市区町村窓口の代表3地域（東京/横浜/大阪）整備（#75/#78/#79）・pimm相互リンクのWeb UI実装（#77）。残: 実データ投入（Neon接続時）・通知実配信・本番負荷試験・本格UAT（本番運用化の対象）・MVP用サブドメイン作成（Cloudflare承認待ち）",
   "phase": "Review",
   "kpi": {
     "success_rate_target": 0.9,
@@ -20,8 +20,8 @@
     "max_duration_minutes": 300,
     "last_session": {
       "date": "2026-08-15",
-      "started_at": "10:00",
-      "summary": "バックログ対応: PR #73(pimm相互リンク)/#74(個別管轄パイプライン)/#75(市区町村窓口・通知基盤・UAT記録・PWA・MVP定義)をマージ。233 tests / E2E 7 / p95 51.8ms 全PASS。MVP詳細定義 docs/evaluation/2026-08-15-MVP詳細定義.md 作成"
+      "started_at": "11:00",
+      "summary": "第三弾: PR #77(pimmリンクUI)/#78(横浜・神奈川区役所)/#79(大阪市役所)をマージ。市区町村窓口が代表3地域に拡充。233 tests / E2E 7 / p95 51.8ms 全PASS。MVP詳細定義・data-registry・review-workflow を最新化"
     },
     "v0.4.1_note": "Issue #32 第一段（台帳登録 seed・dev/main 適用）・#34 認証/RBAC コード実装（既定無効）・#36 MITライセンスを完了。残: 実データの組織/管轄整備・E2E(#35)・OpenAPI(#37)",
     "repair_count": 0,
