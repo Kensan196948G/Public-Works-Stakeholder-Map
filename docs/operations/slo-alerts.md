@@ -60,6 +60,20 @@
 
 - **実施状況: 未実施（NOT RUN）** — 通知基盤がないため。基盤導入後にテスト通知を実施し、
   この文書の「実施日・結果」欄へ記録する。
+- 通知基盤の設計と GitHub Actions 連携の雛形は `docs/operations/alert-notification-design.md` を参照
+  （2026-08-15・ALERT_WEBHOOK_URL 未設定時は Issue 起票のみでフェイルセーフ）。
+
+## 4.5 負荷試験（2026-08-15 記録）
+
+- **検索 API p95 目標**: 2 秒以内（詳細設計 §8）
+- **ローカル実測（2026-08-15・fixture モード・Node サーバー）**:
+  - `BASE_URL=http://localhost:8789 CONCURRENCY=10 REQUESTS=50 npm run load:test`
+  - 結果: p50=11.9ms / **p95=51.8ms** / max=92.3ms / non2xx=0 → **PASS**
+- **本番負荷試験（未実施・本番運用化の対象）**:
+  - 本番（https://pwsm.mirai-dx-platform.com）は Cloudflare Access 保護のため、外部からの直接負荷試験は不可
+  - 実施方法: 認証済み環境（プレビュー Worker・Access セッション付き）で `npm run load:test` を実行し、
+    p95 2 秒以内を確認する。密集地域（東京・横浜・大阪の実データ）と大規模ポリゴンも対象とする
+  - 実施後に本節へ結果を追記する
 
 ## 5. 定期確認
 
