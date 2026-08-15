@@ -1,0 +1,20 @@
+{
+  "sourceSlug": "yokohama-kanagawa-ku",
+  "region": "yokohama",
+  "offices": [
+    {
+      "name": "横浜市 神奈川区役所（代表窓口）",
+      "roleSummary": "横浜市神奈川区の行政窓口代表。工事・占用・道路等の区民手続きの入口（詳細な担当課は業務案内を参照）",
+      "postalCode": "221-0824",
+      "addressRaw": "横浜市神奈川区広台太田町3番地8",
+      "receptionNote": "開庁時間: 月曜〜金曜 8:45-17:00（祝日・休日・年末年始を除く）。第2・第4土曜日開庁。昼の時間帯は待ち時間が長くなる場合あり",
+      "contacts": [
+        { "contactType": "phone", "label": "神奈川区役所（代表）", "displayValue": "045-411-7171" },
+        { "contactType": "web", "label": "神奈川区役所（原典）", "displayValue": "https://www.city.yokohama.lg.jp/kanagawa/" }
+      ],
+      "sourceUrl": "https://www.city.yokohama.lg.jp/kanagawa/madoguchi-shisetsu/kuyakusho/",
+      "confirmedAt": "2026-08-15",
+      "notes": "2026-08-15 に公式ページを取得して抽出。市区町村（政令指定都市の区）単位の窓口整備の代表例。道路占用等の担当課直通番号は業務案内ページを要確認（要照会）。"
+    }
+  ]
+}
