@@ -1,0 +1,22 @@
+{
+  "id": "osaka-city-hall",
+  "region": "osaka",
+  "organizationType": "municipality",
+  "name": "大阪市役所",
+  "publisher": "大阪市",
+  "baseUrl": "https://www.city.osaka.lg.jp/",
+  "allowedHost": "www.city.osaka.lg.jp",
+  "authority": "primary_official",
+  "format": "HTML",
+  "fetchMode": "manual",
+  "ttlDays": 180,
+  "license": {
+    "url": "https://www.city.osaka.lg.jp/site_policy/index.html",
+    "summary": "大阪市ホームページのコンテンツは、出典を明示して引用可能。転載・商用利用は市へ確認。",
+    "reuse": "reference_only",
+    "confirmedAt": "2026-08-15",
+    "confirmedBy": "CTO 代行（2026-08-15・市区町村窓口整備の大阪代表例）"
+  },
+  "active": true,
+  "notes": "大阪市役所（本庁）の代表窓口。市区町村（政令指定都市）単位の窓口整備の代表例。各区役所（北区・中央区等）は同様の手順で収集する。"
+}

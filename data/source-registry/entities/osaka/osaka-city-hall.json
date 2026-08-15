@@ -1,0 +1,20 @@
+{
+  "sourceSlug": "osaka-city-hall",
+  "region": "osaka",
+  "offices": [
+    {
+      "name": "大阪市役所（代表窓口）",
+      "roleSummary": "大阪市の行政窓口代表。工事・占用・道路等の市政手続きの入口（担当局は各局の窓口を参照）",
+      "postalCode": "530-8201",
+      "addressRaw": "大阪市北区中之島1丁目3番20号",
+      "receptionNote": "開庁時間: 月曜〜金曜 9:00-17:30（土曜・日曜・祝日・年末年始を除く）。担当局の直通番号は各局ページを要確認",
+      "contacts": [
+        { "contactType": "phone", "label": "大阪市役所（代表）", "displayValue": "06-6208-8181" },
+        { "contactType": "web", "label": "大阪市役所（原典）", "displayValue": "https://www.city.osaka.lg.jp/" }
+      ],
+      "sourceUrl": "https://www.city.osaka.lg.jp/",
+      "confirmedAt": "2026-08-15",
+      "notes": "2026-08-15 に公式ページを取得して抽出。市区町村（政令指定都市）単位の窓口整備の代表例。大阪市の各区役所（北区・中央区等）は同様の手順で個別に収集する。"
+    }
+  ]
+}
