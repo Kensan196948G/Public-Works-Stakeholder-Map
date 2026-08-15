@@ -479,6 +479,7 @@ Issueには次の情報を含めてください。
 | 2026-08-12 | 🎉 **v0.5.0 本番リリース**: PR #58 マージ・migration 0003 適用（監査チェーン）・Worker 686797b6 デプロイ・tag/Release 作成 |
 | 2026-08-13 | 🎉 **v0.5.1 実データ版切替（Issue #32）**: 代表3地域の実データ（org 19・office 16・contact 33・jurisdiction 193）を core へ反映・デモデータ suspended・DATASET_VERSION 切替 |
 | 2026-08-15 | 🚀 **MVP/Prototype 評価とバックログ対応**: ハートビート誤検知修正（#67/#69/#70）・E2E ポート衝突解決・個別管轄ポリゴン取込パイプライン（road/river/port/police・#74）・市区町村窓口の代表例（千代田区・#75）・通知基盤設計・UAT 機械検証・PWA 基本対応・MVP 詳細定義 |
+| 2026-08-15 | 🌐 **MVP URL 公開（#81）**: https://pwsm-mvp.mirai-dx-platform.com を fixture モードで公開（関係者レビュー用・本番と分離） |
 
 ### 🚦 リリース状況（v0.5.1 実データ版切替済み・関係者限定）
 
