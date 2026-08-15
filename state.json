@@ -6,13 +6,13 @@
     "release_deadline": "2027-01-18",
     "phase_mode": "development"
   },
-  "goal": "MVP/Prototype自律評価完了（2026-08-15）: 実動作検証・全自動検証PASS・ハートビート誤検知修正一式（PR #67/#69/#70/#71）を main へマージ。Issue #66/#57 クローズ・#32 は進捗記録済み。残: 個別管轄ポリゴン/市区町村窓口/二者レビュー（バックログ）",
+  "goal": "バックログ対応第二弾完了（2026-08-15）: 個別管轄ポリゴンパイプライン（#74）・市区町村窓口代表例/通知基盤/UAT記録/PWA/MVP定義（#75）を main へマージ。pimm との相互リンク確立（#73）。残: 実データ投入（Neon接続時）・通知実配信・本番負荷試験・本格UAT（本番運用化の対象）",
   "phase": "Review",
   "kpi": {
     "success_rate_target": 0.9,
     "ci_success_rate": 1.0,
     "test_pass_rate": 1.0,
-    "test_count": 227,
+    "test_count": 233,
     "security_critical": 0,
     "blocker_count": 0
   },
@@ -20,8 +20,8 @@
     "max_duration_minutes": 300,
     "last_session": {
       "date": "2026-08-15",
-      "started_at": "08:30",
-      "summary": "MVP/Prototype自律評価完了: lint/typecheck/227テスト/build/fixture 11/link 16-16/負荷 p95 51ms/E2E 7件 全PASS。ハートビート誤検知を PR #67(イベント限定+自動クローズ)→#69(堅牢化)→#70(actions:read権限)→#71(記録)で修正・マージ。実地検証で stale=0 を確認。Issue #66/#57 クローズ。評価報告書 2026-08-15 作成"
+      "started_at": "10:00",
+      "summary": "バックログ対応: PR #73(pimm相互リンク)/#74(個別管轄パイプライン)/#75(市区町村窓口・通知基盤・UAT記録・PWA・MVP定義)をマージ。233 tests / E2E 7 / p95 51.8ms 全PASS。MVP詳細定義 docs/evaluation/2026-08-15-MVP詳細定義.md 作成"
     },
     "v0.4.1_note": "Issue #32 第一段（台帳登録 seed・dev/main 適用）・#34 認証/RBAC コード実装（既定無効）・#36 MITライセンスを完了。残: 実データの組織/管轄整備・E2E(#35)・OpenAPI(#37)",
     "repair_count": 0,
