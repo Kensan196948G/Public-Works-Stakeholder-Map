@@ -1,0 +1,22 @@
+{
+  "id": "yokohama-kanagawa-ku",
+  "region": "yokohama",
+  "organizationType": "municipality",
+  "name": "横浜市 神奈川区役所",
+  "publisher": "横浜市",
+  "baseUrl": "https://www.city.yokohama.lg.jp/kanagawa/madoguchi-shisetsu/kuyakusho/",
+  "allowedHost": "www.city.yokohama.lg.jp",
+  "authority": "primary_official",
+  "format": "HTML",
+  "fetchMode": "manual",
+  "ttlDays": 180,
+  "license": {
+    "url": "https://www.city.yokohama.lg.jp/koho/koho-seisaku/policy/linksite.html",
+    "summary": "横浜市ホームページの著作物は出典を明示して引用可能。商用利用は市へ確認。",
+    "reuse": "reference_only",
+    "confirmedAt": "2026-08-15",
+    "confirmedBy": "CTO 代行（2026-08-15・市区町村窓口整備の横浜代表例）"
+  },
+  "active": true,
+  "notes": "横浜市神奈川区役所の代表窓口。市区町村（政令指定都市の区）単位の窓口整備の代表例。他区（鶴見・中・西・港北等）も同様の手順で収集する。"
+}
