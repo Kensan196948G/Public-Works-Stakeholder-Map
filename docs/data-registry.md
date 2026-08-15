@@ -114,10 +114,19 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/registry/0003_n03_jurisdicti
 
 代表 3 地域の区・市区町村レベル窓口を、都道府県/政令市代表に加えて整備する。
 
-- **代表例（追加済み）**: 千代田区 環境まちづくり部 環境まちづくり総務課 占用係
-  （`data/source-registry/entities/tokyo/chiyoda-road-senyo.json`・`sources/chiyoda-road-senyo.json`）
-  - 道路占用許可（足場・仮囲い・突出看板等）の受付・許可窓口
-  - 公式ページ: https://www.city.chiyoda.lg.jp/koho/machizukuri/kotsu/shuyodoro/dorosenyo.html
+- **代表例（追加済み・代表3地域）**:
+  - 東京: 千代田区 環境まちづくり部 環境まちづくり総務課 占用係
+    （`entities/tokyo/chiyoda-road-senyo.json`・`sources/chiyoda-road-senyo.json`）
+    - 道路占用許可（足場・仮囲い・突出看板等）の受付・許可窓口
+    - 公式ページ: https://www.city.chiyoda.lg.jp/koho/machizukuri/kotsu/shuyodoro/dorosenyo.html
+  - 横浜: 神奈川区役所 代表窓口
+    （`entities/yokohama/yokohama-kanagawa-ku.json`・`sources/yokohama-kanagawa-ku.json`）
+    - 区民手続きの入口（代表電話 045-411-7171・開庁時間）
+    - 公式ページ: https://www.city.yokohama.lg.jp/kanagawa/
+  - 大阪: 大阪市役所（本庁）代表窓口
+    （`entities/osaka/osaka-city-hall.json`・`sources/osaka-city-hall.json`）
+    - 市政手続きの入口（代表電話 06-6208-8181・開庁時間）
+    - 公式ページ: https://www.city.osaka.lg.jp/
 - **収集手順**（各特別区・政令指定都市の区で繰り返す）:
   1. 区公式サイトで「道路占用」「河川占用」「土木」等の手続きページを特定
   2. 担当部署名・直通電話・受付場所・必要書類を確認し、`entities/<region>/<slug>.json` へ記録
