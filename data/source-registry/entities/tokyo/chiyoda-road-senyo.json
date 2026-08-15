@@ -1,0 +1,22 @@
+{
+  "sourceSlug": "chiyoda-road-senyo",
+  "region": "tokyo",
+  "offices": [
+    {
+      "name": "千代田区 環境まちづくり部 環境まちづくり総務課 占用係",
+      "roleSummary": "千代田区管理道路の占用許可（足場・仮囲い・突出看板等）の受付・許可窓口。区役所5階で仮受付・本申請・許可書発行を担当",
+      "postalCode": "102-8688",
+      "addressRaw": "東京都千代田区九段南1-2-1（千代田区役所5階）",
+      "receptionNote": "手続きの順序: 区役所で占用仮受付 → 所轄警察署で道路使用許可 → 区役所で本申請・占用許可書発行。占用料は納付確認後に許可書交付",
+      "contacts": [
+        { "contactType": "phone", "label": "占用係（直通）", "displayValue": "03-5211-4235" },
+        { "contactType": "phone", "label": "ファクス", "displayValue": "03-3264-4792" },
+        { "contactType": "email", "label": "メール", "displayValue": "machizukurisoumu@city.chiyoda.lg.jp" },
+        { "contactType": "web", "label": "道路占用の許可申請（原典）", "displayValue": "https://www.city.chiyoda.lg.jp/koho/machizukuri/kotsu/shuyodoro/dorosenyo.html" }
+      ],
+      "sourceUrl": "https://www.city.chiyoda.lg.jp/koho/machizukuri/kotsu/shuyodoro/dorosenyo.html",
+      "confirmedAt": "2026-08-15",
+      "notes": "2026-08-15 に公式ページを取得して抽出。市区町村（特別区）単位の窓口整備の代表例。道路使用許可は所轄警察署（別機関）が担当するため、本窓口は占用のみ。"
+    }
+  ]
+}

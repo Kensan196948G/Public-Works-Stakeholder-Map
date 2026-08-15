@@ -1,0 +1,22 @@
+{
+  "id": "chiyoda-road-senyo",
+  "region": "tokyo",
+  "organizationType": "road_admin",
+  "name": "千代田区（道路占用の許可申請）",
+  "publisher": "千代田区",
+  "baseUrl": "https://www.city.chiyoda.lg.jp/koho/machizukuri/kotsu/shuyodoro/dorosenyo.html",
+  "allowedHost": "www.city.chiyoda.lg.jp",
+  "authority": "primary_official",
+  "format": "HTML",
+  "fetchMode": "manual",
+  "ttlDays": 180,
+  "license": {
+    "url": "https://www.city.chiyoda.lg.jp/koho/kuseijoho/sitepolicy.html",
+    "summary": "千代田区ホームページのコンテンツは、特に記載がない限り自由に引用・リンク可。商用利用や転載は区へ確認。",
+    "reuse": "reference_only",
+    "confirmedAt": "2026-08-15",
+    "confirmedBy": "CTO 代行（2026-08-15・市区町村窓口整備の代表例）"
+  },
+  "active": true,
+  "notes": "千代田区管理道路の占用許可窓口（環境まちづくり総務課 占用係）。市区町村（特別区）単位の窓口整備の代表例として追加。他の特別区・政令指定都市の区も同様の手順で収集する。"
+}

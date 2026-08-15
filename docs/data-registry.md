@@ -101,7 +101,7 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/registry/0003_n03_jurisdicti
 - ツール改善: N03-2026 の `N03_005`（行政区名）対応・`13000` 等の全ゼロ市区町村コードを
   `unknown` へ正規化（所属未定地の重複を防止）・配布ページ未掲載の最新版を HEAD プローブで検出
 
-### 1.9 🏢 窓口・連絡先エンティティの収集（2026-08-13・代表3地域 16 窓口 / 33 連絡先）
+### 1.9 🏢 窓口・連絡先エンティティの収集（2026-08-13・代表3地域 16 窓口 / 33 連絡先 → 2026-08-15 市区町村例追加）
 
 - 収集元: `data/source-registry/entities/{tokyo,yokohama,osaka}/*.json`（公式ページから抽出した下書き。
   東京 6 窓口/12 連絡先・横浜 4/8・大阪 6/13）
@@ -109,6 +109,24 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/registry/0003_n03_jurisdicti
 - 適用: Neon dev ブランチへ pending + `contact_pending_review` で適用済み（冪等）
 - レビュー: 原典の再確認・個人情報なし確認・二者レビュー後に `core.*` へ反映
 - 検証: `data/source-registry/test/entity-office.test.ts`（スキーマ・台帳一致・電話形式・SQL 不変条件）
+
+#### 1.9.1 🏙️ 市区町村単位の窓口整備（バックログ対応・2026-08-15 着手）
+
+代表 3 地域の区・市区町村レベル窓口を、都道府県/政令市代表に加えて整備する。
+
+- **代表例（追加済み）**: 千代田区 環境まちづくり部 環境まちづくり総務課 占用係
+  （`data/source-registry/entities/tokyo/chiyoda-road-senyo.json`・`sources/chiyoda-road-senyo.json`）
+  - 道路占用許可（足場・仮囲い・突出看板等）の受付・許可窓口
+  - 公式ページ: https://www.city.chiyoda.lg.jp/koho/machizukuri/kotsu/shuyodoro/dorosenyo.html
+- **収集手順**（各特別区・政令指定都市の区で繰り返す）:
+  1. 区公式サイトで「道路占用」「河川占用」「土木」等の手続きページを特定
+  2. 担当部署名・直通電話・受付場所・必要書類を確認し、`entities/<region>/<slug>.json` へ記録
+  3. 対応する `sources/<slug>.json` を台帳へ追加（`region` は既存 enum の tokyo/yokohama/osaka を使用）
+  4. 生成スクリプト（source-registry → 0001 / entity-imports → 0002 / office-contact → 0005）を再実行
+  5. Neon dev で適用し、機械レビュー → 二者レビュー → core 反映（§1.10 と同じ経路）
+- **留意点**: 道路使用許可は所轄警察署（別機関）が担当するため、区窓口の role_summary に分岐を明記する。
+  実在の電話・住所は公開情報であり README のデータ方針（公開情報ベース）に適合するが、
+  個人名・個人メールは含めない（代表課メール等の部署アドレスに限定）。
 
 ### 1.10 ✅ 機械レビューと core 反映パイプライン（2026-08-13・dev 適用済み）
 
