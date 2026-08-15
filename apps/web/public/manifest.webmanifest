@@ -1,0 +1,18 @@
+{
+  "name": "公共工事ステークホルダー整理マップ",
+  "short_name": "公共工事マップ",
+  "description": "工事場所と工事条件から、事前協議の確認候補となる関係機関を公開情報ベースで整理します。",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#f8fafc",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
