@@ -60,4 +60,34 @@ AUTH_ENABLED = "false"
 AUTH_AUDIENCE = ""
 AUTH_JWKS_URL = ""
 
+# MVP 環境（2026-08-15・関係者レビュー用・ユーザー承認済み）。
+# pwsm-mvp.mirai-dx-platform.com を custom domain として公開（他のプロジェクトの -mvp パターンに整合）。
+# fixture（架空データ）モードで動作し、本番（pwsm-api・実データ）とは分離する。
+[env.mvp]
+name = "pwsm-mvp"
+workers_dev = false
+routes = [
+  { pattern = "pwsm-mvp.mirai-dx-platform.com", custom_domain = true }
+]
+
+# assets は環境ごとに継承されないため mvp にも明示定義する
+[env.mvp.assets]
+directory = "../web/dist"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
+[env.mvp.vars]
+APP_ENV = "preview"
+# MVP は関係者レビュー用のため認証は無効（fixture モード・一般アクセス可）
+# 実データ・Secrets（DATABASE_URL）は設定しない
+AUTH_ENABLED = "false"
+AUTH_AUDIENCE = ""
+AUTH_JWKS_URL = ""
+# fixture（架空デモデータ）のデータ版識別子。MVP は実データ（本番）を使用しない
+DATASET_VERSION = "2026-07-18.fixture.1"
+# RBAC vars（認証無効のため空・本番とは分離）
+AUTH_ADMIN_EMAILS = ""
+AUTH_REVIEWER_EMAILS = ""
+AUTH_EDITOR_EMAILS = ""
+
 # DATABASE_URL 等の秘密情報は wrangler secret put で登録し、このファイルへ書かない
