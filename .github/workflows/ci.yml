@@ -110,8 +110,9 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/pwsm?sslmode=disable
         run: |
           set -e
-          [ "$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM provenance.data_sources")" = "24" ]
-          [ "$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM staging.import_records")" = "16" ]
+          # demo(8) + 台帳(16→20: N13/W05/C02/P18 追加) = 28
+          [ "$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM provenance.data_sources")" = "28" ]
+          [ "$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM staging.import_records")" = "18" ]
           [ "$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM core.organizations WHERE status='published'")" = "8" ]
           [ "$(psql "$DATABASE_URL" -tAc "SELECT count(*) FROM core.jurisdictions WHERE status='published'")" = "14" ]
           # PostGIS 空間検索の疎通確認（デモ中央地区の点で候補が返る）
