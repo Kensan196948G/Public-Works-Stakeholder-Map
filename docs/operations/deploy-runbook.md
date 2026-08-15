@@ -114,6 +114,25 @@ npm run deploy:preview
 
 ---
 
+## 3.5 🧪 MVP 環境へのデプロイ（関係者レビュー用・2026-08-15 追加）
+
+MVP/Prototype 用の関係者レビュー URL です。fixture（架空データ）モードで動作し、本番（実データ）とは完全分離します。
+
+```bash
+# 事前: リポジトリルートで npm run build（apps/web/dist を最新化）
+# 作業ディレクトリ: apps/api（またはルートで npm run deploy:mvp）
+npm run deploy:mvp
+#   = wrangler deploy --env mvp
+#   → Worker: pwsm-mvp / custom domain: pwsm-mvp.mirai-dx-platform.com
+```
+
+- **環境構成**: `[env.mvp]`（wrangler.toml）— fixture モード・認証無効・DB/Secrets なし
+- **確認 URL**: https://pwsm-mvp.mirai-dx-platform.com
+- **ロールバック**: `wrangler versions` で直前バージョンへ戻す（本番に影響なし）
+- **注意**: 本番（`pwsm-api`・実データ・Access 保護）とは別 Worker のため、デプロイしても本番に影響しない
+
+---
+
 ## 4. 🚀 本番デプロイ手順（単一 Worker: API + Web assets）— 🚫 承認済み PR の範囲でのみ実行
 
 本番は default env（Worker 名 `pwsm-api`）です。**API と Web 資産は同一 Worker として一括デプロイ**されます。段階公開（versions upload → deploy）を推奨します。
