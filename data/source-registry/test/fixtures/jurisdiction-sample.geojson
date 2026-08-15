@@ -1,0 +1,41 @@
+{
+  "type": "FeatureCollection",
+  "name": "jurisdiction-sample",
+  "description": "個別管轄ポリゴン取込スクリプトの CI 検証用サンプル（完全架空・デモ検証用）",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "PREF": "13", "NAME": "みらい川 代表区間（デモ）" },
+      "geometry": {
+        "type": "MultiPolygon",
+        "coordinates": [
+          [
+            [
+              [139.6, 35.6],
+              [139.7, 35.6],
+              [139.7, 35.7],
+              [139.6, 35.7],
+              [139.6, 35.6]
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "PREF": "13", "NAME": "みらい港 臨海地区（デモ）" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [139.7, 35.5],
+            [139.8, 35.5],
+            [139.8, 35.6],
+            [139.7, 35.6],
+            [139.7, 35.5]
+          ]
+        ]
+      }
+    }
+  ]
+}

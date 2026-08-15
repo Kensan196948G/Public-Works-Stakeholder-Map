@@ -1,0 +1,22 @@
+{
+  "id": "mlit-ksj-p18",
+  "region": "national",
+  "organizationType": "police",
+  "name": "国土数値情報 警察署データ（P18）",
+  "publisher": "国土交通省 国土数値情報ダウンロードサービス",
+  "baseUrl": "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-P18.html",
+  "allowedHost": "nlftp.mlit.go.jp",
+  "authority": "primary_official",
+  "format": "GML",
+  "fetchMode": "manual",
+  "ttlDays": 365,
+  "license": {
+    "url": "https://www.mlit.go.jp/kokudosiseki/copyright.html",
+    "summary": "政府標準利用規約（第2.0版）準拠。出典記載（国土数値情報（警察署データ））を条件に複製・公衆送信・翻案等を自由に利用可（商用可）。",
+    "reuse": "standard_terms",
+    "confirmedAt": "2026-08-15",
+    "confirmedBy": "CTO 代行（2026-08-15・警察管轄整備）"
+  },
+  "active": true,
+  "notes": "警察署の位置データ（点）。管轄区域の公式ポリゴンは提供されないため、行政区域との重なりや距離で推定区域（estimated=true・precision=interpreted）として整備する。README の注意事項（警察署の管轄には推定が含まれる）を画面表示へ必ず反映する。"
+}

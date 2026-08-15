@@ -92,8 +92,8 @@
         },
         "reuse": {
           "type": "string",
-          "description": "standard_terms: 政府標準利用規約 2.0 / CC BY 4.0 互換（出典表示で再利用・商用可）。reference_only: 制限型（私的使用・引用除き無断複製不可）— 本文を複製せずリンク+出典+最小索引情報のみ保持する（§9.3）",
-          "enum": ["standard_terms", "reference_only"]
+          "description": "standard_terms: 政府標準利用規約 2.0 / CC BY 4.0 互換（出典表示で再利用・商用可）。non_commercial: 非商用条件（私的・研究・行政目的は可、商用は許諾要）— 商用利用前に許諾条件を確認。reference_only: 制限型（私的使用・引用除き無断複製不可）— 本文を複製せずリンク+出典+最小索引情報のみ保持する（§9.3）",
+          "enum": ["standard_terms", "non_commercial", "reference_only"]
         },
         "confirmedAt": {
           "type": "string",
