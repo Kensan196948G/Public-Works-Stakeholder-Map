@@ -150,13 +150,15 @@ systemctl status pwsm-api --no-pager
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/0001_initial_schema.sql
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/0002_feedback.sql
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/0003_audit_hash_chain.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/0004_jurisdiction_geography_index.sql
 
 # seed（環境に応じて選択。本番の実データはダンプ復元または登録パイプラインで適用済み）
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/demo/0001_demo_dataset.sql        # デモ
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/registry/0001_source_registry.sql # 情報源台帳
 ```
 
-- 統合テスト用の `pwsm_test` は「migration 3 本 + デモ seed」を適用して作成する（`TEST_DATABASE_URL` で参照）。
+- 統合テスト用の `pwsm_test` は「migration 4 本 + デモ seed」を適用して作成する（`TEST_DATABASE_URL` で参照）。
+- `0004_jurisdiction_geography_index.sql` は候補検索の半径一致（`ST_DWithin`）をインデックス駆動にする geography 式 GiST インデックス。**適用前は本番検索が約 1.07 秒（Seq Scan）、適用後は約 8ms**（2026-08-30 実測）。PostgreSQL の `geometry::geography` は IMMUTABLE なので式インデックスとして安全。
 
 ---
 
