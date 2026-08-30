@@ -95,7 +95,7 @@ export interface AppOptions {
 export interface ApiContext {
   Bindings: {
     APP_ENV?: string;
-    /** 設定時は Neon/PostGIS リポジトリを使用。未設定時は架空 fixture（Issue #10） */
+    /** 設定時はローカル PostgreSQL/PostGIS リポジトリを使用。未設定時は架空 fixture（Issue #10） */
     DATABASE_URL?: string;
     /** DB モード時のデータ版識別子（公開版切替で更新する） */
     DATASET_VERSION?: string;

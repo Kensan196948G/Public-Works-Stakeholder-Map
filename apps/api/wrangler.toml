@@ -1,11 +1,13 @@
-# Cloudflare Workers 設定 — default env が本番（Worker 名 pwsm-api）。
-# 本番デプロイは PR マージ承認（Y）に明記された範囲でのみ実行する（docs/operations/deploy-runbook.md 参照）
+# ⚠️ Cloudflare Workers デプロイは廃止（2026-08-30）: 本番/MVP は
+# Node サーバー（apps/api/src/dev-server.ts）+ systemd + Cloudflare Tunnel で公開する。
+# このファイルは旧構成の記録として残す（custom domain ルートは削除済み・Worker は不使用）。
+# 現行のデプロイ手順は docs/operations/deploy-runbook.md を参照。
 name = "pwsm-api"
 main = "src/index.ts"
 compatibility_date = "2026-07-01"
 
-# 本番はカスタムドメインへ一本化（Cloudflare Access で保護）。
-# workers.dev 経由の非保護アクセス経路は無効化する
+# 旧: 本番はカスタムドメインへ一本化（Cloudflare Access で保護）。
+# 現行: pwsm.mirai-dx-platform.com の DNS は Tunnel（cfargotunnel.com）を指す
 workers_dev = false
 routes = [
   { pattern = "pwsm.mirai-dx-platform.com", custom_domain = true }

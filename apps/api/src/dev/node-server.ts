@@ -1,7 +1,7 @@
 /**
- * 開発・検証用 Node サーバー（Issue #14）。
+ * 開発・検証用 Node サーバー（Issue #14・npm run webui / E2E 用）。
  * workerd が起動できない環境（ADR-0001 追記参照）で、API + Web 静的配信を
- * 単一ポートで提供する。本番配信には使用しない（本番は Cloudflare Workers/Pages）。
+ * 単一ポートで提供する。本ホストの公開配信（systemd）は src/dev-server.ts を使用する。
  *
  * 起動: npm run build && node apps/api/dist/dev/node-server.js（リポジトリルートから）
  * 停止: Ctrl+C（または kill <pid>）
@@ -77,7 +77,7 @@ await serveOnFreePort(
   root.fetch,
   Number.isInteger(requestedPort) && requestedPort >= 0 ? requestedPort : 8787,
   (port) => {
-    const mode = process.env.DATABASE_URL === undefined ? 'fixture（架空データ）' : 'DB（Neon）';
+    const mode = process.env.DATABASE_URL === undefined ? 'fixture（架空データ）' : 'DB（ローカル PostgreSQL）';
     console.warn(`🖥️  検証用 WebUI サーバー起動（モード: ${mode}）`);
     console.warn(`   http://localhost:${port}/`);
     for (const address of lanAddresses()) {
