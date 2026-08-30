@@ -12,7 +12,7 @@ import type { DemoDataset, DemoRegion } from '@pwsm/fixtures';
 
 /**
  * fixture ベースの候補検索リポジトリ（詳細設計仕様書 §7 のアルゴリズムを bbox で近似）。
- * Phase 1 で Neon/PostGIS の空間検索（ST_Covers / ST_DWithin）へ置き換えるが、
+ * DB モードではローカル PostgreSQL/PostGIS の空間検索（ST_Covers / ST_DWithin）を使うが、
  * 「行政区域特定 → 空間候補 → ルール評価 → 統合 → 信頼度 → 根拠付き返却」の流れは同一。
  */
 

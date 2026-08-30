@@ -1,4 +1,4 @@
-import { neon } from '@neondatabase/serverless';
+import { getSql, jsonParam } from './sql-client.js';
 import type { AuditEvent, AuditChainVerification } from '@pwsm/contracts';
 
 /**
@@ -108,7 +108,7 @@ export async function recordAuditEvent(
     if (memoryEvents.length > MEMORY_CAP) memoryEvents.length = MEMORY_CAP;
     return;
   }
-  const sql = neon(databaseUrl);
+  const sql = getSql(databaseUrl);
   // 連結チェーンは直近イベントの event_hash を prev とする。
   // 同時実行で分岐する可能性は低頻度運用のため許容し、検証 API で検出する。
   const last = (await sql`
@@ -123,7 +123,7 @@ export async function recordAuditEvent(
       (occurred_at, actor, action, target_kind, target_id, result, correlation_id, metadata, prev_hash, event_hash)
     VALUES (${now.toISOString()}, ${input.actor}, ${input.action}, ${input.targetKind},
             ${input.targetId ?? null}, ${input.result}, ${input.correlationId},
-            ${JSON.stringify(input.metadata)}::jsonb, ${prevHash}, ${eventHash})
+            ${jsonParam(sql, input.metadata)}, ${prevHash}, ${eventHash})
   `;
 }
 
@@ -149,7 +149,7 @@ export async function listAuditEvents(
       store: 'memory',
     };
   }
-  const sql = neon(databaseUrl);
+  const sql = getSql(databaseUrl);
   const rows = (await sql`
     SELECT id, occurred_at, actor, action, target_kind, result, correlation_id, metadata,
            prev_hash, event_hash
@@ -211,7 +211,7 @@ export async function verifyAuditChain(
     return { store: 'memory', checked: ordered.length, valid: true, brokenAtEventId: null, reason: null };
   }
 
-  const sql = neon(databaseUrl);
+  const sql = getSql(databaseUrl);
   const rows = (await sql`
     SELECT id, occurred_at, actor, action, target_kind, COALESCE(target_id, '') AS target_id,
            result, correlation_id, metadata, prev_hash, event_hash

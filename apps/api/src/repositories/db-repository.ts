@@ -1,4 +1,4 @@
-import { neon, type NeonQueryFunction } from '@neondatabase/serverless';
+import { getSql, type Sql } from './sql-client.js';
 import type {
   BoundaryPrecision,
   Candidate,
@@ -18,7 +18,7 @@ import {
 } from '@pwsm/domain';
 
 /**
- * Neon PostgreSQL / PostGIS ベースの候補検索リポジトリ（詳細設計仕様書 §7.2、Issue #10）。
+ * ローカル PostgreSQL / PostGIS ベースの候補検索リポジトリ（詳細設計仕様書 §7.2、Issue #10）。
  * - 点一致: ST_Covers（境界上の点も候補に含める）
  * - 周辺検索: ST_DWithin（geography キャストでメートル距離）
  * - 公開承認済み（published）のデータのみ返す
@@ -65,8 +65,6 @@ const TYPE_ORDER: Record<OrganizationType, number> = {
 
 const GRADE_ORDER: Record<ConfidenceGrade, number> = { A: 0, B: 1, C: 2, D: 3 };
 
-type Sql = NeonQueryFunction<false, false>;
-
 /** DB 上の公開ルールを読み込む。condition_json は宣言的条件（未知形式は評価時に false）。 */
 async function loadPublishedRules(sql: Sql): Promise<StakeholderRule[]> {
   // enum 配列は driver が未知 OID として文字列を返すため text[] へキャストする
@@ -91,7 +89,7 @@ async function loadPublishedRules(sql: Sql): Promise<StakeholderRule[]> {
 
 /** 現在有効なルール版（メタデータ・応答用）。検索時と同じ有効期間条件で判定する。ルール未登録時は 0。 */
 export async function fetchRuleVersion(databaseUrl: string): Promise<number> {
-  const sql = neon(databaseUrl);
+  const sql = getSql(databaseUrl);
   const rows = (await sql`
     SELECT COALESCE(MAX(version), 0) AS version
     FROM core.stakeholder_rules
@@ -104,7 +102,7 @@ export async function fetchRuleVersion(databaseUrl: string): Promise<number> {
 
 /** DB 接続確認（/health/ready 用）。失敗時は例外を投げる。 */
 export async function checkDatabaseReady(databaseUrl: string): Promise<void> {
-  const sql = neon(databaseUrl);
+  const sql = getSql(databaseUrl);
   await sql`SELECT 1`;
 }
 
@@ -120,7 +118,7 @@ export async function searchCandidatesDb(
   request: SearchRequest,
   now: Date,
 ): Promise<DbSearchResult> {
-  const sql = neon(databaseUrl);
+  const sql = getSql(databaseUrl);
   const { lat, lon } = request.location;
   const radius = request.radiusMeters;
 
@@ -163,7 +161,7 @@ export async function searchCandidatesDb(
         )
     `,
   ]);
-  const rows = rowsResult as JurisdictionRow[];
+  const rows = rowsResult as unknown as JurisdictionRow[];
 
   // 条件ルールを評価し、機関種別ごとの一致理由を集約する
   const ruleMatches = evaluateRules(request, rules);
@@ -303,7 +301,7 @@ export async function fetchJurisdictionMapDb(
   organizationIds: readonly string[],
   datasetVersion: string,
 ): Promise<JurisdictionMapResponse> {
-  const sql = neon(databaseUrl);
+  const sql = getSql(databaseUrl);
   // DB の id は uuid のため、形式不正な ID は型エラー（500）にせず対象外にする。
   // UI は検索応答の organizationId（uuid）を渡すが、直接 API 呼び出しでも安全に空結果を返す。
   const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -370,7 +368,7 @@ export async function fetchOrganizationDetailDb(
   databaseUrl: string,
   organizationId: string,
 ): Promise<OrganizationDetail | null> {
-  const sql = neon(databaseUrl);
+  const sql = getSql(databaseUrl);
   const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (!UUID_PATTERN.test(organizationId)) return null;
 
@@ -430,7 +428,7 @@ export async function fetchOrganizationDetailDb(
     status: org.status,
     sourceCheckedAt: org.source_checked_at === null ? null : new Date(org.source_checked_at).toISOString(),
     freshnessDueAt: org.freshness_due_at === null ? null : new Date(org.freshness_due_at).toISOString(),
-    offices: (officeRows as {
+    offices: (officeRows as unknown as {
       id: string;
       name: string;
       role_summary: string | null;
@@ -443,7 +441,7 @@ export async function fetchOrganizationDetailDb(
       addressRaw: row.address_raw,
       receptionNote: row.reception_note,
     })),
-    contactPoints: (contactRows as {
+    contactPoints: (contactRows as unknown as {
       id: string;
       contact_type: string;
       label: string;
@@ -458,7 +456,7 @@ export async function fetchOrganizationDetailDb(
       extension: row.extension,
       sourceCheckedAt: row.source_checked_at === null ? null : new Date(row.source_checked_at).toISOString(),
     })),
-    jurisdictions: (jurisdictionRows as {
+    jurisdictions: (jurisdictionRows as unknown as {
       id: string;
       asset_type: string;
       asset_name: string | null;

@@ -9,17 +9,17 @@ import {
   recordAuditEvent,
   verifyAuditChain,
 } from '../src/repositories/audit-repository.js';
-import { neon } from '@neondatabase/serverless';
+import { getSql } from '../src/repositories/sql-client.js';
 
 /**
- * Neon/PostGIS 統合テスト（Issue #10）。
- * TEST_DATABASE_URL（Neon dev ブランチ + demo seed 適用済み）設定時のみ実行し、
+ * ローカル PostgreSQL / PostGIS 統合テスト（Issue #10）。
+ * TEST_DATABASE_URL（ローカル PostgreSQL + migration/seed 適用済み）設定時のみ実行し、
  * CI など未設定環境では skip する。接続文字列はコード・ログへ出力しない。
  */
 const databaseUrl = process.env.TEST_DATABASE_URL;
 const FIXED_NOW = new Date('2026-07-18T00:00:00Z');
 
-describe.skipIf(databaseUrl === undefined)('searchCandidatesDb（Neon dev ブランチ）', () => {
+describe.skipIf(databaseUrl === undefined)('searchCandidatesDb（ローカル PostgreSQL）', () => {
   const url = databaseUrl as string;
 
   it('道路掘削 + 交通規制の検索で該当種別の候補が根拠付きで返る', async () => {
@@ -167,11 +167,11 @@ describe.skipIf(databaseUrl === undefined)('fetchOrganizationDetailDb（Neon dev
   });
 });
 
-describe.skipIf(databaseUrl === undefined)('監査チェーン（migration 0003・Neon dev ブランチ）', () => {
+describe.skipIf(databaseUrl === undefined)('監査チェーン（migration 0003・ローカル PostgreSQL）', () => {
   const url = databaseUrl as string;
 
   it('記録したイベントのチェーンが検証に成功し、改ざんを検出する', async () => {
-    const sql = neon(url);
+    const sql = getSql(url);
     // 検証用イベントを 2 件記録（テスト専用プレフィックスのアクションで識別）
     await recordAuditEvent(url, {
       actor: 'integration-test',
