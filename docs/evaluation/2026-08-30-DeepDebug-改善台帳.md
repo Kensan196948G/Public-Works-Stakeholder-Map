@@ -32,17 +32,26 @@
 
 | 区分 | 確認内容 | 結果 |
 |---|---|---|
-| ユニット/統合 | 全テスト | 235 passed / 9 skipped（統合 9 件は `TEST_DATABASE_URL=pwsm_test` で PASS） |
+| ユニット/統合 | 全テスト | 235 passed / 10 skipped（統合 10 件は `TEST_DATABASE_URL=pwsm_test` で PASS・0004 インデックス検証含む） |
 | 型/Lint/Build | `npm run typecheck` / `npm run lint` / `npm run build` | 全て success |
-| E2E | `npm run test:e2e`（Playwright 7 件） | 7/7 PASS |
+| E2E | `npm run test:e2e`（Playwright 8 件・レスポンシブ含む） | 8/8 PASS |
 | 依存監査 | `npm audit` / `npm audit --omit=dev` | 0 vulnerabilities |
 | API | health/live・health/ready・metadata・search・map/jurisdictions・admin（403 は RBAC 設計通り） | 正常 |
-| DB | 本番 `pwsm`: org 27 / jurisdiction 207 / office 24 / contact 33 / rules 6 / sources 24 / imports 258 / audit 37 | 正常（core スキーマ） |
-| CI | main 最新 push・PR・heartbeat | 全て success |
+| API 異常系 | 半径超過/緯度超過/不正JSON/巨大ボディ→400・レート制限→429+Retry-After・feedback 空/不正→400 | 正常（RFC 6585・Problem Details） |
+| セキュリティ | CSP（frame-ancestors 'none'・object-src 'none'）・HSTS・X-Frame-Options・Referrer-Policy 全 API 一貫 | 正常 |
+| XSS/注入 | `dangerouslySetInnerHTML`/`innerHTML` 0 件（React 自動エスケープ）・SQL 注入風 workType→400・XSS UUID→404 | 安全 |
+| シークレット | git 全履歴（195 コミット）スキャンで実シークレット検出なし | 安全 |
+| Migration/Seed | 空 DB へ 0001〜0004 + seed 3 本適用→CI と同一数値（sources 31 / imports 23 / org 8 / jurisdiction 14）を再現 | 再現可能 |
+| DB | 本番 `pwsm`: org 27 / jurisdiction 207 / office 24 / contact 33 / rules 6 / sources 31 / imports 258 / audit 142 | 正常（core スキーマ） |
+| CI | main 最新 push・PR・heartbeat・link-check | 全て success（link:check 23/23） |
 | 公開 | 本番 302（Cloudflare Access 保護・設計通り）/ MVP 200 | 正常 |
+| 運用 | バックアップ実地検証（16MB・復元警告0）・ロールバック実地試験（旧SHA build 成功）・負荷試験（p95 55ms） | 正常 |
+| Frontend | 設定保存（localStorage）・チェックリスト保存・URL 共有復元・印刷ビュー・フィルタ/ソート（9 件テスト） | 正常 |
 
 ## 3. 残課題・運用依頼
 
 | ID | 内容 | 依頼先 | 備考 |
 |---|---|---|---|
 | DD-03 | systemd `IPAddressAllow` の緩和（住所検索の outbound 許可） | 運用承認者（root 権限） | `/etc` 読み取り専用のためエージェントから変更不可。承認後に `systemctl restart pwsm-api / pwsm-mvp / pwsm-api-preview` で反映。反映後の確認: `curl -w "%{http_code}" "<URL>/api/v1/geocode?q=東京"` が 200 |
+| ci.yml | migration 0004 の db-validation 追記 | 承認者（workflow スコープ付きトークン） | Issue #87 コメントにパッチ記載済み。統合テストによる代替検証は追加済み |
+| Cloudflare Worker 残骸 | pwsm-api / pwsm-api-preview / pwsm-mvp の Worker 3 個（routes/domains なし・不使用） | 承認者（破壊的削除のため） | state.json の「不使用」記録と一致。削除はロールバック不能のため人間判断 |
