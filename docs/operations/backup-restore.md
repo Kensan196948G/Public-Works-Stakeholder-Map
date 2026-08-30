@@ -40,14 +40,21 @@ gzip -dc reports/backups/pwsm-*.sql.gz | pg_restore --list | head
 | ☐ | `gzip -t` が成功する（整合性） |
 | ☐ | `pg_restore --list` に core / provenance / staging / audit / workflow のテーブルが含まれる |
 
+> ⚠️ **ツールチェーンのバージョン固定（DD-08）**: 本ホストには複数の PostgreSQL クライアント（16 / 17 / 18）が共存しており、`pg_dump` / `pg_restore` を PATH 経由で呼ぶと**最新バージョン（18）が選ばれる**ことがある（`pg_wrapper` はホスト指定時に最新版を選択）。PG18 の `pg_restore` は PG17 以降の `SET transaction_timeout = 0` を発行し、PG16 サーバーが `unrecognized configuration parameter "transaction_timeout"` の警告を出す（復元自体は成功するが警告が残る）。
+> **サーバー（PG16）と同一バージョンのクライアントを明示指定すること。**
+
 ## 4. 復元手順（論理エクスポートから）
 
 ```bash
+# 0) サーバーと同一バージョンの pg_restore / pg_dump を明示する（DD-08）
+PG_RESTORE="/usr/lib/postgresql/16/bin/pg_restore"   # サーバーが 16 の場合
+#   確認: $PG_RESTORE --version → PostgreSQL 16.x
+
 # 1) 復元先 DB を用意（例: pwsm_restore）
 createdb -h 127.0.0.1 -U postgres pwsm_restore
 
-# 2) ダンプを復元
-gzip -dc reports/backups/pwsm-YYYYMMDD-HHMMSS.sql.gz | pg_restore \
+# 2) ダンプを復元（バージョン固定した pg_restore を使用）
+gzip -dc reports/backups/pwsm-YYYYMMDD-HHMMSS.sql.gz | "$PG_RESTORE" \
   --no-owner --no-privileges -h 127.0.0.1 -U postgres -d pwsm_restore
 
 # 3) 検証: スキーマ・件数・空間データ
