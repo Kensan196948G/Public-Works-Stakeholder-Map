@@ -1,4 +1,4 @@
-import { neon } from '@neondatabase/serverless';
+import { getSql } from './sql-client.js';
 import type {
   AdminFeedbackItem,
   FeedbackCategory,
@@ -53,7 +53,7 @@ export async function recordFeedback(
     if (memoryFeedback.length > MEMORY_CAP) memoryFeedback.length = MEMORY_CAP;
     return toResponse(id, now);
   }
-  const sql = neon(databaseUrl);
+  const sql = getSql(databaseUrl);
   await sql`
     INSERT INTO workflow.feedback_messages
       (id, category, message, source_url, dataset_version)
@@ -81,7 +81,7 @@ export async function listFeedbackMessages(
       store: 'memory',
     };
   }
-  const sql = neon(databaseUrl);
+  const sql = getSql(databaseUrl);
   const rows = (await sql`
     SELECT id, category, status, message, source_url, dataset_version, created_at
     FROM workflow.feedback_messages
@@ -130,7 +130,7 @@ export async function updateFeedbackStatus(
       createdAt: record.createdAt,
     };
   }
-  const sql = neon(databaseUrl);
+  const sql = getSql(databaseUrl);
   const updated = (await sql`
     UPDATE workflow.feedback_messages
     SET status = ${status}

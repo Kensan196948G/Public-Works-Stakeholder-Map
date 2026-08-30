@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Cloudflare Workers API — 候補検索・メタデータ・ヘルスチェック",
+  "description": "API — 候補検索・メタデータ・ヘルスチェック（Node + ローカル PostgreSQL）",
   "scripts": {
     "build": "tsc -b",
     "dev": "wrangler dev",
@@ -12,15 +12,16 @@
     "deploy:production:promote": "wrangler versions deploy"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^1.1.0",
     "@pwsm/contracts": "*",
     "@pwsm/domain": "*",
     "@pwsm/fixtures": "*",
     "hono": "^4.12.30",
+    "postgres": "^3.4.9",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@hono/node-server": "^2.0.10",
-    "@types/node": "^26.1.1"
+    "@types/node": "^26.1.1",
+    "tsx": "^4.23.12"
   }
 }

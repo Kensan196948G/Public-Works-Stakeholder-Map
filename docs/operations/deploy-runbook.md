@@ -2,9 +2,9 @@
 
 | 項目 | 内容 |
 |---|---|
-| 🎯 目的 | API（Cloudflare Workers）・Web（Cloudflare Pages 相当）・Neon 接続を本番へ安全に反映する手順を定める |
+| 🎯 目的 | Node サーバー（API + Web 静的配信）・ローカル PostgreSQL・Cloudflare Tunnel を本番へ安全に反映する手順を定める |
 | 👥 対象読者 | デプロイを実行する人間（オペレーター）・DevOps・承認者 |
-| 📅 最終更新日 | 2026-08-05 |
+| 📅 最終更新日 | 2026-08-30（Neon 廃止・ローカル PostgreSQL / Node + Tunnel 構成へ全面移行） |
 
 > 🚫 **本番デプロイ・本番公開・Secrets 登録は、人間の明示承認なしに実行しません。**
 > 承認はリリース PR の「マージ判定 `Y`」へ集約します。`Y` は当該 PR に明記されたデプロイ・migration・Secrets 登録の**正確な範囲だけ**を一括承認したものであり、承認後の実作業は人間または CTO（Claude）が PR 記載の範囲内で実行できます。PR に記載のない本番操作は引き続き禁止です。
@@ -18,22 +18,23 @@
 |---|---|
 | デプロイ実行者 | 人間（承認済みオペレーター） |
 | 前提条件 | リリース前チェックリスト全 🔴 充足・承認者サイン済み |
-| API スタック | Cloudflare Workers（`apps/api`・Hono・Worker 名 `pwsm-api`） |
-| Web スタック | Vite + React（`apps/web`）→ ビルド成果物を同一 Worker の **Static Assets** として API と同一オリジンで配信（`[assets]`・SPA fallback・`run_worker_first = ["/api/*"]`） |
-| DB | Neon PostgreSQL / PostGIS（プロジェクト `tiny-river-77604173`） |
-| 設定ファイル | `apps/api/wrangler.toml`（`[env.preview]` 分離済み・default env = 本番 `pwsm-api`・Web assets は `../web/dist`） |
-| Secrets | Cloudflare Secrets（`DATABASE_URL` 等）。実値は本書に記載しない |
-| 必要ツール | Node.js（CI は 24 / ローカル 22+）・npm・`wrangler`（Cloudflare 認証済み） |
+| API スタック | Node サーバー（`apps/api/src/dev-server.ts`・Hono・postgres.js）を `tsx` で実行 |
+| Web スタック | Vite + React（`apps/web`）→ `apps/web/dist` を同一 Node サーバーが静的配信（SPA fallback 付き） |
+| DB | ローカル PostgreSQL / PostGIS（本ホスト 127.0.0.1:5432・db `pwsm`・role `pwsm_app`。Neon は不使用） |
+| 公開経路 | Cloudflare Tunnel（`/home/kensan/.cloudflared/pwsm-api-config.yml` 等）＋ Cloudflare Access（本番のみ） |
+| 設定ファイル | `apps/api/.env`（本番）・`.env.mvp`（MVP）・`.env.preview`（preview）。Git 管理外 |
+| systemd サービス | `pwsm-api`（18803・本番 DB モード）/ `pwsm-mvp`（18808・fixture）/ `pwsm-api-preview`（18809・fixture） |
+| 必要ツール | Node.js（CI は 24 / ローカル 22+）・npm・psql・systemd |
 
 ```mermaid
 flowchart TB
-    A["📋 チェックリスト承認済み"] --> B["🔐 Secrets 登録確認"]
-    B --> C["🧪 preview へ検証デプロイ"]
-    C --> D["✅ preview smoke test"]
+    A["📋 チェックリスト承認済み"] --> B["🔐 .env 設定確認"]
+    B --> C["🧪 ローカル検証（dev-server 起動 + smoke test）"]
+    C --> D["✅ CI / テスト緑"]
     D --> E{"問題なし?"}
     E -->|No| Z["⛔ 中止 / 修正"]
-    E -->|Yes| F["🚀 本番デプロイ（単一 Worker: API + Web assets）"]
-    F --> H["✅ 本番 smoke test"]
+    E -->|Yes| F["🚀 本番反映（build → systemd restart）"]
+    F --> H["✅ 本番 smoke test（Tunnel 経由 URL）"]
     H --> I{"合格?"}
     I -->|No| R["↩️ rollback.md へ"]
     I -->|Yes| J["📝 記録・Projects 更新"]
@@ -60,144 +61,113 @@ npm run build
 ```
 
 - ✅ 上記がすべて success であること（失敗時はデプロイ中止）。
-- 🔐 `wrangler whoami` で Cloudflare 認証を確認する（未認証なら人間が対話ログインする）。
+- ✅ 統合テストは `TEST_DATABASE_URL`（ローカル `pwsm_test`・migration/seed 適用済み）を設定して実行する。
 
 ---
 
-## 2. 🔐 Neon 接続文字列（Secrets）登録手順 — 🚫 人間承認・手動のみ
+## 2. 🔐 ローカル PostgreSQL 接続設定（.env）— 🚫 秘密情報は本文に記載しない
 
-> 実際の接続文字列は Neon コンソール / `get_connection_string` から取得し、**本書・リポジトリには絶対に書きません**。以下はコマンド手順のみです。
+Neon は廃止済み（2026-08-30）。本番 DB は本ホストのローカル PostgreSQL です。
 
-```bash
-# 作業ディレクトリ: apps/api
-# <CONNECTION_STRING> は本番(main)ブランチの値をプレースホルダーとして扱う
-#   例フォーマット: postgresql://<user>:<password>@<host>/<db>?sslmode=require
-
-# 本番 (default env = pwsm-api) へ登録
-wrangler secret put DATABASE_URL
-# → プロンプトに接続文字列を貼り付け（履歴・画面共有に残さない）
-
-# preview 環境は別値で登録（本番と分離）
-wrangler secret put DATABASE_URL --env preview
-```
-
-> 💡 **接続文字列を画面・履歴・会話ログへ出さない登録方法（推奨）**: Neon API キーを持つ環境で
-> `npx neonctl connection-string --project-id tiny-river-77604173 <branch/db/role 指定> | npx wrangler secret put DATABASE_URL`
-> のようにパイプで直接渡すと、値が端末表示・シェル履歴・作業ログに残らない。
+- 本番 `.env`（`/home/kensan/Projects/Mirai-DX-Project/Public-Works-Stakeholder-Map/apps/api/.env`、Git 管理外）に以下を設定する:
+  - `DATABASE_URL`（ローカル PostgreSQL・`pwsm` db・`pwsm_app` role）
+  - `APP_ENV=production`
+  - `DATASET_VERSION`（公開データ版、例: `2026-08-13.real.1`）
+  - `AUTH_ENABLED=false`（Cloudflare Access でエッジ保護。アプリ内 RBAC 有効化は systemd の outbound 許可とセットで行う）
+- migration / seed の適用は CI（postgis コンテナ）とローカルで同一手順（§5 参照）。
 
 | ✅ | 確認項目 |
 |---|---|
-| ☐ | 本番と preview の接続文字列が別ブランチ・別値である |
-| ☐ | 登録値がシェル履歴・ログ・スクリーンショットに残っていない |
-| ☐ | `.env` / `.env.local` を誤ってコミットしていない |
+| ☐ | `.env` が Git 管理外（`apps/api/.gitignore` に `.env*`） |
+| ☐ | `DATABASE_URL` がローカル PostgreSQL を指す（Neon の URL でない） |
+| ☐ | `DATASET_VERSION` が公開データ版と一致 |
 
 > 🔴 **本番では `DATABASE_URL` を必ず設定します（この節は省略不可）。** 実装（`apps/api/src/app.ts`）は `DATABASE_URL` が設定されている場合のみ DB 到達を確認し、`SELECT 1` が失敗すると `/api/v1/health/ready` が **503 `{status:"unavailable"}`** を返します。
-> `DATABASE_URL` 未設定は開発用の fixture モード（`/health/ready` は常に 200 `ok`）であり、本番構成では使いません。DB 接続なしの版を本番へ出さないでください。
+> `DATABASE_URL` 未設定は開発用の fixture モード（`/health/ready` は常に 200 `ok`）であり、本番構成では使いません。
 
 ---
 
-## 3. 🧪 preview 環境への検証デプロイ（本番前・推奨）
+## 3. 🧪 ローカル / preview 検証（本番前・推奨）
 
-本番前に preview へ上げ、smoke test を通してから本番に進みます。
+本番前にローカルで API + Web を起動し、smoke test を通してから本番に進みます。
 
 ```bash
-# 作業ディレクトリ: apps/api
-# preview 環境へバージョンをアップロード（本番トラフィックには影響しない）
-npm run deploy:preview
-#   = wrangler versions upload --env preview  →  Worker: pwsm-api-preview
-#   （初回のみ Worker が存在しないため wrangler deploy --env preview で作成する）
+# リポジトリルートで Web をビルド（apps/web/dist を最新化）
+npm run build
+
+# 本番相当（DB モード）をローカル起動
+cd apps/api
+PORT=18899 node --env-file=.env ../../node_modules/.bin/tsx src/dev-server.ts
+# → http://localhost:18899/ で Web、/api/v1/* で API を確認
+
+# fixture モード（MVP 相当）は --env-file=.env.mvp で同様に起動
 ```
 
-- Web 資産（`apps/web/dist`）も同時にアップロードされる（事前にリポジトリルートで `npm run build` を実行しておく）。
-- 出力される preview URL / version ID を控える。
-- §6 の smoke test を **preview に対して** 先に実施する。
+- §6 の smoke test をローカル起動ポートに対して先に実施する。
 
 ---
 
-## 3.5 🧪 MVP 環境へのデプロイ（関係者レビュー用・2026-08-15 追加）
+## 3.5 🧪 MVP 環境（関係者レビュー用）
 
-MVP/Prototype 用の関係者レビュー URL です。fixture（架空データ）モードで動作し、本番（実データ）とは完全分離します。
-
-```bash
-# 事前: リポジトリルートで npm run build（apps/web/dist を最新化）
-# 作業ディレクトリ: apps/api（またはルートで npm run deploy:mvp）
-npm run deploy:mvp
-#   = wrangler deploy --env mvp
-#   → Worker: pwsm-mvp / custom domain: pwsm-mvp.mirai-dx-platform.com
-```
-
-- **環境構成**: `[env.mvp]`（wrangler.toml）— fixture モード・認証無効・DB/Secrets なし
-- **確認 URL**: https://pwsm-mvp.mirai-dx-platform.com
-- **ロールバック**: `wrangler versions` で直前バージョンへ戻す（本番に影響なし）
-- **注意**: 本番（`pwsm-api`・実データ・Access 保護）とは別 Worker のため、デプロイしても本番に影響しない
+- **systemd サービス**: `pwsm-mvp`（ポート 18808・fixture モード・`apps/api/.env.mvp`）
+- **公開 URL**: https://pwsm-mvp.mirai-dx-platform.com（Tunnel: `pwsm-mvp-config.yml`・一般アクセス可）
+- **反映手順**: `npm run build` 後に `systemctl restart pwsm-mvp`（権限が必要な場合は承認者に依頼）
+- **ロールバック**: `git checkout <直前SHA>` 相当で戻し、再度 restart（本番に影響なし）
 
 ---
 
-## 4. 🚀 本番デプロイ手順（単一 Worker: API + Web assets）— 🚫 承認済み PR の範囲でのみ実行
+## 4. 🚀 本番反映手順（Node サーバー + systemd）— 🚫 承認済み PR の範囲でのみ実行
 
-本番は default env（Worker 名 `pwsm-api`）です。**API と Web 資産は同一 Worker として一括デプロイ**されます。段階公開（versions upload → deploy）を推奨します。
+本番は systemd サービス `pwsm-api`（ポート 18803・DB モード）です。**API と Web 資産は同一 Node サーバー**で配信されます。
 
 ```bash
-# 事前: リポジトリルートで npm run build（apps/web/dist を最新化）
-# 作業ディレクトリ: apps/api
+# 事前: リポジトリルートで npm run build（apps/web/dist を最新化・tsc -b で apps/api/dist も更新）
 
-# 方式A（推奨・段階公開）: バージョンをアップロードしてから本番へ昇格
-npm run deploy:production:upload    # = wrangler versions upload
-#   → 生成された version ID を控える（rollback 時に使用）
-npm run deploy:production:promote   # = wrangler versions deploy
-#   → 昇格するバージョンとトラフィック割合を対話で指定（例: 新版 100%）
+# 本番反映（systemd サービス再起動で新コードを読み込む）
+sudo systemctl restart pwsm-api
+# または承認環境で kill <Main PID> → Restart=on-failure による自動再起動
 
-# 方式B（簡易・即時全量）: 直接デプロイ（初回の Worker 作成時はこちら）
-# wrangler deploy
+# 起動ログ確認（モード表示: DB（ローカル PostgreSQL））
+systemctl status pwsm-api --no-pager
 ```
 
 | ✅ | 確認項目 |
 |---|---|
-| ☐ | デプロイ先が本番 `pwsm-api`（preview ではない）である |
-| ☐ | 昇格した version ID を記録した（`rollback.md` で使用） |
-| ☐ | `compatibility_date`（`wrangler.toml`）が意図通り |
+| ☐ | `pwsm-api` が active (running)・ポート 18803 で LISTEN |
+| ☐ | 起動ログに `モード: DB（ローカル PostgreSQL）` と表示される |
+| ☐ | Tunnel（`pwsm-api-cloudflared.service`）が active で `localhost:18803` へ疎通 |
 
-> 💡 段階公開（方式A）を使うと、`rollback.md` の「版ロールバック」で旧 version ID へ即時に戻せます。
-
-> ⚠️ **環境変数（`[vars]`）を変更するリリースでは方式A（versions upload）は使わないこと**
-> （2026-08-05 v0.4.2 で実証）。`wrangler versions upload` は `[vars]` の変更を
-> バージョンのバインディングへ反映しません（`AUTH_ENABLED` 等が旧値のままになる）。
-> **vars を含む変更は方式B（`wrangler deploy`）を使用**し、設定同期込みでデプロイしてください。
-> コードのみの変更であれば方式A（versions）で問題ありません。
+> ⚠️ **環境変数を変更するリリースでは `.env` の内容を必ず確認する**（`EnvironmentFile` は再起動時に読込まれるため、restart だけで反映される）。
 
 ---
 
-## 5. 🌐 Web 配信の確認（Workers Static Assets 統合）
+## 5. 🗄️ DB マイグレーションと seed
 
-Web は独立した Pages プロジェクトではなく、**§4 の Worker デプロイに同梱**されます（`wrangler.toml` の `[assets]` が `apps/web/dist` を配信）。個別の配置作業は不要です。
+ローカル PostgreSQL へ適用（CI の `db-validation` ジョブと同一手順）。
 
 ```bash
-# 作業ディレクトリ: リポジトリルート
-# Web を本番ビルド（成果物は apps/web/dist/ → §4 のデプロイに同梱される）
-npm run build -w @pwsm/web
-#   = vite build
+# 対象 DB の DATABASE_URL を設定（本番は pwsm・テストは pwsm_test）
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/0001_initial_schema.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/0002_feedback.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/0003_audit_hash_chain.sql
 
-# 生成物確認
-ls apps/web/dist
+# seed（環境に応じて選択。本番の実データはダンプ復元または登録パイプラインで適用済み）
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/demo/0001_demo_dataset.sql        # デモ
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/registry/0001_source_registry.sql # 情報源台帳
 ```
 
-> 🔴 **main への merge を本番公開の契機にしません（`main merge ≠ 本番公開`）。** GitHub 連携による自動プロダクション・デプロイは使わず、本番反映は必ず §4 の手順（承認済み PR の範囲）で明示的に実行します。
-
-| ✅ | 確認項目 |
-|---|---|
-| ☐ | Web と API が同一オリジン（`fetch('/api/v1/…')` の相対パスが本番 Worker に到達する） |
-| ☐ | `/` で `index.html` が配信され、SPA fallback（未知パス → index.html）が機能する |
-| ☐ | 免責表示・推定/鮮度表示がビルド成果物に含まれる |
-| ☐ | 公開範囲（管理系は Cloudflare Access 保護）が設計通り |
+- 統合テスト用の `pwsm_test` は「migration 3 本 + デモ seed」を適用して作成する（`TEST_DATABASE_URL` で参照）。
 
 ---
 
 ## 6. ✅ デプロイ後 smoke test
 
-本番（または preview）URL に対して、最低限の健全性と設計原則（免責）を確認します。
+本番（または MVP）URL に対して、最低限の健全性と設計原則（免責）を確認します。
 
 ```bash
-# <BASE_URL> は対象環境の URL（例: https://pwsm-api.<subdomain>.workers.dev）
+# <BASE_URL> は対象環境の URL
+#   本番: https://pwsm.mirai-dx-platform.com（Cloudflare Access 認証後）
+#   MVP : https://pwsm-mvp.mirai-dx-platform.com
 
 # 1) liveness: プロセス確認のみ。常に 200 {"status":"ok"}
 curl -fsS "<BASE_URL>/api/v1/health/live"
@@ -209,6 +179,9 @@ curl -fsS "<BASE_URL>/api/v1/health/ready"
 
 # 3) metadata: disclaimer / datasetVersion / ruleVersion / appEnv を確認
 curl -fsS "<BASE_URL>/api/v1/metadata"
+
+# 4) Web トップ: SPA（index.html）が配信される
+curl -fsS -o /dev/null -w "%{http_code} %{content_type}\n" "<BASE_URL>/"
 ```
 
 | ✅ | 確認項目 | 期待 |
@@ -217,10 +190,10 @@ curl -fsS "<BASE_URL>/api/v1/metadata"
 | ☐ | `/api/v1/health/ready` | 本番は HTTP 200・`status: ok`・`datasetVersion` が想定版（DB 到達不可なら 503 `unavailable`＝デプロイ失敗として扱う） |
 | ☐ | `/api/v1/metadata` | `disclaimer`（必須免責文）を含む・`appEnv` が `production` |
 | ☐ | 検索 `POST /api/v1/stakeholders/search` | 候補応答に免責が常時付与される |
-| ☐ | Web トップ | 免責が常時表示・検索が API に到達する |
+| ☐ | Web トップ `/` | HTTP 200・`text/html`・SPA（404 でないこと） |
 | ☐ | エラー整形 | 異常系が RFC 9457（Problem Details）で返る |
 
-> ⚠️ 本番（`DATABASE_URL` 設定時）に `/health/ready` が 503 `unavailable` を返す場合、DB 到達不可＝デプロイ未完了とみなし、公開しないこと（`§8 失敗時` / `rollback.md` へ）。`DATABASE_URL` 未設定の fixture モードは開発専用で、本番構成では使わない（`apps/api/src/app.ts` 参照）。
+> ⚠️ 本番（`DATABASE_URL` 設定時）に `/health/ready` が 503 `unavailable` を返す場合、DB 到達不可＝デプロイ未完了とみなし、公開しないこと（`§8 失敗時` / `rollback.md` へ）。`DATABASE_URL` 未設定の fixture モードは開発・MVP 専用です。
 
 ---
 
@@ -228,7 +201,7 @@ curl -fsS "<BASE_URL>/api/v1/metadata"
 
 | ✅ | 作業 |
 |---|---|
-| ☐ | デプロイ対象 SHA・API version ID・Web デプロイ ID を記録 |
+| ☐ | デプロイ対象 SHA・systemd restart 日時を記録 |
 | ☐ | smoke test 結果を記録（合否・応答例） |
 | ☐ | GitHub Projects の Status を `Deploy Gate` → `Done` に更新 |
 | ☐ | `README.md` 開発状況にリリース行を追記 |
@@ -238,7 +211,8 @@ curl -fsS "<BASE_URL>/api/v1/metadata"
 
 ## 8. ↩️ 失敗時
 
-- smoke test 失敗・重大な誤表示・5xx 急増を検知した場合、**直ちに `docs/operations/rollback.md`** に従い直前の正常版へ戻す。
+- smoke test 失敗・重大な誤表示・5xx 急増を検知した場合、**直ちに `docs/operations/rollback.md`** に従い直前の正常版へ戻す（`git checkout <直前SHA>` + systemd restart）。
 - 誤窓口表示・情報漏えい疑い・DB 障害などは `docs/operations/incident-response.md` の初動に従う。
+- Tunnel 不調時は `systemctl status pwsm-api-cloudflared` を確認し、再起動する。
 
 > 🚫 本番へ影響する再デプロイ・ロールバックは、承認済み PR に記載された事前検証済み手順の範囲でのみ実行する（無制限な再デプロイは禁止）。範囲外の操作が必要になった場合は停止し、人間の判断を仰ぐ。

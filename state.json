@@ -6,13 +6,13 @@
     "release_deadline": "2027-01-18",
     "phase_mode": "development"
   },
-  "goal": "MVP URL公開完了（2026-08-15）: https://pwsm-mvp.mirai-dx-platform.com を fixture モードで公開（PR #81・関係者レビュー用）。残: P1実データ投入（Neon接続時）・二者レビュー/UAT・本番負荷試験・通知実配信（本番運用化の対象）",
+  "goal": "Neon 廃止・ローカル PostgreSQL 移行完了（2026-08-30）: 本番/MVP を Node サーバー（systemd pwsm-api/pwsm-mvp + Cloudflare Tunnel）で公開し、両 URL の 404 を解消。DB は本ホスト 127.0.0.1:5432 の pwsm（実データ org 27 / jurisdiction 207 / office 24 / contact 33）。ドライバを postgres.js へ全面置換（jsonb は sql.json 送信）。残: P1 二者レビュー/UAT・本番負荷試験・通知実配信（本番運用化の対象）",
   "phase": "ProductionOps",
   "kpi": {
     "success_rate_target": 0.9,
     "ci_success_rate": 1.0,
     "test_pass_rate": 1.0,
-    "test_count": 233,
+    "test_count": 242,
     "security_critical": 0,
     "blocker_count": 0
   },
@@ -95,19 +95,30 @@
   "infra": {
     "github_repo": "Kensan196948G/Public-Works-Stakeholder-Map",
     "github_project": 48,
-    "neon_project_id": "tiny-river-77604173",
-    "neon_migrations_applied": [
-      "0001_initial_schema.sql"
-    ],
-    "neon_seeds_applied": [
-      "0001_demo_dataset.sql (dev)",
-      "0001_demo_dataset.sql (main, 2026-07-24)"
-    ],
-    "neon_dev_branch": "br-calm-forest-auo4xou3",
+    "db": {
+      "provider": "ローカル PostgreSQL 16.14 + PostGIS 3.6.4（本ホスト 127.0.0.1:5432）",
+      "database": "pwsm（実データ・本番）/ pwsm_test（統合テスト用・デモ seed）",
+      "app_user": "pwsm_app",
+      "neon": "廃止（2026-08-30・Neon プロジェクト tiny-river-77604173 は利用停止）"
+    },
+    "deploy": {
+      "model": "Node サーバー（systemd）+ Cloudflare Tunnel（Workers 不使用）",
+      "systemd_units": {
+        "pwsm-api": "ポート 18803・DB モード（.env）・pwsm.mirai-dx-platform.com",
+        "pwsm-mvp": "ポート 18808・fixture モード（.env.mvp）・pwsm-mvp.mirai-dx-platform.com",
+        "pwsm-api-preview": "ポート 18809・fixture モード（.env.preview）"
+      },
+      "tunnel_configs": "/home/kensan/.cloudflared/pwsm-api-config.yml / pwsm-mvp-config.yml",
+      "workers": "pwsm-api / pwsm-mvp / pwsm-api-preview は routes なし（custom domain ルート削除済み・不使用）"
+    },
+    "neon_project_id": "tiny-river-77604173（廃止）",
+    "neon_migrations_applied": [],
+    "neon_seeds_applied": [],
+    "neon_dev_branch": "br-calm-forest-auo4xou3（廃止）",
     "cloudflare_account_id": "4f1e888469df7e0b896bb4e211b12633",
-    "cloudflare_worker_production": "pwsm-api",
-    "cloudflare_worker_preview": "pwsm-api-preview",
-    "preview_url": "https://pwsm-api-preview.kensan1969.workers.dev",
+    "cloudflare_worker_production": "pwsm-api（不使用・routes なし）",
+    "cloudflare_worker_preview": "pwsm-api-preview（不使用・routes なし）",
+    "preview_url": "https://pwsm-api-preview.kensan1969.workers.dev（不使用）",
     "production_url": "https://pwsm.mirai-dx-platform.com",
     "cloudflare_zone": "mirai-dx-platform.com (e375e651e49a40801a305b89e297bff0)"
   },
@@ -136,7 +147,8 @@
       "vitest 4 / workerd はローカルの ulimit -v 20GB 環境で V8 仮想メモリ予約により起動不能 → vitest 3 固定・検証用 Node dev server (npm run webui) で代替 (ADR-0001)",
       "CodeRabbit CLI は organization spending cap で rate limit になる場合がある → GitHub 側チェック + 内部レビューエージェントで代替",
       "neon serverless driver は enum 配列 (custom OID) を文字列で返す → ::text[] キャスト必須",
-      "@neondatabase/serverless は Neon プロキシ前提のためローカル Postgres（127.0.0.1）へ接続不可 → DB 統合テストは TEST_DATABASE_URL（Neon dev ブランチ）ゲートとし、CI は psql で migration/seed 検証（2026-08-12 実証）",
+      "postgres.js は文字列パラメータを JSON エスケープして送るため、jsonb 列への JSON.stringify 済み文字列挿入は「jsonb 文字列」として保存される（二重エンコード）→ オブジェクトを sql.json() 経由で送る（2026-08-30 実証）",
+      "postgres.js の Promise.all 等で型が Row[] & Iterable & ResultQueryMeta の交差になる箇所は as unknown as でキャストが必要",
       "JWT 改ざんテストで末尾 2 文字を変えても atob が下位ビットを無視し同一バイトになることがある → 中央文字の変更と base64url 形式検査で対応（2026-08-12 検出）"
     ],
     "success_patterns": [

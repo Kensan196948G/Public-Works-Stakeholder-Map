@@ -1,4 +1,4 @@
-import { neon } from '@neondatabase/serverless';
+import { getSql, jsonParam } from './sql-client.js';
 import type {
   CreateImportRequest,
   DataSourceSummary,
@@ -178,7 +178,7 @@ export function createFixtureAdminRepository(now: () => Date): AdminRepository {
 }
 
 /* ------------------------------------------------------------------ */
-/* Neon PostgreSQL 実装                                                */
+/* ローカル PostgreSQL 実装                                            */
 /* ------------------------------------------------------------------ */
 
 function isoOrNull(value: unknown): string | null {
@@ -224,7 +224,7 @@ const IMPORT_SELECT = `
 `;
 
 export function createDbAdminRepository(databaseUrl: string, now: () => Date): AdminRepository {
-  const sql = neon(databaseUrl);
+  const sql = getSql(databaseUrl);
 
   const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -291,7 +291,7 @@ export function createDbAdminRepository(databaseUrl: string, now: () => Date): A
       if (found.length === 0) return 'source_not_found';
       const inserted = (await sql`
         INSERT INTO staging.import_records (source_id, entity_kind, raw_payload)
-        VALUES (${request.sourceId}, ${request.entityKind}, ${JSON.stringify(request.rawPayload)}::jsonb)
+        VALUES (${request.sourceId}, ${request.entityKind}, ${jsonParam(sql, request.rawPayload)})
         RETURNING id
       `) as { id: string }[];
       const id = inserted[0]?.id;

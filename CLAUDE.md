@@ -68,8 +68,8 @@ Claude Codeは単なる実装者ではなく、次の責任を持つ。
 | --- | --- |
 | Claude Code on Linux | 開発、調査、ビルド、テストおよび一時作業 |
 | GitHub | ソースコード、設定テンプレート、設計書、READMEおよび変更履歴の正本 |
-| Cloudflare | Pages、Workers、Accessなどによるpreview、検証および公開基盤 |
-| Neon | PostgreSQLデータベースの正本 |
+| Cloudflare | Tunnel・Access・DNSによる公開、preview、検証基盤（Workersは不使用） |
+| ローカル PostgreSQL | PostgreSQL / PostGISデータベースの正本（本ホスト 127.0.0.1:5432。Neonは廃止 2026-08-30） |
 
 次を厳守する。
 
@@ -155,7 +155,7 @@ Claude Codeは単なる実装者ではなく、次の責任を持つ。
 - secret、PIIおよびconnection string露出確認
 - accessibility、responsive、loading、empty、errorおよびsuccess状態の確認
 - localまたはpreview WebUIの起動および確認
-- Neon developmentまたはpreview branch上でのmigration検証
+- ローカル PostgreSQL / CI（postgis コンテナ）上でのmigration検証
 - backup、restoreおよびrollback手順の非本番検証
 
 ### 8.4 GitHubとpreview
@@ -306,25 +306,25 @@ Cloudflareでは、read-only調査、preview変更、production変更を明確�
 
 ---
 
-## 13. Neon PostgreSQL運用方針
+## 13. ローカル PostgreSQL 運用方針
 
-Neon PostgreSQLを業務データの正本として扱う。
+本ホストのローカル PostgreSQL（127.0.0.1:5432・PostGIS）を業務データの正本として扱う（Neon は廃止 2026-08-30）。
 
 確認対象：
 
-- project、branch、database、schemaおよびrole
-- connection、pooling、migration、indexおよびquery performance
+- database、schemaおよびrole（pwsm / pwsm_test / pwsm_app）
+- connection、migration、indexおよびquery performance
 - data integrity、capacity、auditability、backupおよびrestore
 - development、preview、staging、productionの境界
 
 原則：
 
-- 接続情報はSecret管理とし、コードやログへ出力しない。
-- developmentまたはpreview branchでmigrationとrollbackを先に検証する。
+- 接続情報はSecret管理とし、コードやログへ出力しない（`.env` はGit管理外）。
+- ローカルまたはCI（postgis コンテナ）でmigrationとrollbackを先に検証する。
 - additiveかつ後方互換なmigrationを優先する。
 - 破壊的変更はexpand-and-contractなどの段階移行へ再設計する。
 - production write、migrationまたは削除は、PRに対象、影響、backup、rollbackおよび検証方法を明記する。
-- production dataをテスト用途へ無断転用しない。
+- production dataをテスト用途へ無断転用しない（統合テストは `pwsm_test` を使用）。
 - migration失敗時に継続実行せず、データ整合性を確認する。
 
 ---
@@ -651,3 +651,13 @@ Yの場合は同じGoalを継続し、承認時のPRとhead SHAを再確認し�
 セッション開始時はread-onlyのMonitorから始め、work planを作成する。致命的blockerがない限りPhase 1完了まで自律実行し、マージ判定`Y / N`を求める。
 
 `Y`後は同じGoalを再開し、Phase 2の本番リリースとPhase 3の安定化まで継続する。`N`の場合はmergeおよびproduction操作を行わない。
+<!-- central-github-policy -->
+## GitHub運用ポリシー（中央配布）
+
+GitHub運用はこのWorkspaceの記述ではなく、中央ポリシーに従います。
+
+- 正本: /home/kensan/Projects/Deep-Seek-Harness-Project/GITHUB_POLICY.md
+- 詳細: /home/kensan/Projects/Deep-Seek-Harness-Project/docs/architecture/CloudflareNeonGitHub自動化仕様.md
+- 優先順位: 中央GitHub Policy > GitHub Rulesets > GitHub Actions/CI > Workspace AGENTS.md / CLAUDE.md / README
+- main直接push禁止、Required Checks PASS後のSquash Merge、merge後branch削除
+
