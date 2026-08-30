@@ -316,7 +316,15 @@ export async function fetchJurisdictionMapDb(
       j.asset_name,
       j.precision::text AS precision,
       j.estimated,
-      ST_AsGeoJSON(j.geometry) AS geometry
+      -- 詳細設計仕様書 §6.2「表示範囲内の簡略化管轄GeoJSON」に従い、
+      -- 境界の概形を保つ簡略化を適用する。行政区域ポリゴンは細部が非常に細かく、
+      -- 未簡略化だと東京63件で約13.9MB/48万点になり描画・転送が重くなる（DD-09・2026-08-31実測）。
+      -- 二段階: ST_SnapToGrid（座標丸め・自己交差なし）→ ST_SimplifyPreserveTopology（トポロジー保存）。
+      -- 実測: 13.9MB → 0.24MB（約1/58）、時間 1.1s → 約175ms、自己交差なし。
+      -- 地図は視覚補助であり正式境界を保証しないため、簡略化は表示要件に合致する。
+      ST_AsGeoJSON(
+        ST_SimplifyPreserveTopology(ST_SnapToGrid(j.geometry, 0.0005), 0.0005)
+      ) AS geometry
     FROM core.jurisdictions j
     JOIN core.organizations o ON o.id = j.organization_id
     WHERE o.id = ANY(${validIds}::uuid[])
