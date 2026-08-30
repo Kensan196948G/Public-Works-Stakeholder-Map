@@ -143,13 +143,13 @@ flowchart TD
 
 ```mermaid
 flowchart TB
-    U["👥 利用者"] --> WEB
-    U --> API
-    subgraph WK ["☁️ Cloudflare Worker pwsm-api（単一オリジン）"]
-        WEB["🌐 Web（Static Assets）"]
-        API["⚙️ API（Hono /api/*）"]
+    U["👥 利用者"] --> CF["☁️ Cloudflare（Access 入口制御 + Tunnel）"]
+    CF --> NODE["🖥️ Node サーバー（systemd・単一オリジン）"]
+    subgraph NODE ["🖥️ Node サーバー（apps/api/src/dev-server.ts）"]
+        WEB["🌐 Web（apps/web/dist 静的配信・SPA fallback）"]
+        API["⚙️ API（Hono /api/v1/*）"]
     end
-    API --> DB["🗄️ Neon PostgreSQL / PostGIS"]
+    API --> DB["🗄️ ローカル PostgreSQL / PostGIS（127.0.0.1:5432）"]
     SRC["🏛️ 国・自治体等の公式情報"] --> JOB["🔄 取得・差分処理"]
     JOB --> STG["🧪 ステージング"]
     STG --> REV["👀 品質検査・人手レビュー"]
@@ -160,8 +160,8 @@ flowchart TB
 |---|---|
 | 🐧 Claude Code on Linux | 開発、一時ビルド、テスト |
 | 🐙 GitHub | ソースコード、設計書、READMEの正本 |
-| ☁️ Cloudflare | Web、API、入口制御、定期処理、Secrets |
-| 🐘 Neon | PostgreSQLデータの正本 |
+| ☁️ Cloudflare | Tunnel 経由の公開・Access 入口制御・DNS（Workers は不使用） |
+| 🐘 ローカル PostgreSQL | PostgreSQL / PostGIS データの正本（本ホスト 127.0.0.1:5432） |
 
 Linuxローカル、Docker volume、SQLiteを正本にはしません。`.env`はGitへ登録せず、`.env.example`だけを管理します。
 
@@ -291,19 +291,25 @@ npm test
 npm run webui                 # fixture（架空データ）モード
 # → http://localhost:<自動選択ポート>/ と LAN アドレスが表示されます
 
-# DB モード（Neon 接続）。環境変数はシェルから明示的に渡す
+# DB モード（ローカル PostgreSQL 接続）。環境変数はシェルから明示的に渡す
 # （.env ファイルは自動読込されない。値をコマンド履歴に残したくない場合は
-#   `set -a && source .env.local && set +a && npm run webui` のように読み込む）
-DATABASE_URL="<Neon接続文字列>" DATASET_VERSION="<データ版>" npm run webui
+#   `set -a && source .env && set +a && npm run webui` のように読み込む）
+DATABASE_URL="postgresql://user:pass@127.0.0.1:5432/pwsm" DATASET_VERSION="<データ版>" npm run webui
 
 # 停止: Ctrl+C
 ```
 
+> 本ホストの公開配信（pwsm.mirai-dx-platform.com / pwsm-mvp.mirai-dx-platform.com）は
+> systemd サービス（`pwsm-api` / `pwsm-mvp` / `pwsm-api-preview`）＋ Cloudflare Tunnel で構成する。
+> 詳細は `docs/operations/deploy-runbook.md` を参照。
+
 ### 🗄️ DB マイグレーションと seed
 
 ```bash
-# Neon の dev ブランチで検証 → 人間承認後に main へ適用（詳細: docs/operations/）
+# ローカル PostgreSQL へ適用（migration → seed の順。CI と同一手順）
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/0001_initial_schema.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/0002_feedback.sql
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/migrations/0003_audit_hash_chain.sql
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/demo/0001_demo_dataset.sql
 ```
 
@@ -314,9 +320,9 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/demo/0001_demo_dataset.sql
 | `packages/contracts` | `@pwsm/contracts` | API 契約・列挙型の Zod スキーマ（単一の真実） |
 | `packages/domain` | `@pwsm/domain` | 正規化・信頼度・CSV 無害化・ルール評価・鮮度判定 |
 | `data/fixtures` | `@pwsm/fixtures` | 架空 3 地域の検証用データセット |
-| `apps/api` | `@pwsm/api` | Workers API（health / metadata / 候補検索） |
+| `apps/api` | `@pwsm/api` | API（health / metadata / 候補検索・Node + ローカル PostgreSQL） |
 | `apps/web` | `@pwsm/web` | Web UI（検索フォーム・候補一覧・免責・CSV 出力） |
-| `db/migrations` | — | Neon PostgreSQL 初期スキーマ（5 スキーマ分離） |
+| `db/migrations` | — | ローカル PostgreSQL 初期スキーマ（5 スキーマ分離） |
 | `db/seeds/demo` | — | 架空デモデータ seed（fixture から自動生成） |
 | `docs/adr` | — | アーキテクチャ決定記録 |
 | `docs/operations` | — | 📚 運用文書（リリース前チェックリスト・デプロイ手順・ロールバック・障害対応） |
@@ -480,25 +486,26 @@ Issueには次の情報を含めてください。
 | 2026-08-13 | 🎉 **v0.5.1 実データ版切替（Issue #32）**: 代表3地域の実データ（org 19・office 16・contact 33・jurisdiction 193）を core へ反映・デモデータ suspended・DATASET_VERSION 切替 |
 | 2026-08-15 | 🚀 **MVP/Prototype 評価とバックログ対応**: ハートビート誤検知修正（#67/#69/#70）・E2E ポート衝突解決・個別管轄ポリゴン取込パイプライン（road/river/port/police・#74）・市区町村窓口の代表例（千代田区・#75）・通知基盤設計・UAT 機械検証・PWA 基本対応・MVP 詳細定義 |
 | 2026-08-15 | 🌐 **MVP URL 公開（#81）**: https://pwsm-mvp.mirai-dx-platform.com を fixture モードで公開（関係者レビュー用・本番と分離） |
+| 2026-08-30 | 🐘➡️🏠 **Neon 廃止・ローカル PostgreSQL 移行**: DB を Neon から本ホストのローカル PostgreSQL/PostGIS（127.0.0.1:5432）へ移行。API/Web を Node サーバー（systemd + Cloudflare Tunnel）で公開する構成へ変更（Workers 不使用）。両 URL の 404（SPA 未配信）を解消。ドライバを `@neondatabase/serverless` → `postgres.js` へ全面置換（jsonb は `sql.json()` で送信）。実データ（org 27 / jurisdiction 207 / office 24 / contact 33）をローカル DB へ反映。テスト 242 件・E2E 7 件通過 |
 
 ### 🚦 リリース状況（v0.5.1 実データ版切替済み・関係者限定）
 
 | 領域 | 状態 |
 |---|---|
 | 🖥️ フロントエンド | ✅ 検索・地図・候補一覧・チェックリスト・CSV・免責 |
-| ⚙️ バックエンド API | ✅ health / metadata / 検索（fixture ⇔ Neon 切替） |
-| 🐘 データベース | ✅ スキーマ + 架空 seed 適用済み（Neon dev/main） |
-| 🧪 テスト | ✅ 233 件（2026-08-15 時点・Neon 統合 9 件は `TEST_DATABASE_URL` 設定時のみ実行） |
+| ⚙️ バックエンド API | ✅ health / metadata / 検索（fixture ⇔ ローカル PostgreSQL 切替） |
+| 🐘 データベース | ✅ ローカル PostgreSQL/PostGIS に実データ適用済み（Neon は不使用） |
+| 🧪 テスト | ✅ 242 件（2026-08-30 時点・統合 9 件は `TEST_DATABASE_URL` 設定時のみ実行） |
 | 🔐 セキュリティ | ✅ CSV 注入対策・URL 検証・CSP・レート制限・ボディ上限・依存監査 0 件 |
 | 📚 運用文書 | ✅ チェックリスト / デプロイ / ロールバック / 障害対応 |
-| 🚀 本番デプロイ | ✅ **v0.5.1 公開済み**（2026-08-13・https://pwsm.mirai-dx-platform.com ・Cloudflare Access 保護・実データ（代表3地域）＋デモは suspended。運用は `docs/operations/` 参照） |
+| 🚀 本番デプロイ | ✅ **公開中**（https://pwsm.mirai-dx-platform.com ・Cloudflare Access 保護・実データ / https://pwsm-mvp.mirai-dx-platform.com ・fixture・一般アクセス可。どちらも Node サーバー + Tunnel・ローカル PostgreSQL。運用は `docs/operations/` 参照） |
 
 ### ✅ 実装済み（Phase 0 + Phase 1）
 
 - 📜 API 契約と列挙型（Zod、Web/API 共有の単一の真実）
 - 🧮 ドメインロジック: 正規化（NFKC・電話・URL）、信頼度スコア（説明可能な加減点方式）、CSV 数式注入対策、宣言的ルール評価、TTL 鮮度判定
-- 🌐 Workers API: `/api/v1/health/*`、`/metadata`、`/stakeholders/search`（架空 fixture ⇔ Neon/PostGIS 切替、免責常時付与、RFC 9457 エラー）
-- 🐘 Neon PostgreSQL: 初期スキーマ + 架空 seed 適用済み、ST_Covers/ST_DWithin 空間検索
+- 🌐 API: `/api/v1/health/*`、`/metadata`、`/stakeholders/search`（架空 fixture ⇔ ローカル PostgreSQL/PostGIS 切替、免責常時付与、RFC 9457 エラー）
+- 🐘 ローカル PostgreSQL/PostGIS: 初期スキーマ + 実データ適用済み、ST_Covers/ST_DWithin 空間検索
 - 🗺️ 地図（MapLibre + 地理院タイル）・チェックリスト（FR-009）・CSV 出力
 - 🤖 GitHub Actions CI（lint / typecheck / test / build / 依存監査）
 - 📚 運用文書（リリース前チェックリスト・デプロイ・ロールバック・障害対応）
