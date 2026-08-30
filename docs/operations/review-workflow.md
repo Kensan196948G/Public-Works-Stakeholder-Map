@@ -8,7 +8,7 @@
 
 ## 1. レビュー対象（2026-08-15 更新）
 
-### 1.1 実データ（2026-08-13 適用・Neon dev）
+### 1.1 実データ（2026-08-13 適用・ローカル PostgreSQL）
 
 | entity_kind | 件数 | 品質フラグ |
 |---|---:|---|
@@ -27,7 +27,7 @@
 レビュー台帳 CSV の出力:
 
 ```bash
-DATABASE_URL="<Neon dev 接続文字列>" node scripts/export-staging-review-sheet.mjs
+DATABASE_URL="postgresql://pwsm_app:<パスワード>@127.0.0.1:5432/pwsm" node scripts/export-staging-review-sheet.mjs
 # → reports/staging-review-YYYYMMDD.csv
 ```
 

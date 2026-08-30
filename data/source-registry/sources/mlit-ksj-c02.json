@@ -4,7 +4,7 @@
   "organizationType": "port_admin",
   "name": "国土数値情報 港湾データ（C02）",
   "publisher": "国土交通省 国土数値情報ダウンロードサービス",
-  "baseUrl": "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-C02.html",
+  "baseUrl": "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-C02-2014.html",
   "allowedHost": "nlftp.mlit.go.jp",
   "authority": "primary_official",
   "format": "GML",
@@ -18,5 +18,5 @@
     "confirmedBy": "CTO 代行（2026-08-15・港湾管轄ポリゴン整備）"
   },
   "active": true,
-  "notes": "全国の港湾データ（港湾区域境界は LineString のためポリゴン化処理が必要）。代表3地域の主要港湾（東京港・横浜港・大阪港）から着手する。CRS を EPSG:4326 へ変換してからステージング取込する。"
+  "notes": "全国の港湾データ（港湾区域境界は LineString のためポリゴン化処理が必要）。代表3地域の主要港湾（東京港・横浜港・大阪港）から着手する。CRS を EPSG:4326 へ変換してからステージング取込する。baseUrl は 2026-08-30 に KsjTmplt-C02-2014.html へ更新（旧 URL は 404・Issue #85）。"
 }

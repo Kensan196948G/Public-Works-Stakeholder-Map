@@ -11,34 +11,34 @@
 - 四半期点検で `status: active` を確認する（Cloudflare Dashboard → SSL/TLS）
 - カスタム証明書（Bring Your Own）を導入する場合は、更新担当・期限・アラートを本節に追記する
 
-## 2. Secrets 一覧（本番 Worker `pwsm-api`）
+## 2. 接続設定一覧（本番 Node サーバー `pwsm-api`）
 
-| 名称 | 用途 | ローテーション |
-|---|---|---|
-| `DATABASE_URL` | Neon main 接続文字列（Secret・値は非表示） | 接続情報漏えい時・四半期ごとに検討 |
+| 名称 | 用途 | 保管場所 | ローテーション |
+|---|---|---|---|
+| `DATABASE_URL` | ローカル PostgreSQL `pwsm` 接続文字列（Git 管理外・`apps/api/.env`） | 本ホスト `apps/api/.env`（`chmod 600`） | 接続情報漏えい時・四半期ごとに検討 |
+| `AUTH_*`（`AUTH_ENABLED` 等） | アプリ内 RBAC 設定（現状無効・Cloudflare Access でエッジ保護） | 本ホスト `apps/api/.env` | 認証方式変更時 |
 
 ### DATABASE_URL ローテーション手順
 
 ```bash
-# 1) Neon で新しい接続文字列（またはロールパスワード変更）を用意
-# 2) 本番 Worker へ登録（値は画面・履歴・ログへ出さない）
-cd apps/api
-wrangler secret put DATABASE_URL   # プロンプトへ貼り付け
-# 3) 再デプロイ（vars は変更しないため versions deploy で可。vars 変更時は wrangler deploy）
-wrangler versions deploy <new-version-id>@100
-# 4) /health/ready が 200 であることを確認
+# 1) ローカル PostgreSQL で新しいパスワード / ロールを用意（例: pwsm_app のパスワード変更）
+# 2) apps/api/.env の DATABASE_URL を更新（値は画面・履歴・ログへ出さない。chmod 600 を維持）
+# 3) systemd サービスを再起動（EnvironmentFile は再起動時に読込まれる）
+sudo systemctl restart pwsm-api
+# 4) /api/v1/health/ready が 200 であることを確認
 ```
+
+> ⚠️ `.env` は Git 管理外（`apps/api/.gitignore` に `.env*`）。バックアップは `docs/operations/backup-restore.md` を参照。
 
 ## 3. 外部 API キー
 
 | キー | 用途 | 保管 | ローテーション |
 |---|---|---|---|
-| Cloudflare API Token（CLOUDFLARE_API_TOKEN） | デプロイ・監視・Access 管理 | ローカル env / CI Secrets | 漏えい時・定期的に再発行 |
-| Neon API Key（NEON_API_KEY） | Neon 管理・復元試験 | ローカル config | **漏えい時（2026-08-05 に help 出力で一度表示されたため推奨）**・定期的 |
+| Cloudflare API Token（CLOUDFLARE_API_TOKEN） | Cloudflare API・Tunnel 管理 | ローカル env / CI Secrets | 漏えい時・定期的に再発行 |
 | GitHub PAT（GITHUB_PERSONAL_ACCESS_TOKEN） | リポジトリ操作 | ローカル env | 漏えい時 |
+| cloudflared トンネル証明書 | Tunnel 接続（`/home/kensan/.cloudflared/`） | 本ホスト | トンネル再作成時 |
 
-> ⚠️ 2026-08-05 に `neonctl --help` のデフォルト値として Neon API キーが端末出力へ一度表示されました。
-> リポジトリには含まれていませんが、**ローテーションを推奨**します（Neon Dashboard → Account → API keys）。
+> ⚠️ Neon は 2026-08-30 廃止済み（`NEON_API_KEY` は不使用・削除済み）。
 
 ## 4. 棚卸し・点検
 

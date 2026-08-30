@@ -71,4 +71,4 @@ flowchart LR
 1. 通知先（Slack チャンネル / メール）の決定と Secret 登録
 2. 各監視ワークフローへの通知ステップ追加（§3 雛形を適用）
 3. テスト通知の実施と確認（SLO 文書 §4）
-4. Workers のヘルスチェック連携（外部監視 SaaS または Cron での /health/ready 監視）
+4. Node サーバーのヘルスチェック連携（外部監視 SaaS または Cron での `/api/v1/health/ready` 監視）

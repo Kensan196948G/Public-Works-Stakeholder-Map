@@ -86,3 +86,22 @@ test('候補詳細（FR-005）: 機関詳細を開くと窓口・管轄区域が
   await expect(page.getByText('窓口・部署')).toBeVisible();
   await expect(page.getByText('管轄区域（視覚補助・正式境界ではない）')).toBeVisible();
 });
+
+test('モバイル幅で水平スクロールが発生しない（DD-06 レスポンシブ）', async ({ page }) => {
+  // スマホ幅（390px）で全画面を確認し、横はみ出し要素がないことを検証
+  await page.setViewportSize({ width: 390, height: 800 });
+  await page.goto('/');
+  await page.getByRole('button', { name: '候補を検索' }).click();
+  await expect(page.locator('.candidate-card').first()).toBeVisible();
+
+  const metrics = await page.evaluate(() => {
+    const vw = document.documentElement.clientWidth;
+    const docW = document.documentElement.scrollWidth;
+    const offenders = [...document.querySelectorAll('body *')]
+      .map((el) => el.getBoundingClientRect().right)
+      .filter((right) => right > vw + 2).length;
+    return { vw, docW, offenders };
+  });
+  expect(metrics.docW).toBeLessThanOrEqual(metrics.vw);
+  expect(metrics.offenders).toBe(0);
+});

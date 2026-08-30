@@ -4,7 +4,7 @@
   "organizationType": "road_admin",
   "name": "国土数値情報 道路データ（N13）",
   "publisher": "国土交通省 国土数値情報ダウンロードサービス",
-  "baseUrl": "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N13-v2_0.html",
+  "baseUrl": "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N13-2024.html",
   "allowedHost": "nlftp.mlit.go.jp",
   "authority": "primary_official",
   "format": "GML",
@@ -18,5 +18,5 @@
     "confirmedBy": "CTO 代行（2026-08-15・道路管轄ポリゴン整備）"
   },
   "active": true,
-  "notes": "全国の道路ラインデータ。管轄ポリゴン化の際は路線単位（N13_002 等）へ集約し、CRS を EPSG:4326 へ変換してからステージング取込する。代表3地域から着手し、二者レビュー後に core 反映する。"
+  "notes": "全国の道路ラインデータ。管轄ポリゴン化の際は路線単位（N13_002 等）へ集約し、CRS を EPSG:4326 へ変換してからステージング取込する。代表3地域から着手し、二者レビュー後に core 反映する。baseUrl は 2026-08-30 に KsjTmplt-N13-2024.html へ更新（旧 URL は 404・Issue #85）。"
 }
