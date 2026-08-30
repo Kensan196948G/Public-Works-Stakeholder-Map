@@ -3,10 +3,13 @@
  * 検索 API の簡易負荷テスト（詳細設計仕様書 §8: 通常検索 p95 2 秒以内）。
  * - 外部依存なしの Node スクリプト。検証用 WebUI / preview / 本番 URL に対して実行できる
  * - アプリ層レート制限（search 60 回/分/IP）を考慮し、デフォルトは 40 リクエスト
+ * - 本番（Tunnel 経由）では Cloudflare が `cf-connecting-ip` を付与するため、
+ *   LOAD_TEST_IP_POOL で擬似 IP プールを指定すると複数ユーザーをシミュレートできる（DD-11）
  *
  * 使い方:
  *   npm run load:test
  *   BASE_URL=http://localhost:8789 CONCURRENCY=2 REQUESTS=20 npm run load:test
+ *   BASE_URL=http://127.0.0.1:18803 LOAD_TEST_IP_POOL=8 npm run load:test  # 本番・8 擬似ユーザー
  */
 
 import process from 'node:process';
@@ -15,12 +18,16 @@ const BASE_URL = process.env.BASE_URL ?? 'http://localhost:8789';
 const CONCURRENCY = Number(process.env.CONCURRENCY ?? 4);
 const REQUESTS = Number(process.env.REQUESTS ?? 40);
 const P95_LIMIT_MS = Number(process.env.P95_LIMIT_MS ?? 2000);
+const IP_POOL = Number(process.env.LOAD_TEST_IP_POOL ?? 1);
 
 if (!Number.isInteger(CONCURRENCY) || CONCURRENCY < 1 || CONCURRENCY > 16) {
   throw new Error('CONCURRENCY は 1〜16 の整数で指定してください');
 }
 if (!Number.isInteger(REQUESTS) || REQUESTS < 1 || REQUESTS > 200) {
   throw new Error('REQUESTS は 1〜200 の整数で指定してください');
+}
+if (!Number.isInteger(IP_POOL) || IP_POOL < 1 || IP_POOL > 255) {
+  throw new Error('LOAD_TEST_IP_POOL は 1〜255 の整数で指定してください');
 }
 
 const body = JSON.stringify({
@@ -32,11 +39,25 @@ const body = JSON.stringify({
   purpose: 'pre_consultation',
 });
 
+// レート制限（60 回/分/IP）を回避しつつ複数ユーザーをシミュレートするため、
+// リクエストごとに cf-connecting-ip をローテーションする（DD-11・本番負荷試験用）
+function headersFor(index) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (IP_POOL > 1) {
+    // テスト用ドキュメント IP レンジ（RFC 5737）で擬似ユーザーを生成
+    const octet = (index % IP_POOL) + 1;
+    headers['cf-connecting-ip'] = `198.51.100.${octet}`;
+  }
+  return headers;
+}
+
+let requestCounter = 0;
+
 async function runOne() {
   const start = performance.now();
   const res = await fetch(`${BASE_URL}/api/v1/stakeholders/search`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: headersFor(requestCounter++),
     body,
   });
   const durationMs = performance.now() - start;
