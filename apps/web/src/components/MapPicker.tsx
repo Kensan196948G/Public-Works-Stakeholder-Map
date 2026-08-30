@@ -1,7 +1,7 @@
 import type { FeatureCollection } from 'geojson';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { JurisdictionMapResponse, Location } from '@pwsm/contracts';
 import { demoDataset } from '@pwsm/fixtures';
 
@@ -60,6 +60,8 @@ export function MapPicker({ location, onPick, highlightRegions }: MapPickerProps
   const markerRef = useRef<maplibregl.Marker | null>(null);
   const highlightRef = useRef<JurisdictionMapResponse | null | undefined>(highlightRegions);
   highlightRef.current = highlightRegions;
+  // 地図初期化失敗（WebGL 非対応・GPU 制限等）時はフォールバック表示し、画面全体を落とさない
+  const [initFailed, setInitFailed] = useState(false);
   // クリックハンドラから常に最新の onPick を呼ぶための参照
   const onPickRef = useRef(onPick);
   onPickRef.current = onPick;
@@ -103,12 +105,20 @@ export function MapPicker({ location, onPick, highlightRegions }: MapPickerProps
   useEffect(() => {
     if (containerRef.current === null || mapRef.current !== null) return;
 
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style: GSI_STYLE,
-      center: [location.lon, location.lat],
-      zoom: 9,
-    });
+    let map: maplibregl.Map | null = null;
+    try {
+      map = new maplibregl.Map({
+        container: containerRef.current,
+        style: GSI_STYLE,
+        center: [location.lon, location.lat],
+        zoom: 9,
+      });
+    } catch {
+      // WebGL コンテキスト作成失敗など（ヘッドレス・GPU 制限・企業ポリシー等）。
+      // フォールバック UI へ切り替え、アプリ全体の描画を継続する（§9.1: 地図は視覚補助）
+      setInitFailed(true);
+      return;
+    }
     map.addControl(new maplibregl.NavigationControl(), 'top-right');
 
     map.on('load', () => {
@@ -161,13 +171,22 @@ export function MapPicker({ location, onPick, highlightRegions }: MapPickerProps
 
   return (
     <div className="map-picker">
-      <div
-        ref={containerRef}
-        className="map-container"
-        role="img"
-        aria-label="地図（クリックで地点を指定）"
-        aria-describedby="map-fallback-note"
-      />
+      {initFailed ? (
+        <div className="map-fallback" role="note">
+          <p>⚠️ この環境では地図（WebGL）を表示できません。</p>
+          <p>
+            上の「住所で検索」または緯度・経度の直接入力で地点を指定できます（地図は視覚補助であり、候補一覧には影響しません）。
+          </p>
+        </div>
+      ) : (
+        <div
+          ref={containerRef}
+          className="map-container"
+          role="img"
+          aria-label="地図（クリックで地点を指定）"
+          aria-describedby="map-fallback-note"
+        />
+      )}
       <p id="map-fallback-note" className="map-note">
         地図が操作できない環境では、上の「住所で検索」または緯度・経度の直接入力で地点を指定できます。
       </p>
