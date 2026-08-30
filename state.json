@@ -6,7 +6,7 @@
     "release_deadline": "2027-01-18",
     "phase_mode": "development"
   },
-  "goal": "Neon 廃止・ローカル PostgreSQL 移行完了（2026-08-30）: 本番/MVP を Node サーバー（systemd pwsm-api/pwsm-mvp + Cloudflare Tunnel）で公開し、両 URL の 404 を解消。DB は本ホスト 127.0.0.1:5432 の pwsm（実データ org 27 / jurisdiction 207 / office 24 / contact 33）。ドライバを postgres.js へ全面置換（jsonb は sql.json 送信）。残: P1 二者レビュー/UAT・本番負荷試験・通知実配信（本番運用化の対象）。Deep Debug Round 1（2026-08-30）: 検索API高速化（geography 式インデックス 0004・1.07s→8ms・PR #88）・WebGL 非対応フォールバック（MapPicker・PR #88）を実施。住所検索 502（systemd outbound 遮断）は Issue #87 として運用依頼中",
+  "goal": "Neon 廃止・ローカル PostgreSQL 移行完了（2026-08-30）: 本番/MVP を Node サーバー（systemd pwsm-api/pwsm-mvp + Cloudflare Tunnel）で公開し、両 URL の 404 を解消。DB は本ホスト 127.0.0.1:5432 の pwsm（実データ org 27 / jurisdiction 207 / office 24 / contact 33）。ドライバを postgres.js へ全面置換（jsonb は sql.json 送信）。残: P1 二者レビュー/UAT・本番負荷試験・通知実配信（本番運用化の対象）。Deep Debug Round 1（2026-08-30）: 検索API高速化（geography 式インデックス 0004・1.07s→8ms・PR #88）・WebGL 非対応フォールバック（MapPicker・PR #88）を実施。住所検索 502（systemd outbound 遮断）は Issue #87 として運用依頼中。Deep Debug Round 2（2026-08-30）: 運用文書の Neon 残存 10 件を解消（backup-restore/rollback 等・PR #91）・モバイルレスポンシブ修正（390px オーバーフロー解消・PR #91）・情報源リンク切れ 2 件修正（Issue #85 クローズ・PR #91）。残: DD-03（geocode 502・systemd 承認待ち）、DD-04（データ分類・Issue #32 時）",
   "phase": "ProductionOps",
   "kpi": {
     "success_rate_target": 0.9,
