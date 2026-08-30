@@ -153,6 +153,15 @@ COMMIT;
 | ☐ | 原因・影響範囲・恒久対策を Issue 化（`incident-response.md` の再発防止と連携） |
 | ☐ | GitHub Projects の Status を更新 |
 
+## 5.1 ロールバック実地試験（2026-08-31・Deep Debug Round 4）
+
+| 項目 | 内容 |
+|---|---|
+| 対象 | 直前の正常 SHA（`f2cf084`・Neon 廃止・ローカル PostgreSQL 移行時点） |
+| 方法 | `git worktree add` で一時ツリーへ旧 SHA を展開 → `npm ci` → `npm run build` |
+| 結果 | ✅ `npm ci`（0 vulnerabilities）・`npm run build`（6.76s・152 modules）成功。ロールバック手順（git checkout → build → restart）が実行可能であることを実証 |
+| 補足 | 本番への実際の切戻しは人間の承認後、`systemctl restart pwsm-api` で反映（本試験では本番を変更していない） |
+
 ---
 
 ## 📞 エスカレーション
