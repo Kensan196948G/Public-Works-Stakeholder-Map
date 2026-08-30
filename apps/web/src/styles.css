@@ -331,6 +331,9 @@ dd {
   height: 320px;
   border: 1px solid var(--color-border);
   border-radius: 6px;
+  /* MapLibre の canvas が親を超えて広がるのを防ぐ（モバイル横はみ出し対策・DD-06） */
+  min-width: 0;
+  overflow: hidden;
 }
 
 .map-note {
@@ -408,6 +411,7 @@ dd {
 /* --- ナビゲーション・設定・監査ログ（Issue #17） --- */
 .app-nav {
   display: flex;
+  flex-wrap: wrap; /* モバイル幅で折り返す（DD-06: 横はみ出し対策） */
   gap: 0.4rem;
   margin-bottom: 1rem;
 }

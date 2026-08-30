@@ -1,69 +1,74 @@
-# 🗄️ バックアップ・復旧・RPO／RTO（Neon PostgreSQL）
+# 🗄️ バックアップ・復旧・RPO／RTO（ローカル PostgreSQL）
 
 | 項目 | 内容 |
 |---|---|
-| DB | Neon PostgreSQL（プロジェクト `tiny-river-77604173`・main ブランチ） |
-| 方式 | Neon のブランチング + Point-in-Time Restore（PITR） |
-| 更新日 | 2026-08-12 |
+| DB | ローカル PostgreSQL / PostGIS（本ホスト 127.0.0.1:5432・db `pwsm`・role `pwsm_app`。Neon は 2026-08-30 廃止） |
+| 方式 | 論理エクスポート（`pg_dump` custom format・`npm run backup:export`） |
+| 更新日 | 2026-08-30（Neon 廃止・ローカル PostgreSQL 移行後に全面改訂） |
 
 ## 1. バックアップ方針
 
-- Neon はプロジェクト単位で**自動バックアップ（PITR）**を提供し、ブランチ作成により任意時点へ復元できる
 - アプリコード・設定・ドキュメントは **GitHub（main）** が正本（Git 履歴がバックアップを兼ねる）
-- 運用データ（`provenance` / `staging` / `core` / `audit`）は Neon が正本
-- 論理エクスポート（`pg_dump`）は四半期の復元試験時に併せて実施し、アプリ DB と異なる保管先（ローカル暗号化領域）へ保存する
+- 運用データ（`provenance` / `staging` / `core` / `audit` / `workflow`）はローカル PostgreSQL `pwsm` が正本
+- ローカル PostgreSQL は Neon のような自動 PITR を持たないため、**定期的な論理エクスポートが必須**（RPO 24 時間を担保するため最低 1 日 1 回）
+- 論理エクスポート（`pg_dump`）は `npm run backup:export` で実施し、`reports/backups/`（`.gitignore` 済み）へ保存する
+- 機密性が高い場合は出力後に暗号化し、アプリ DB と異なる保管先・保持ポリシーで管理する
 
 ## 2. RPO／RTO 目標（MVP）
 
 | 指標 | 目標 | 備考 |
 |---|---:|---|
-| RPO | 24 時間以内 | Neon PITR は通常これを大幅に下回る |
-| RTO | 8 時間以内 | ブランチ復元 + 接続文字列切替 + 検証 |
+| RPO | 24 時間以内 | 論理エクスポートを最低 1 日 1 回実行して担保 |
+| RTO | 8 時間以内 | ダンプ復元 + アプリ接続先切替 + 検証 |
 
-## 3. 復元手順（ブランチ方式）
-
-```bash
-# 1) 復元対象時点のブランチを作成（例: 現在の main から）
-neonctl branches create --project-id tiny-river-77604173 --name restore-YYYYMMDD --parent main
-
-# 2) 接続文字列を取得し、アプリ DB として参照
-neonctl connection-string restore-YYYYMMDD --project-id tiny-river-77604173 --role neondb_owner --database neondb
-
-# 3) 検証: スキーマ・件数・空間データ
-psql "$RESTORE_URL" -c "\dt core.*"
-psql "$RESTORE_URL" -c "SELECT count(*) FROM staging.import_records;"
-
-# 4) 問題なければ復元ブランチを本番として採用（またはアプリ接続先を切替）
-# 5) 検証用ブランチは削除
-neonctl branches delete --project-id tiny-river-77604173 --branch restore-YYYYMMDD
-```
-
-## 4. 復元試験（実施記録）
-
-| 日付 | 内容 | 結果 |
-|---|---|---|
-| 2026-08-05 | main から検証ブランチを作成し、スキーマ・staging 件数・空間データを確認 | 実施（下記の検証結果を参照） |
-
-> 四半期ごとに本手順を再実行し、結果をこの表へ追記する（次回予定: 2026-11-05）。
-
-## 5. ロールバック（アプリ）
-
-- Worker: `wrangler versions deploy <旧version-id>` で即時切替（`rollback.md` 参照）
-- DB: 復元ブランチへ接続切替。破壊的 migration は expand-and-contract で回避
-
-## 6. 論理エクスポートの自動化（2026-08-12）
-
-四半期の復元試験に先立ち、任意時点の論理バックアップを取得できます。
+## 3. バックアップ手順（論理エクスポート）
 
 ```bash
-# 接続文字列はコマンド履歴へ残さない（set -a && source .env.local 等で環境変数として渡す）
-DATABASE_URL="<Neon接続文字列>" npm run backup:export
+# 作業ディレクトリ: リポジトリルート
+# 接続文字列はコマンド履歴へ残さない（環境変数として渡す）
+DATABASE_URL="postgresql://pwsm_app:<パスワード>@127.0.0.1:5432/pwsm" npm run backup:export
 # → reports/backups/pwsm-YYYYMMDD-HHMMSS.sql.gz（custom format・gzip）
 
-# 検証
+# 検証（整合性確認）
 gzip -t reports/backups/pwsm-*.sql.gz
 gzip -dc reports/backups/pwsm-*.sql.gz | pg_restore --list | head
 ```
 
-- 出力先 `reports/` は gitignore 済み（正本は外部保管先へコピーする）
-- 機密性が高い場合は出力後に暗号化し、アプリ DB と異なる保管先・保持ポリシーで管理する
+| ✅ | 確認項目 |
+|---|---|
+| ☐ | `reports/backups/pwsm-*.sql.gz` が生成される（custom format・gzip） |
+| ☐ | `gzip -t` が成功する（整合性） |
+| ☐ | `pg_restore --list` に core / provenance / staging / audit / workflow のテーブルが含まれる |
+
+## 4. 復元手順（論理エクスポートから）
+
+```bash
+# 1) 復元先 DB を用意（例: pwsm_restore）
+createdb -h 127.0.0.1 -U postgres pwsm_restore
+
+# 2) ダンプを復元
+gzip -dc reports/backups/pwsm-YYYYMMDD-HHMMSS.sql.gz | pg_restore \
+  --no-owner --no-privileges -h 127.0.0.1 -U postgres -d pwsm_restore
+
+# 3) 検証: スキーマ・件数・空間データ
+psql -h 127.0.0.1 -U postgres -d pwsm_restore -c "\dt core.*"
+psql -h 127.0.0.1 -U postgres -d pwsm_restore -c "SELECT count(*) FROM staging.import_records;"
+psql -h 127.0.0.1 -U postgres -d pwsm_restore -c "SELECT count(*) FROM core.jurisdictions;"
+
+# 4) 問題なければアプリの DATABASE_URL を復元 DB へ切替え（apps/api/.env 変更 + systemctl restart pwsm-api）
+# 5) 不要な復元 DB は削除
+dropdb -h 127.0.0.1 -U postgres pwsm_restore
+```
+
+## 5. 復元試験（実施記録）
+
+| 日付 | 内容 | 結果 |
+|---|---|---|
+| 2026-08-30 | 本番 `pwsm` の論理エクスポート（`npm run backup:export`・16MB）を作成し、`gzip -t` で整合性確認 | 実施（2026-08-30 Deep Debug・DD-05 にて確認） |
+
+> 四半期ごとに本手順を再実行し、結果をこの表へ追記する（次回予定: 2026-11-30）。
+
+## 6. ロールバック（アプリ）
+
+- **API / Web**: Node サーバーはビルド済み `apps/web/dist` と `apps/api/src` を直接参照するため、`git checkout <直前SHA>` → `npm run build` → `systemctl restart pwsm-api` で戻す（`rollback.md` 参照）
+- **DB**: 上記 §4 の復元手順でダンプから復元。破壊的 migration は expand-and-contract で回避

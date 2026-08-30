@@ -2,9 +2,9 @@
 
 | 項目 | 内容 |
 |---|---|
-| 🎯 目的 | 本番リリース後に問題が発生した際、Workers・Web・Neon DB を安全に直前の正常状態へ戻す |
+| 🎯 目的 | 本番リリース後に問題が発生した際、Node サーバー（API + Web）・ローカル PostgreSQL DB を安全に直前の正常状態へ戻す |
 | 👥 対象読者 | ロールバックを実行する人間（オペレーター）・DevOps・承認者 |
-| 📅 最終更新日 | 2026-07-18 |
+| 📅 最終更新日 | 2026-08-30（Neon 廃止・ローカル PostgreSQL / Node + Tunnel 構成へ全面改訂） |
 
 > 🚫 **本番へのロールバック実行・DB スキーマ変更・データ削除は、必ず人間の明示承認が必須です。**
 > CTO / Claude は手順・影響評価・推奨案の提示のみを行い、実行しません。
@@ -16,9 +16,9 @@
 ```mermaid
 flowchart TD
     A["🚨 異常検知"] --> B{"種類は?"}
-    B -->|5xx 急増 / smoke 失敗 / 機能停止| C["Workers 版ロールバック（最優先・無停止）"]
-    B -->|Web 表示崩れ / 誤リンク| D["Web 版ロールバック"]
-    B -->|DB スキーマ不整合 / データ破損| E["Neon branch restore（非破壊・第一選択）"]
+    B -->|5xx 急増 / smoke 失敗 / 機能停止| C["API 版ロールバック（git checkout + build + restart・第一選択）"]
+    B -->|Web 表示崩れ / 誤リンク| D["Web 版ロールバック（同一 Node サーバー・自動で同時に戻る）"]
+    B -->|DB スキーマ不整合 / データ破損| E["DB ダンプ復元（論理エクスポートから）"]
     B -->|誤窓口・情報漏えい疑い| F["incident-response.md へ"]
     C --> G["✅ smoke test 再実行"]
     D --> G
@@ -30,82 +30,84 @@ flowchart TD
 
 | 状況 | 一次対応 | 参照節 |
 |---|---|---|
-| API の 5xx 急増・smoke test 失敗・機能停止 | Workers を直前 version へ戻す | §1 |
-| Web の表示崩れ・誤った公式リンク | Web を直前ビルドへ戻す | §2 |
-| DB スキーマ / データの不整合・破損 | Neon の branch restore で復旧 | §3 |
+| API の 5xx 急増・smoke test 失敗・機能停止 | git checkout で直前 SHA へ戻し、build + restart | §1 |
+| Web の表示崩れ・誤った公式リンク | Web 資産は API と同一 Node サーバーから配信されるため §1 で同時に戻る | §2 |
+| DB スキーマ / データの不整合・破損 | 論理エクスポート（`reports/backups/pwsm-*.sql.gz`）から復元 | §3 |
 | 誤窓口表示・改ざん疑い・情報漏えい疑い | インシデント初動を優先 | `incident-response.md` |
 
-> 💡 **原則: まず影響の小さい手段から。** Workers 版ロールバックは非破壊。Neon 復旧は **restore branch を作成して検証してから main へ反映**する（§3.1）。main への直接 in-place restore は現在のデータ状態を置換するため非破壊とは扱わない。DROP を伴う DB down（§3.2）は最終手段。
+> 💡 **原則: まず影響の小さい手段から。** git ロールバックは非破壊（直前コミットへ戻すだけ）。DB 復旧は**復元先 DB で検証してから本番へ反映**する（§3.1）。DROP を伴う DB down（§3.2）は最終手段。
 
 ---
 
-## 1. ⚙️ Workers（API）の版ロールバック — 無停止・第一選択
+## 1. ⚙️ API / Web（Node サーバー）のロールバック — 第一選択
 
-`deploy-runbook.md` の段階公開（`wrangler versions upload` → `versions deploy`）を使っていれば、旧 version へ即座に戻せます。
+Node サーバー（systemd `pwsm-api`）は `apps/api/src`（API）とビルド済み `apps/web/dist`（Web UI）を直接参照します。
+直前の正常コミットへ戻し、再ビルドして再起動します。
 
 ```bash
-# 作業ディレクトリ: apps/api
+# 作業ディレクトリ: リポジトリルート
 
-# 現在・過去のバージョン一覧（version ID と作成時刻を確認）
-wrangler versions list
+# 1) 直前の正常 SHA を確認（deploy-runbook.md §4 の記録を参照）
+git log --oneline -5
 
-# 方式A: 直前の正常 version へトラフィックを戻す（対話で version ID と割合を指定）
-wrangler versions deploy
-#   → 旧 version ID を 100% に指定して昇格
+# 2) 対象 SHA へ戻す（コード・設定・ドキュメントが巻き戻る）
+git checkout <直前の正常SHA>
 
-# 方式B: rollback サブコマンド（対象 version を指定して即時復帰）
-wrangler rollback [<VERSION_ID>]
+# 3) 再ビルド（apps/web/dist を最新化）
+npm run build
+
+# 4) systemd サービスを再起動（権限が必要な場合は承認者に依頼）
+sudo systemctl restart pwsm-api
+#   ※ MVP（fixture モード）は pwsm-mvp / preview は pwsm-api-preview
 ```
 
 | ✅ | 確認項目 |
 |---|---|
-| ☐ | 戻す先が「直前の正常 version ID」である（`deploy-runbook.md §4` の記録を参照） |
+| ☐ | 戻す先が「直前の正常 SHA」である（`deploy-runbook.md §4` の記録を参照） |
 | ☐ | ロールバック後に `curl <BASE_URL>/api/v1/health/ready` が 200 |
 | ☐ | `/api/v1/metadata` の `disclaimer` が表示され、`datasetVersion` が想定版 |
 
-> ⚠️ Secrets（`DATABASE_URL` 等）は version に紐づかない。接続先の切り戻しが必要な場合は §3・Secrets 再設定（人間承認）を併用する。
+> ⚠️ `.env`（`DATABASE_URL`・`AUTH_*` 等）は git 管理外（ローカル設定）のため、git checkout では変わらない。接続先の切り戻しが必要な場合は §3・Secrets 再設定（人間承認）を併用する。
 
 ---
 
 ## 2. 🌐 Web の版ロールバック
 
-Web 資産は API と同一 Worker（`pwsm-api`）の Static Assets として version に同梱されるため、**§1 の Worker 版ロールバックで Web も同時に戻ります**（個別の Pages ロールバックは不要）。
+Web 資産は API と同一 Node サーバー（`apps/web/dist`）から配信されるため、**§1 の git checkout + build + restart で Web も同時に戻ります**（個別の Pages ロールバックは不要）。
 
 | ✅ | 確認項目 |
 |---|---|
-| ☐ | 戻した version で `/`（index.html）と `/api/v1/health/ready` の両方が正常応答する |
+| ☐ | 戻した状態で `/`（index.html）と `/api/v1/health/ready` の両方が正常応答する |
 | ☐ | 免責・推定/鮮度表示が復帰後も常時表示される |
 
 ---
 
-## 3. 🗄️ Neon PostgreSQL のロールバック
+## 3. 🗄️ ローカル PostgreSQL のロールバック
 
-対象: プロジェクト `tiny-river-77604173`（main = 本番 / dev = `br-calm-forest-auo4xou3`）。
-本番マイグレーションは `db/migrations/0001_initial_schema.sql`（単一トランザクション・**down 節なし**）。
+対象: ローカル PostgreSQL `pwsm`（本番）。マイグレーションは `db/migrations/0001_initial_schema.sql` / `0002_feedback.sql` / `0003_audit_hash_chain.sql` / `0004_jurisdiction_geography_index.sql`（**down 節なし**）。
 
-### 3.1 restore branch 経由の復旧 — 第一選択 🟢
+### 3.1 論理エクスポートからの復元 — 第一選択 🟢
 
-Neon の Point-in-Time restore を使い、**まず対象時刻の復元ブランチ（restore branch）を作成し、そこで検証してから main へ反映**します。
-main へ直接 in-place restore すると現在のデータ状態を上書きするため、本手順では採らず、検証を挟む復元ブランチ方式を第一選択とします。
+`reports/backups/pwsm-*.sql.gz`（`npm run backup:export` の成果物）から復元します。**まず復元先 DB で検証してから本番へ反映**します（本番へ直接 in-place 復元は現在のデータ状態を上書きするため本手順では採らず、検証を挟む方式を第一選択とします）。
 
 | ✅ | 手順（順序どおり） |
 |---|---|
-| ☐ | 復旧目標時刻（RPO 目標 24 時間・設計 §15）を決める |
-| ☐ | 対象時刻の**復元ブランチ（restore branch）を作成**する（main へは直接適用しない） |
-| ☐ | 復元ブランチ上で **件数・FK・geometry・サンプル検索**を検証（設計 §15 の復元試験に準拠） |
-| ☐ | 検証合格後に、復元ブランチを本番へ反映（main への昇格、または接続先を復元ブランチへ切替） |
-| ☐ | アプリの接続先変更（`DATABASE_URL`）に伴う Secrets 変更は人間承認 |
+| ☐ | 復旧目標時刻（RPO 目標 24 時間・`backup-restore.md` 参照）を決める |
+| ☐ | 復元先 DB（例: `pwsm_restore`）を作成し、対象ダンプを `pg_restore --no-owner --no-privileges` で復元 |
+| ☐ | 復元 DB 上で **件数・FK・geometry・サンプル検索**を検証（`backup-restore.md` §4 に準拠） |
+| ☐ | 検証合格後に、アプリの接続先（`apps/api/.env` の `DATABASE_URL`）を復元 DB へ切替え + `systemctl restart pwsm-api` |
+| ☐ | アプリの接続先変更（`DATABASE_URL`）に伴う設定変更は人間承認 |
 
-> 🚫 Neon **プロジェクトの削除・dev ブランチの削除・main への直接 restore（in-place）** は人間承認必須（データ状態を置換するため）。復元ブランチの作成・反映も人間が実行する。
+> 🚫 **DB の削除・本番への直接 in-place 復元（現在のデータ状態を置換）** は人間承認必須。復元 DB の作成・反映も人間が実行する。
 
 ### 3.2 スキーマ down（全削除）— 最終手段・破壊的 🔴
 
-`0001` は down 節を持たないため、スキーマ単位の巻き戻しは以下の DROP で行います。
-**これは 5 スキーマ配下の全テーブル・全データを削除します。** branch restore（§3.1）が使えない場合に限る最終手段です。
+マイグレーションは down 節を持たないため、スキーマ単位の巻き戻しは以下の DROP で行います。
+**これは 5 スキーマ配下の全テーブル・全データを削除します。** ダンプ復元（§3.1）が使えない場合に限る最終手段です。
 
 ```sql
 -- 🔴 破壊的操作: 実行は人間の明示承認が必須。事前に論理エクスポート/バックアップを取得すること。
--- 対象は本番(main)ではなく、まず dev ブランチ br-calm-forest-auo4xou3 で検証する。
+-- 対象は本番ではなく、まず pwsm_test で検証する。
 BEGIN;
 DROP SCHEMA IF EXISTS audit      CASCADE;
 DROP SCHEMA IF EXISTS workflow   CASCADE;
@@ -119,11 +121,11 @@ COMMIT;
 
 | ✅ | 実行前チェック |
 |---|---|
-| ☐ | **branch restore（§3.1）で代替できないことを確認した** |
+| ☐ | **ダンプ復元（§3.1）で代替できないことを確認した** |
 | ☐ | 対象データの論理エクスポート / バックアップ取得済み |
-| ☐ | dev ブランチで DROP → 再適用（`0001`）を検証済み |
-| ☐ | 本番（main）への適用について人間の明示承認を得た |
-| ☐ | 実行後、`0001_initial_schema.sql` を再適用し 5 スキーマ・CHECK 制約を復元 |
+| ☐ | `pwsm_test` で DROP → 再適用（`0001`〜`0004`）を検証済み |
+| ☐ | 本番への適用について人間の明示承認を得た |
+| ☐ | 実行後、`0001_initial_schema.sql`〜`0004_jurisdiction_geography_index.sql` を再適用し 5 スキーマ・CHECK 制約を復元 |
 
 > 🚫 **DROP SCHEMA … CASCADE はデータ削除・履歴改変に相当する。** CLAUDE.md の原則により無断実行禁止。
 
@@ -135,7 +137,7 @@ COMMIT;
 
 | ✅ | 手順 |
 |---|---|
-| ☐ | 公開版 ID を直前の承認版へ原子的に切替える（設計 §18.2） |
+| ☐ | 公開版 ID を直前の承認版へ原子的に切替える（設計 §18.2・`apps/api/.env` の `DATASET_VERSION` 変更 + restart） |
 | ☐ | 切替後に smoke test（`/api/v1/metadata` の `datasetVersion`）で版を確認 |
 | ☐ | 版差異により作成済みチェックリストへ警告が出ることを確認（設計 §17.2-8） |
 
@@ -147,7 +149,7 @@ COMMIT;
 |---|---|
 | ☐ | `deploy-runbook.md §6` の smoke test を再実行し合格 |
 | ☐ | 免責・推定/鮮度表示が復帰後も常時表示される |
-| ☐ | 復旧に用いた version ID / restore 時刻 / 公開版 ID を記録 |
+| ☐ | 復旧に用いた SHA / 復元時刻 / 公開版 ID を記録 |
 | ☐ | 原因・影響範囲・恒久対策を Issue 化（`incident-response.md` の再発防止と連携） |
 | ☐ | GitHub Projects の Status を更新 |
 
@@ -155,5 +157,5 @@ COMMIT;
 
 ## 📞 エスカレーション
 
-- Workers 版ロールバック・Web 版ロールバック・branch restore のいずれでも回復しない場合、`docs/operations/incident-response.md` の該当シナリオへ移行する。
+- git ロールバック・DB ダンプ復元のいずれでも回復しない場合、`docs/operations/incident-response.md` の該当シナリオへ移行する。
 - 情報漏えい疑い・誤窓口の重大表示は、ロールバックより先にインシデント初動（取得停止・トークン失効・記録保全）を優先する。

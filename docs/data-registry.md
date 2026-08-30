@@ -24,7 +24,7 @@
 5. SCR-07 でレビュー（二者レビュー原則: 取込者 ≠ 承認者）
 6. 承認済みレコードをデータ版切替として公開反映（マージ判定 `Y` の範囲で実施）
 
-## 1.5 🔁 台帳の Neon 登録（自動生成 seed・2026-08-05 実装）
+## 1.5 🔁 台帳の登録（自動生成 seed・2026-08-05 実装・2026-08-30 ローカル PostgreSQL 対応）
 
 台帳 JSON（`data/source-registry/sources/*.json`）から、`provenance.data_sources` 用の
 冪等 seed SQL を自動生成します。
@@ -36,14 +36,14 @@ node scripts/generate-source-registry-seed.mjs
 # 標準出力で内容確認
 node scripts/generate-source-registry-seed.mjs --stdout
 
-# 適用（dev で検証後に main へ）
+# 適用（pwsm_test で検証後に本番 pwsm へ）
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/registry/0001_source_registry.sql
 ```
 
 - 決定的 UUID（`uuidFor("registry:<slug>")`）で同一台帳から何度でも再適用可能（`ON CONFLICT DO UPDATE`）
 - `license.summary` / `license.url` は `license_text` / `license_url` へ格納し、
   「利用条件未記録」の品質監視（SCR-08）と連動する
-- **適用済み（2026-08-05）**: Neon dev ブランチ + main（16 ソース = 代表 3 地域 15 + N03 1・全件 license 付き）
+- **適用済み（2026-08-05・2026-08-30 移行後も維持）**: ローカル PostgreSQL `pwsm`（16 ソース = 代表 3 地域 15 + N03 1・全件 license 付き）
 - テスト: `data/source-registry/test/seed.test.ts`（台帳 ↔ seed の対応・冪等性を CI で検証）
 
 ### 1.6 🧱 組織のステージング取込（Issue #32 第二段・2026-08-05）
@@ -59,7 +59,7 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/registry/0002_staging_org_im
 - 生成物は必ず `pending`（無レビュー公開禁止・§6.2）
 - `raw_payload` に canonicalName / officialUrl / organizationType / sourceSlug を含み、
   SCR-07 のレビュー画面で確認できる
-- **適用済み（2026-08-05）**: Neon dev + main（16 件 pending・台帳 16 ソース登録済み）
+- **適用済み（2026-08-05・2026-08-30 移行後も維持）**: ローカル PostgreSQL `pwsm`（16 件 pending・台帳 16 ソース登録済み）
 - テスト: `data/source-registry/test/entity-seed.test.ts`
 
 ### 1.7 🗺️ N03 行政区域の取込（Issue #32 第三段・ツール実装済み）
@@ -96,7 +96,7 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/registry/0003_n03_jurisdicti
 - 取得: `N03-20260101_13/14/27_GML.zip`（URL は `data/source-registry/imports/n03-20260101-manifest.json` 参照）
 - 変換: ogr2ogr で EPSG:4326 の GeoJSON 化 → `scripts/n03-geojson-to-imports.mjs` で
   市町村単位（政令市は行政区単位）に集約し、ステージング取込 SQL を生成
-- 適用: **Neon dev ブランチ**へ 193 件（東京 63・神奈川 58・大阪 72）を pending 適用（冪等）
+- 適用: **ローカル PostgreSQL `pwsm`** へ 193 件（東京 63・神奈川 58・大阪 72）を pending 適用（冪等）
 - 品質フラグ: `geometry_pending_review`（境界はレビューで確認）
 - ツール改善: N03-2026 の `N03_005`（行政区名）対応・`13000` 等の全ゼロ市区町村コードを
   `unknown` へ正規化（所属未定地の重複を防止）・配布ページ未掲載の最新版を HEAD プローブで検出
@@ -106,7 +106,7 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/registry/0003_n03_jurisdicti
 - 収集元: `data/source-registry/entities/{tokyo,yokohama,osaka}/*.json`（公式ページから抽出した下書き。
   東京 6 窓口/12 連絡先・横浜 4/8・大阪 6/13）
 - 生成: `scripts/generate-office-contact-imports.mjs` → `db/seeds/registry/0005_staging_office_contacts.sql`
-- 適用: Neon dev ブランチへ pending + `contact_pending_review` で適用済み（冪等）
+- 適用: ローカル PostgreSQL `pwsm` へ pending + `contact_pending_review` で適用済み（冪等）
 - レビュー: 原典の再確認・個人情報なし確認・二者レビュー後に `core.*` へ反映
 - 検証: `data/source-registry/test/entity-office.test.ts`（スキーマ・台帳一致・電話形式・SQL 不変条件）
 
@@ -132,7 +132,7 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/registry/0003_n03_jurisdicti
   2. 担当部署名・直通電話・受付場所・必要書類を確認し、`entities/<region>/<slug>.json` へ記録
   3. 対応する `sources/<slug>.json` を台帳へ追加（`region` は既存 enum の tokyo/yokohama/osaka を使用）
   4. 生成スクリプト（source-registry → 0001 / entity-imports → 0002 / office-contact → 0005）を再実行
-  5. Neon dev で適用し、機械レビュー → 二者レビュー → core 反映（§1.10 と同じ経路）
+  5. ローカル PostgreSQL（pwsm_test で検証 → 本番 pwsm）で適用し、機械レビュー → 二者レビュー → core 反映（§1.10 と同じ経路）
 - **留意点**: 道路使用許可は所轄警察署（別機関）が担当するため、区窓口の role_summary に分岐を明記する。
   実在の電話・住所は公開情報であり README のデータ方針（公開情報ベース）に適合するが、
   個人名・個人メールは含めない（代表課メール等の部署アドレスに限定）。
@@ -141,13 +141,13 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/seeds/registry/0003_n03_jurisdicti
 
 ```bash
 # 1) 機械レビュー（全レコードの妥当性検証 → docs/review/YYYY-MM-DD-staging-review.md）
-DATABASE_URL="<Neon dev接続文字列>" npm run review:verify
+DATABASE_URL="postgresql://pwsm_app:<パスワード>@127.0.0.1:5432/pwsm" npm run review:verify
 
 # 2) レビュー承認（SCR-07）後、core 昇格 SQL を生成
-DATABASE_URL="<Neon dev接続文字列>" npm run promote:core
+DATABASE_URL="postgresql://pwsm_app:<パスワード>@127.0.0.1:5432/pwsm" npm run promote:core
 # → reports/0006_core_real_data.sql（巨大 WKT のため Git 管理外・再生成可能）
 
-# 3) 適用（dev で検証 → main はデータ版切替 PR の範囲で）
+# 3) 適用（pwsm_test で検証 → 本番 pwsm はデータ版切替 PR の範囲で）
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f reports/0006_core_real_data.sql
 ```
 

@@ -83,31 +83,31 @@ flowchart LR
 
 ## 4. 🗄️ DB マイグレーション適用確認（🔴 必須）
 
-対象 Neon プロジェクト・ブランチ、マイグレーション適用状況を確認します（実接続文字列は記載しない）。
+対象ローカル PostgreSQL（本番 `pwsm`・127.0.0.1:5432）、マイグレーション適用状況を確認します（実接続文字列は記載しない）。
 
 | ✅ | 確認項目 | 補足 |
 |---|---|---|
-| ☐ | `db/migrations/0001_initial_schema.sql` が本番（main）ブランチへ適用済み | 5 スキーマ（`core` / `staging` / `provenance` / `workflow` / `audit`）が存在 |
+| ☐ | `db/migrations/0001_initial_schema.sql`〜`0004_jurisdiction_geography_index.sql` が本番 `pwsm` へ適用済み | 5 スキーマ（`core` / `staging` / `provenance` / `workflow` / `audit`）が存在 |
 | ☐ | PostGIS 拡張が有効 | `CREATE EXTENSION postgis` 済み |
 | ☐ | 整合性 CHECK 制約が有効 | published は根拠必須・`estimated` は `official` 精度不可・期間逆転禁止（設計 §5.3） |
-| ☐ | dev ブランチで先行検証済み | 本番へ直接 DDL を流していない（隔離検証） |
+| ☐ | `pwsm_test` で先行検証済み | 本番へ直接 DDL を流していない（隔離検証） |
 | ☐ | 追加マイグレーションがある場合、番号連番・冪等性・ロールバック方針を確認 | `rollback.md` 参照 |
-| ☐ | バックアップ / 復旧点を確認 | 適用直前の Neon ブランチ復元点を控える（設計 §16.1） |
+| ☐ | バックアップ / 復旧点を確認 | 適用直前の論理エクスポート（`reports/backups/pwsm-*.sql.gz`）を控える（`backup-restore.md` 参照） |
 
-> 🚫 **本番（main）ブランチへの DB スキーマ変更適用は人間の明示承認が必須。** dev ブランチでの検証までが CTO 自律範囲。
+> 🚫 **本番 DB へのスキーマ変更適用は人間の明示承認が必須。** `pwsm_test` での検証までが CTO 自律範囲。
 
 ---
 
 ## 5. 🔐 Secrets 設定確認（🔴 必須）
 
-秘密情報は Cloudflare Secrets / `.env.local` で管理し、**本文書・リポジトリに実値を書きません**。
+秘密情報は本ホストの `apps/api/.env`（Git 管理外）で管理し、**本文書・リポジトリに実値を書きません**。
 
 | ✅ | 対象 | 確認項目 |
 |---|---|---|
-| ☐ | `DATABASE_URL` | Cloudflare Secret に登録済み（`wrangler secret put`）。値はプレースホルダー管理 |
-| ☐ | `.env` 非登録 | `.env` / `.env.local` が Git 追跡外（`.gitignore`）である |
+| ☐ | `DATABASE_URL` | `apps/api/.env` にローカル PostgreSQL 接続文字列が設定済み（`chmod 600`・Git 追跡外） |
+| ☐ | `.env` 非登録 | `.env` / `.env.mvp` / `.env.preview` が Git 追跡外（`.gitignore`）である |
 | ☐ | secret scan | コミット差分に接続文字列・トークン・パスワードが含まれない |
-| ☐ | 環境分離 | preview / production の Secret が分離されている（`wrangler.toml` `[env.preview]`） |
+| ☐ | 環境分離 | production（`pwsm-api`）・MVP（`pwsm-mvp`）・preview（`pwsm-api-preview`）で `.env` が分離されている |
 | ☐ | `.env.example` | プレースホルダーのみで実値を含まない |
 
 > 🚫 **Secrets の登録・変更・削除は人間の明示承認が必須。** CTO は手順提示のみ。
