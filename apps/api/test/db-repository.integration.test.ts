@@ -212,3 +212,17 @@ describe.skipIf(databaseUrl === undefined)('監査チェーン（migration 0003�
     clearMemoryAuditEvents();
   });
 });
+
+describe.skipIf(databaseUrl === undefined)('検索パフォーマンス用インデックス（migration 0004・DD-01）', () => {
+  const url = databaseUrl as string;
+
+  it('geography 式 GiST インデックス idx_jurisdictions_geometry_geography が存在する', async () => {
+    const sql = getSql(url);
+    const rows = (await sql`
+      SELECT indexname FROM pg_indexes
+      WHERE schemaname = 'core' AND tablename = 'jurisdictions'
+        AND indexname = 'idx_jurisdictions_geometry_geography'
+    `) as { indexname: string }[];
+    expect(rows.length).toBe(1);
+  });
+});
