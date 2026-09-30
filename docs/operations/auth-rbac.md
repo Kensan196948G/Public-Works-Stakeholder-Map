@@ -61,7 +61,7 @@ flowchart LR
 > 現状 viewer として扱われます（reviewer/editor は `AUTH_REVIEWER_EMAILS` / `AUTH_EDITOR_EMAILS` へ
 > 追加すると昇格します。ドメイン単位のロール判定は将来拡張候補）。
 
-> 本番への反映はリリース PR に設定・影響・rollback を明記し、マージ判定 `Y` の範囲で実施します。
+> 本番への反映はリリース PR に設定・影響・rollback を明記し、本番リリース判定 `Y` の範囲で実施します（PR 自体は Required Checks 全成功で自動マージ）。
 
 ## 5. 無効化（rollback）
 
