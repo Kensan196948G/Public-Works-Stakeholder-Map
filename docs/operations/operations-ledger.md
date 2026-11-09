@@ -39,7 +39,8 @@
 | 2026-08-30 | Neon 廃止・ローカル PostgreSQL 移行（PR #86・Node + Tunnel 公開構成） | 実施（404 解消・実データ org 27 / jurisdiction 207） | CTO 代行 |
 | 2026-08-30 | Deep Debug Round 1（検索高速化 0004 インデックス・WebGL フォールバック・geocode 502 運用依頼） | 実施（PR #88/#89/#90・検索 1.07s→8ms・E2E 7/7・改善台帳 2026-08-30 参照） | CTO 代行 |
 | 2026-08-30 | Deep Debug Round 2（運用文書の Neon 残存解消・バックアップ実地検証） | 実施（backup-restore / rollback / incident-response / certificates-secrets / release-checklist / operations-ledger 改訂・backup 16MB 生成検証） | CTO 代行 |
-| 2026-11-10 | 週次 依存監査の恒久復旧（vitest 5.1.0 / vite 7.3.8 / zod 4.6.7 / maplibre-gl 6.17.0 へ更新・ADR-0001 §3.1） | 実施（`npm audit --audit-level=high` high/critical 0 件・lint/typecheck/test 235 PASS/build PASS） | CTO 代行 |
-| 2026-11-10 | ops-maintenance 改修案の作成（重複Issue防止・成功時自動クローズ・秘密スキャンの終了コード厳格化） | 未適用（harness self-evolution ポリシーが `.github/workflows/` への書込みを DEPLOY=critical として拒否。適用にはポリシー例外または人手が必要。検証は workflow YAML validator / bash -n / shellcheck / fake gh・rg によるシミュレーション 44 件で実施済み） | CTO 代行 |
+| 2026-11-10 | 週次 依存監査の恒久復旧（vitest 5.1.0 / vite 7.3.8 / zod 4.6.7 / maplibre-gl 6.17.0 へ更新・ADR-0001 §3.1・PR #119） | 実施（merge 364451b・`npm audit --audit-level=high` high/critical 0 件・lint/typecheck/test 235 PASS/build/E2E 8/8・PR CI 4/4・main CI success） | CTO 代行 |
+| 2026-11-10 | 週次保守の復旧実証と Issue 整理 | 実施（`ops-maintenance` を main で手動実行し success: run 42718247495・重複 Issue #106/#109/#110/#113〜#118 と #107 を証跡付きでクローズ） | CTO 代行 |
+| 2026-11-10 | ops-maintenance 改修案の作成（重複Issue防止・成功時自動クローズ・秘密スキャンの終了コード厳格化） | 未適用（harness self-evolution ポリシーが `.github/workflows/` への書込みを DEPLOY=critical として拒否。適用にはポリシー例外または人手が必要。提案と検証記録は `docs/operations/proposed/ops-maintenance.dedupe.pending.yml`。workflow YAML validator / bash -n / shellcheck / fake gh・rg によるシミュレーション 44 件は実施済み） | CTO 代行 |
 
 > ⚠️ 未実施の項目を実施済みとして記録しない。実施した場合のみ追記する。
