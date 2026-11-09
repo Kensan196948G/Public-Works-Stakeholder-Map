@@ -28,7 +28,7 @@
     "deploy:mvp": "npm run build && wrangler deploy --env mvp"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.12"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
