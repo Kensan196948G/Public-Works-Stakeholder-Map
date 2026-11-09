@@ -28,4 +28,4 @@ baseUrl と allowedHost の一致・license 未記録時の notes 必須）。
 2. `node scripts/generate-source-registry-seed.mjs` で台帳 seed SQL を生成（決定的 UUID・冪等）
 3. `node scripts/generate-entity-imports.mjs` で組織のステージング取込を生成
 4. Neon dev で検証 → main へ適用（`provenance.data_sources` 登録・`staging.import_records` pending）
-5. SCR-07 二者レビュー → データ版切替 PR（マージ判定 `Y`）で公開
+5. SCR-07 二者レビュー → データ版切替 PR（自動マージ）後、本番リリース判定 `Y` で公開
