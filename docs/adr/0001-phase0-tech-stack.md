@@ -57,10 +57,11 @@ V8 sandbox の仮想アドレス空間予約により同環境では起動不能
 - **環境変化の実測**: 本ホストの `ulimit -v` は現在 `unlimited`（旧環境は 20GB 制限）。
   同じ実行環境で vitest 5.1.0 の全 235 テスト（skip 10）が 3 秒台で PASS することを確認した。
 - **セキュリティ上の必然性**: `tinypool <= 2.1.1` の Prototype Pollution → RCE
-  （GHSA-5gmw-xhrv-c9v3 / GHSA-85c8-ppgw-ccpr、critical）が 2026-09 以降の
-  アドバイザリで検出され、`ops-maintenance` / CI `dependency audit` が fail し続けた。
-  修正版 tinypool は vitest 5 系（vite 7 系）に同梱されるため、3.x 固定のままでは
-  ゲートを満たせない。vitest 5 は vite `^7.0.0` を許容し、選定済みの vite 7 と整合する。
+  （GHSA-5gmw-xhrv-c9v3 / GHSA-85c8-ppgw-ccpr、critical）により、2026-09-14 の
+  初回失敗以降 `ops-maintenance` / CI `dependency audit` が fail し続けた。
+  vitest 5 は tinypool 依存を廃止して自前の pool 実装へ置き換えており、tinypool は
+  依存ツリーから消える。そのため 3.x 固定のままではゲートを満たせない。
+  vitest 5 は vite `^7.0.0` を許容し、選定済みの vite 7 と整合する。
 - **維持した制約**: `workerd`（`wrangler dev`）を使わない方針（§3 追記）は変更しない。
   API のローカル検証は引き続き Hono `app.request()` による統合テストで行う。
 
@@ -68,10 +69,16 @@ V8 sandbox の仮想アドレス空間予約により同環境では起動不能
 
 | ライブラリ | 旧 | 新 | 理由 |
 |---|---|---|---|
-| vitest | 3.2.7 | 5.1.0 | tinypool critical（上記） |
-| vite | 7.3.6 | 7.3.8 | GHSA-9jrq-w75r-8gcw ほか high |
+| vitest | 3.2.7 | 5.1.0 | tinypool 依存の廃止（critical 2 件の解消） |
+| vite | 7.3.6 | 7.3.8 | GHSA-587h-7wmj-h5pm（high）ほか |
 | zod | 4.5.4 | 4.6.7 | GHSA-mrhx-c7xc-m3w5（過大コレクション検証時のメモリ枯渇） |
-| maplibre-gl | 5.24.0 | 6.17.0 | critical アドバイザリ。v6 は ESM 名前付きエクスポートのみのため `import * as maplibregl` へ変更（MapPicker） |
+| maplibre-gl | 5.24.0 | 6.17.0 | GHSA-jrc7-96c5-q579（critical・`<=6.4.0`）。v6 は ESM 名前付きエクスポートのみのため `import * as maplibregl` へ変更（MapPicker） |
+| brace-expansion / source-map-js | 5.0.9 / 1.2.1 | 5.0.12 / 1.2.2 | `npm audit fix`（推移的依存） |
+| eslint / typescript-eslint | 10.9.1 / 8.68.0 | 10.14.0 / 8.72.2 | `^` 範囲内の同時更新（manifest の range は不変） |
+| hono / @hono/node-server | 4.13.5 / 2.1.1 | 4.13.17 / 2.1.6 | 同上（`^` 範囲内の同時更新） |
+
+`^` 範囲内の更新は `npm install` に伴う同時更新であり、`package.json` の range 変更は
+vitest と maplibre-gl の 2 件のみである。
 
 ### 4. fixture は JSON ではなく TypeScript パッケージ
 
