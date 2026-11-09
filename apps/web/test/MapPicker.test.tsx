@@ -35,12 +35,11 @@ vi.mock('maplibre-gl', () => {
     addTo = vi.fn(() => this);
   }
   class MockNavigationControl {}
+  // maplibre-gl v6 は ESM 名前付きエクスポートのみ（default export 廃止）
   return {
-    default: {
-      Map: MockMap,
-      Marker: MockMarker,
-      NavigationControl: MockNavigationControl,
-    },
+    Map: MockMap,
+    Marker: MockMarker,
+    NavigationControl: MockNavigationControl,
   };
 });
 
