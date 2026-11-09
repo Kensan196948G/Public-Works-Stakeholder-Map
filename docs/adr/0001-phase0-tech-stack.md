@@ -29,7 +29,7 @@ Phase 0 の scaffold 構築にあたり、以下を決定した。
 |---|---|---|
 | zod | 4.x | 実行時検証 + 型導出の両立。`z.iso.datetime` 等の組込フォーマット |
 | hono | 4.x | Workers ネイティブ・Node 上でそのままテスト可能（`app.request()`） |
-| vitest | **3.x** | 後述の制約により 4.x を見送り |
+| vitest | **5.x** | §3.1 の再評価により 2026-11-10 に 5.1.0 へ更新（旧: 3.x） |
 | typescript | 6.x | strict + exactOptionalPropertyTypes で不確実性をコンパイル時に強制 |
 
 ### 3. vitest 4 → 3 のダウングレード（制約による決定）
@@ -49,6 +49,29 @@ V8 sandbox の仮想アドレス空間予約により同環境では起動不能
 （`Fatal process out of memory: SegmentedTable::InitializeTable`）。
 このため API のローカル検証は Hono の `app.request()` による統合テストで行い、
 実 runtime での確認は CI / Cloudflare preview 環境で実施する。
+
+### 3.1 vitest 5 への更新（2026-11-10 再評価・§3 の再評価条件を充足）
+
+§3 の**再評価条件**（仮想メモリ制限の解除）を満たしたため、vitest を 5.1.0 へ更新した。
+
+- **環境変化の実測**: 本ホストの `ulimit -v` は現在 `unlimited`（旧環境は 20GB 制限）。
+  同じ実行環境で vitest 5.1.0 の全 235 テスト（skip 10）が 3 秒台で PASS することを確認した。
+- **セキュリティ上の必然性**: `tinypool <= 2.1.1` の Prototype Pollution → RCE
+  （GHSA-5gmw-xhrv-c9v3 / GHSA-85c8-ppgw-ccpr、critical）が 2026-09 以降の
+  アドバイザリで検出され、`ops-maintenance` / CI `dependency audit` が fail し続けた。
+  修正版 tinypool は vitest 5 系（vite 7 系）に同梱されるため、3.x 固定のままでは
+  ゲートを満たせない。vitest 5 は vite `^7.0.0` を許容し、選定済みの vite 7 と整合する。
+- **維持した制約**: `workerd`（`wrangler dev`）を使わない方針（§3 追記）は変更しない。
+  API のローカル検証は引き続き Hono `app.request()` による統合テストで行う。
+
+**併せて更新した依存**（`npm audit --audit-level=high` を 0 件にするため）:
+
+| ライブラリ | 旧 | 新 | 理由 |
+|---|---|---|---|
+| vitest | 3.2.7 | 5.1.0 | tinypool critical（上記） |
+| vite | 7.3.6 | 7.3.8 | GHSA-9jrq-w75r-8gcw ほか high |
+| zod | 4.5.4 | 4.6.7 | GHSA-mrhx-c7xc-m3w5（過大コレクション検証時のメモリ枯渇） |
+| maplibre-gl | 5.24.0 | 6.17.0 | critical アドバイザリ。v6 は ESM 名前付きエクスポートのみのため `import * as maplibregl` へ変更（MapPicker） |
 
 ### 4. fixture は JSON ではなく TypeScript パッケージ
 
