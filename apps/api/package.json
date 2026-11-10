@@ -17,7 +17,7 @@
     "@pwsm/fixtures": "*",
     "hono": "^4.12.30",
     "postgres": "^3.4.9",
-    "zod": "^4.4.3"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@hono/node-server": "^2.0.10",
