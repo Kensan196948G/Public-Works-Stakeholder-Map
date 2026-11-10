@@ -42,5 +42,6 @@
 | 2026-11-10 | 週次 依存監査の恒久復旧（vitest 5.1.0 / vite 7.3.8 / zod 4.6.7 / maplibre-gl 6.17.0 へ更新・ADR-0001 §3.1・PR #119） | 実施（merge 364451b・`npm audit --audit-level=high` high/critical 0 件・lint/typecheck/test 235 PASS/build/E2E 8/8・PR CI 4/4・main CI success） | CTO 代行 |
 | 2026-11-10 | 週次保守の復旧実証と Issue 整理 | 実施（`ops-maintenance` を main で手動実行し success: run 42718247495・重複 Issue #106/#109/#110/#113〜#118 と #107 を証跡付きでクローズ） | CTO 代行 |
 | 2026-11-10 | ops-maintenance 改修案の作成（重複Issue防止・成功時自動クローズ・秘密スキャンの終了コード厳格化） | 未適用（harness self-evolution ポリシーが `.github/workflows/` への書込みを DEPLOY=critical として拒否。適用にはポリシー例外または人手が必要。提案と検証記録は `docs/operations/proposed/ops-maintenance.dedupe.pending.yml`。workflow YAML validator / bash -n / shellcheck / fake gh・rg によるシミュレーション 44 件は実施済み） | CTO 代行 |
+| 2026-11-10 | ops-maintenance 改修の適用（PR #122 → squash merge `ebf414b`。重複 Issue 防止・成功時自動クローズ・秘密スキャン終了コード厳格化。適用時に CI の `rg` 不在＝exit 127 が成功扱いだった偽陰性と、ローカル接続例への誤検知が判明したため、ripgrep 導入と検出パターンの絞り込みも併せて実施） | 実施（PR CI 4/4・main CI success: run 42735773174・main の `workflow_dispatch` success: run 42735806601「同一タイトルのオープン Issue はありません」で no-op 確認・PR ブランチ dispatch success: run 42735574548） | CTO 代行 |
 
 > ⚠️ 未実施の項目を実施済みとして記録しない。実施した場合のみ追記する。
