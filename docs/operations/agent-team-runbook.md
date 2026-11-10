@@ -116,7 +116,9 @@ node .github/scripts/validate-workflows.mjs
 | 独立レビュー | `reviewer-qa` が APPROVE。M1〜M3 の指摘を `1d6b928` で反映 |
 | 復旧実証 | `ops-maintenance` を main で手動実行し成功（run 42718247495） |
 | Issue 整理 | #106 / #109 / #110 / #113〜#118（重複 9 件）と #107（ハートビート）を証跡付きでクローズ |
-| 残課題 | Issue #32（実データ投入・Phase 2 後半）・ops-maintenance 提案の適用・moderate 10 件 |
+| 改修の適用 | PR #122（重複 Issue 防止・成功時自動クローズ・秘密スキャン厳格化。ripgrep 導入と誤検知除外を含む）→ squash merge `ebf414b` |
+| 適用後検証 | main CI success（run 42735773174）・main の `workflow_dispatch` success（run 42735806601・「同一タイトルのオープン Issue はありません」で no-op 確認） |
+| 残課題 | Issue #32（実データ投入・Phase 2 後半）・moderate 10 件・次回スケジュール実行（2026-11-16 10:00 JST）での通知挙動確認 |
 
 ## 8. 変更履歴
 
