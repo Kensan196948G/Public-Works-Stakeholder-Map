@@ -36,34 +36,55 @@ jobs:
         id: audit
         run: npm audit --audit-level=high
 
+      - name: ripgrep をインストール（秘密スキャン用）
+        run: |
+          # GitHub の ubuntu-latest には rg が入っていない。旧実装は rg 不在の
+          # exit 127 を「検出なし」として緑にしていた（偽陰性）。ここで明示的に
+          # 導入し、導入に失敗した場合は後続のスキャンを失敗させる。
+          if ! command -v rg >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq ripgrep
+          fi
+          rg --version
+
       - name: 秘密情報スキャン（コミット済みファイル）
         id: secret_scan
         run: |
           # rg の終了コードで明示的に判定する。
-          #   0      = 検出あり            -> 失敗（秘密情報の可能性）
+          #   0      = 検出あり            -> 許可リストで判定
           #   1      = 検出なし            -> 成功
           #   2 以上 = スキャン自体の失敗  -> 失敗（バイナリ走査エラー、rg 不在は 127 など）
           # 旧実装の `rg ... && exit 1 || exit 0` は 2 以上も「検出なし」と同じ成功扱いに
           # なり、スキャンできなかった実行を緑にしてしまう偽陰性があった。
+          #
+          # DB 接続文字列は「パスワードが 6 文字以上」の形だけを対象にし、さらに
+          # ローカル開発ホスト（127.0.0.1 / localhost / host）への接続例は除外する。
+          # README・`.env.example`・CI に載っている `user:pass@127.0.0.1` のような
+          # プレースホルダを秘密情報と誤検知して毎週失敗するのを避けるため。
           RG_STATUS=0
-          rg -n --hidden -g '!.git/**' -g '!package-lock.json' -g '!node_modules/**' \
-            -e 'postgresql://[^"'"'"' ]+' \
+          OUT="$(rg -n --hidden -g '!.git/**' -g '!package-lock.json' -g '!node_modules/**' \
+            -e 'postgresql://[^:/@\s]+:[^@/\s]{6,}@' \
             -e 'BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY' \
             -e 'ghp_[A-Za-z0-9]{20,}' \
             -e 'AKIA[0-9A-Z]{16}' \
             -e 'napi_[A-Za-z0-9]{20,}' \
             -e 'sk-[A-Za-z0-9]{20,}' \
-            . || RG_STATUS=$?
+            .)" || RG_STATUS=$?
           echo "rg_exit_code=${RG_STATUS}"
-          if [ "${RG_STATUS}" -eq 0 ]; then
-            echo "::error::秘密情報の疑いがある文字列を検出しました（rg exit 0）。上の検出箇所を確認し、除去とローテーションを行ってください。"
-            exit 1
-          fi
-          if [ "${RG_STATUS}" -ne 1 ]; then
+          if [ "${RG_STATUS}" -ge 2 ]; then
             echo "::error::秘密情報スキャン自体が失敗しました（rg exit ${RG_STATUS}）。スキャン未実施を『検出なし』と扱わないため失敗にします。"
             exit 1
           fi
-          echo "秘密情報スキャン: 検出なし（rg exit 1）"
+          if [ "${RG_STATUS}" -eq 0 ]; then
+            REAL="$(printf '%s\n' "${OUT}" | grep -Ev '@(127\.0\.0\.1|localhost|host)([:/]|$)' || true)"
+            if [ -n "${REAL}" ]; then
+              printf '%s\n' "${REAL}"
+              echo "::error::秘密情報の疑いがある文字列を検出しました。上の検出箇所を確認し、除去とローテーションを行ってください。"
+              exit 1
+            fi
+            echo "検出はすべてローカル開発用ホストの接続例のため合格"
+          fi
+          echo "秘密情報スキャン: 検出なし"
 
       - name: 成功時は同一タイトルのオープン Issue を自動クローズ
         if: success()

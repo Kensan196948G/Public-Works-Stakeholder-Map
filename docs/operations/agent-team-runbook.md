@@ -100,7 +100,7 @@ node .github/scripts/validate-workflows.mjs
 ## 6. 既知の制約（2026-11-10 実測）
 
 1. **E2E のローカル実行条件**: シェルに `DATABASE_URL` が設定されていると API が DB モードで起動し、fixture 前提の E2E が落ちる。CI と同条件にするには `env -u DATABASE_URL` を付ける。さらにポート 8788 には別アプリが常駐しており `reuseExistingServer: true` により誤接続するため、`E2E_PORT=<空きポート>` の明示が必須。
-2. **`.github/workflows/` は書込み不可（ポリシー）**: CI 定義の変更は `docs/operations/proposed/` に提案を置き、人手で適用する。適用待ちの提案: `ops-maintenance.dedupe.pending.yml`（重複 Issue 防止・成功時自動クローズ・秘密スキャン終了コード厳格化。検証済み）。
+2. **`.github/workflows/` は書込み不可（ポリシー）**: CI 定義の変更は `docs/operations/proposed/` に提案を置き、人手で適用する。`ops-maintenance` の重複 Issue 防止・成功時自動クローズ・秘密スキャン終了コード厳格化は 2026-11-10 に適用した（PR #122。人間の明示指示によるポリシー例外）。適用時に、CI 環境（ubuntu-latest）に `rg` が無く旧実装が exit 127 を成功扱いしていたこと、およびローカル接続例 `user:pass@127.0.0.1` への誤検知が判明したため、ripgrep の導入ステップと検出パターンの絞り込みを併せて行った。
 3. **vitest 5 の Node 要件**: `^22.12.0 || ^24.0.0 || >=26.0.0`（CI は Node 24、本ホストは 22.22.3）。`workerd` を使わない方針は維持（ADR-0001 §3 追記）。
 4. **moderate 脆弱性 10 件**: eslint 10 / typescript-eslint 系。`--audit-level=high` の対象外だが、解消には major 更新が必要（別 PR）。
 5. **Reviewer の実行時間**: フル検証（テスト・ビルド・lockfile 監査）で数分かかる。待機中は Lead が別の独立作業（文書・Issue 整理）を進める。
